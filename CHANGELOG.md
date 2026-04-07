@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/JacobPEvans/nix-home/compare/v1.13.2...v1.13.3) (2026-04-07)
+
+
+### Bug Fixes
+
+* replace renovate annotation with nix-update convention in grip ([#130](https://github.com/JacobPEvans/nix-home/issues/130)) ([95d5ab3](https://github.com/JacobPEvans/nix-home/commit/95d5ab3e4826d9b76ea205edc07bc9d360017332))
+
 ## [1.13.2](https://github.com/JacobPEvans/nix-home/compare/v1.13.1...v1.13.2) (2026-04-04)
 
 
