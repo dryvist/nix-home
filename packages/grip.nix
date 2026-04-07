@@ -14,7 +14,7 @@
 
 buildPythonPackage rec {
   pname = "grip";
-  # renovate: datasource=pypi depName=grip
+  # managed by: nix-update (deps-update-packages.yml)
   version = "4.6.2";
   pyproject = true;
 
