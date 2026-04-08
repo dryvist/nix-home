@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/JacobPEvans/nix-home/compare/v1.13.3...v1.14.0) (2026-04-08)
+
+
+### Features
+
+* add AI merge gate ([#132](https://github.com/JacobPEvans/nix-home/issues/132)) ([dea9a7f](https://github.com/JacobPEvans/nix-home/commit/dea9a7f996a5746c19d55904b0de48745d0d662f))
+
 ## [1.13.3](https://github.com/JacobPEvans/nix-home/compare/v1.13.2...v1.13.3) (2026-04-07)
 
 
