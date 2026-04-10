@@ -75,6 +75,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.nix == 'true'
     uses: JacobPEvans/.github/.github/workflows/_nix-validate.yml@main
+    with:
+      runner_label: "runs-on=${{ github.run_id }}/runner=2cpu-linux-x64"
 
   markdown-lint:
     name: Markdown Lint
