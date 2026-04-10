@@ -99,6 +99,7 @@ with pkgs;
   bitwarden-cli # CLI for Bitwarden password manager (bw command)
   bws # Bitwarden Secrets Manager CLI (for machine secrets)
   doppler # Doppler secrets manager CLI (for CI/CD and team secrets)
+  aws-vault # AWS credential management — session credentials backed by the OS keychain/credential store (used by av/avl/avd/ava/avr aliases)
 
   # ==========================================================================
   # Remote Shell
