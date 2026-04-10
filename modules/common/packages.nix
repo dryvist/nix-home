@@ -29,11 +29,15 @@ lib.optionals pkgs.stdenv.isLinux [
   git-bug # Distributed bug tracker embedded in git (git bug command)
 
   # ==========================================================================
-  # Bun Runtime
+  # JavaScript Runtimes
   # ==========================================================================
-  # Fast all-in-one JavaScript runtime (provides bunx)
-  # nodejs is available per-repo via devShells
-  bun # Fast all-in-one JavaScript runtime (provides bunx)
+  # bun: fast all-in-one runtime (provides bunx) — general CLI/script use.
+  # nodejs: needed globally for Claude document-skills, which generate scripts
+  # that `require('docx')` / `require('pptxgenjs')` and are executed with
+  # `node`. Those npm libs are installed to ~/.npm-packages via npm install -g
+  # in a home.activation entry (see modules/home-manager/document-skills.nix).
+  bun
+  nodejs
 
   # ==========================================================================
   # Modern CLI Tools
