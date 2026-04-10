@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/JacobPEvans/nix-home/compare/v1.14.0...v1.15.0) (2026-04-10)
+
+
+### Features
+
+* add minio-client (mc) to common packages ([#136](https://github.com/JacobPEvans/nix-home/issues/136)) ([b5fd725](https://github.com/JacobPEvans/nix-home/commit/b5fd7250b301164ae3d3edc20b6f5abffba55a5e))
+
 ## [1.14.0](https://github.com/JacobPEvans/nix-home/compare/v1.13.3...v1.14.0) (2026-04-08)
 
 
