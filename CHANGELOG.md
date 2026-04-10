@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/JacobPEvans/nix-home/compare/v1.16.0...v1.17.0) (2026-04-10)
+
+
+### Features
+
+* add dependencies for Claude document-skills ([#142](https://github.com/JacobPEvans/nix-home/issues/142)) ([ee19586](https://github.com/JacobPEvans/nix-home/commit/ee19586cba3899e058100dd1f70aade9f3ef71bf))
+
 ## [1.16.0](https://github.com/JacobPEvans/nix-home/compare/v1.15.1...v1.16.0) (2026-04-10)
 
 
