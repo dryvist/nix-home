@@ -12,7 +12,12 @@
 { pkgs }:
 
 with pkgs;
-[
+lib.optionals pkgs.stdenv.isLinux [
+  # LibreOffice: CLI soffice for docx/xlsx/pptx → PDF conversion (document-skills).
+  # Not built for aarch64-darwin in nixpkgs — macOS uses the homebrew cask instead.
+  libreoffice
+]
+++ [
   # ==========================================================================
   # Git & Pre-commit Hooks
   # ==========================================================================
@@ -24,11 +29,15 @@ with pkgs;
   git-bug # Distributed bug tracker embedded in git (git bug command)
 
   # ==========================================================================
-  # Bun Runtime
+  # JavaScript Runtimes
   # ==========================================================================
-  # Fast all-in-one JavaScript runtime (provides bunx)
-  # nodejs is available per-repo via devShells
-  bun # Fast all-in-one JavaScript runtime (provides bunx)
+  # bun: fast all-in-one runtime (provides bunx) — general CLI/script use.
+  # nodejs: needed globally for Claude document-skills, which generate scripts
+  # that `require('docx')` / `require('pptxgenjs')` and are executed with
+  # `node`. Those npm libs are installed to ~/.npm-packages via npm install -g
+  # in a home.activation entry (see modules/home-manager/document-skills.nix).
+  bun
+  nodejs
 
   # ==========================================================================
   # Modern CLI Tools
@@ -61,6 +70,18 @@ with pkgs;
 
   d2 # Modern diagram scripting language (D2lang)
   mermaid-cli # Mermaid diagram generator CLI (mmdc)
+
+  # ==========================================================================
+  # Document Processing (Claude document-skills)
+  # ==========================================================================
+  # Runtime dependencies for /document-skills:{docx,xlsx,pptx} — text
+  # extraction, PDF conversion, and PDF→image thumbnails. Python libs live
+  # in the python314.withPackages env below; npm libs (docx, pptxgenjs) are
+  # installed via bun in modules/home-manager/document-skills.nix.
+  # NOTE: libreoffice is Linux-only here — see conditional block at top of
+  # this file. On macOS it's installed as a homebrew cask by nix-darwin.
+  pandoc # Universal document converter (docx text extraction)
+  poppler-utils # `pdftoppm` for PDF → image thumbnails
 
   # ==========================================================================
   # Universal Linters
@@ -168,5 +189,10 @@ with pkgs;
     ps.grip # Preview GitHub Markdown files locally
     ps.pipx # Install and run Python CLI apps in isolated environments
     ps.pygithub # GitHub API v3 Python library
+    # Claude document-skills dependencies
+    ps.pandas # xlsx: data manipulation
+    ps.openpyxl # xlsx: formulas and formatting
+    ps.pillow # pptx: thumbnail grids
+    ps.markitdown # pptx: text extraction
   ]))
 ]

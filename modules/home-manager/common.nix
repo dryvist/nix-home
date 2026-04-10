@@ -54,6 +54,9 @@ let
   # VS Code writable config
   vscodeWritableConfig = import ./vscode/writable-config.nix { inherit config lib pkgs; };
 
+  # Claude document-skills runtime (bun-installed npm libs)
+  documentSkillsConfig = import ./document-skills.nix { inherit pkgs lib; };
+
   # npm configuration
   npmFiles = import ./npm/config.nix { inherit config; };
 
@@ -86,7 +89,7 @@ in
       SCCACHE_CACHE_SIZE = "5G";
     };
 
-    inherit (vscodeWritableConfig) activation;
+    activation = vscodeWritableConfig.activation // documentSkillsConfig.activation;
   };
 
   programs = {
