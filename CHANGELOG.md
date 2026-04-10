@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/JacobPEvans/nix-home/compare/v1.15.0...v1.15.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* move minio-client to dedicated Object Storage section ([#138](https://github.com/JacobPEvans/nix-home/issues/138)) ([8d3e9fd](https://github.com/JacobPEvans/nix-home/commit/8d3e9fd3f750b100e96e069c361fe87fdca79adc))
+
 ## [1.15.0](https://github.com/JacobPEvans/nix-home/compare/v1.14.0...v1.15.0) (2026-04-10)
 
 
