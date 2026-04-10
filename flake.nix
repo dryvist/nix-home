@@ -1,4 +1,7 @@
 {
+  # Nix Validate runs via the reusable _nix-validate.yml workflow.
+  # As of #135 this repo opts into the RunsOn self-hosted runner via the
+  # runner_label input — see .github/workflows/ci-gate.yml.
   description = "Cross-platform home-manager modules (Nix flake)";
 
   inputs = {
