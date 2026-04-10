@@ -5,19 +5,30 @@
 # into ~/.npm-packages (prefix configured in npm/config.nix) so the skills
 # can `require('docx')` / `require('pptxgenjs')` via node out of the box.
 #
+# The actual install logic lives in
+#   modules/home-manager/scripts/install-document-skills-npm-deps.sh
+# exposed as the `install-document-skills-npm-deps` overlay package. Version
+# pins are passed via env so they stay declarative in this file (bump them
+# deliberately, not via semver drift).
+#
 # Returns `{ activation }` for merging into home.activation in common.nix.
 
 { pkgs, lib, ... }:
 
+let
+  # Exact pins for reproducibility — bump deliberately.
+  docxVersion = "9.6.1";
+  pptxgenjsVersion = "4.0.1";
+
+  installScript = "${pkgs.install-document-skills-npm-deps}/bin/install-document-skills-npm-deps";
+in
 {
   activation = {
-    # `npm install -g` is idempotent for matching versions — it's a no-op
-    # when the requested package@version is already present. Path is set
-    # explicitly so activation doesn't depend on the caller's shell init.
     installDocumentSkillNpmDeps = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      export PATH="${pkgs.nodejs}/bin:$HOME/.npm-packages/bin:$PATH"
-      export npm_config_prefix="$HOME/.npm-packages"
-      $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm install -g --silent docx@^9 pptxgenjs@^3
+      export DOCX_VERSION="${docxVersion}"
+      export PPTXGENJS_VERSION="${pptxgenjsVersion}"
+      export NPM_GLOBAL_PREFIX="$HOME/.npm-packages"
+      $DRY_RUN_CMD ${installScript}
     '';
   };
 }
