@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/JacobPEvans/nix-home/compare/v1.15.1...v1.16.0) (2026-04-10)
+
+
+### Features
+
+* add aws-vault to common packages ([#140](https://github.com/JacobPEvans/nix-home/issues/140)) ([0038120](https://github.com/JacobPEvans/nix-home/commit/003812098a59d2ba847bce80cd4cb6bb3cab4bfb))
+
 ## [1.15.1](https://github.com/JacobPEvans/nix-home/compare/v1.15.0...v1.15.1) (2026-04-10)
 
 
