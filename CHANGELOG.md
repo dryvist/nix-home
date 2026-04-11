@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/JacobPEvans/nix-home/compare/v1.17.0...v1.18.0) (2026-04-11)
+
+
+### Features
+
+* **aliases:** add tf-claude combo launcher (aws-vault + doppler) ([#144](https://github.com/JacobPEvans/nix-home/issues/144)) ([432cba4](https://github.com/JacobPEvans/nix-home/commit/432cba4e47bbf24d434cb9e230aa98ef5ba3bf8c))
+
 ## [1.17.0](https://github.com/JacobPEvans/nix-home/compare/v1.16.0...v1.17.0) (2026-04-10)
 
 
