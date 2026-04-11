@@ -64,14 +64,6 @@ lib.optionals pkgs.stdenv.isLinux [
   zellij # Modern terminal multiplexer (Rust, layout engine)
 
   # ==========================================================================
-  # Visualization & Diagramming
-  # ==========================================================================
-  # CLI tools for generating diagrams from text/code.
-
-  d2 # Modern diagram scripting language (D2lang)
-  mermaid-cli # Mermaid diagram generator CLI (mmdc)
-
-  # ==========================================================================
   # Document Processing (Claude document-skills)
   # ==========================================================================
   # Runtime dependencies for /document-skills:{docx,xlsx,pptx} — text
@@ -92,15 +84,11 @@ lib.optionals pkgs.stdenv.isLinux [
   # Shell
   shellcheck # Shell script static analysis (POSIX, bash)
   shfmt # Shell script formatter
-  bats # Bash Automated Testing System for shell script testing
 
   # Documentation
   cspell # Spell checker for code and documentation
-  lychee # Link checker for markdown and HTML (validates URLs in docs)
+  lychee # Link checker — kept global: consumed by downstream repo pre-commit hooks (`language: system`)
   markdownlint-cli2 # Markdown linter (README, docs exist everywhere)
-
-  # CI/CD
-  actionlint # GitHub Actions workflow linter
 
   # Nix (2025 official tooling)
   nixfmt-rfc-style # Official Nix formatter (RFC 166, v1.1.0+)
@@ -157,37 +145,24 @@ lib.optionals pkgs.stdenv.isLinux [
   # Type checking and analysis tools for Python development.
   pyright # Static type checker for Python
 
-  # Python interpreters: Multiple versions via Nix (no pip - packages via Nix only)
-  # Available: python314 (with grip via overlay), python312
+  # Single Python interpreter (python314) — python312 removed (no unique users
+  # in the quartet; `uv run --python 3.12` covers ad-hoc 3.12 needs).
   # NOTE: python3 cannot be overridden at the overlay level on Darwin because
-  # it is used by stdenv bootstrapping (AvailabilityVersions). Reference
-  # python314 explicitly instead.
-  # For Python 3.9 (Splunk, EOL): Use `uv run --python 3.9` (on-demand download)
-  # python310 available per-repo via devShells
-  # Individual interpreters at lower meta.priority to avoid /bin/idle conflict
-  # with the python314.withPackages environment below and each other.
-  # Priority: python314.withPackages (5, default) > python312 (10)
-  # Version-specific binaries (python3.12, python3.14) are always available.
-  (python312.overrideAttrs (old: {
-    meta = old.meta // {
-      priority = 10;
-    };
-  })) # Python 3.12: General development and testing
+  # it's used by stdenv bootstrapping. Reference python314 explicitly.
 
-  # uv: For running EOL Python versions (3.9) not in nixpkgs
+  # uv: For running alternate Python versions on-demand (EOL or pinned)
   # Usage: uv run --python 3.9 pytest tests/
   uv
 
   # ==========================================================================
   # Python Environment
   # ==========================================================================
-  # Create a unified Python environment with all required packages.
-  # This ensures all modules can be imported in the same interpreter.
-  # Using python314.withPackages (overlay provides grip package).
+  # Unified Python environment for credential/secret scripts, GitHub automation,
+  # and Claude document-skills runtime. All modules importable from one interpreter.
+  # Note: this repo's flake also exports `grip` as a standalone package
+  # (nix run .#grip) via overlays/python-packages.nix + packages/grip.nix.
   (python314.withPackages (ps: [
     ps.cryptography # Cryptographic recipes and primitives
-    ps.grip # Preview GitHub Markdown files locally
-    ps.pipx # Install and run Python CLI apps in isolated environments
     ps.pygithub # GitHub API v3 Python library
     # Claude document-skills dependencies
     ps.pandas # xlsx: data manipulation
