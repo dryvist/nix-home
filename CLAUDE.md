@@ -40,9 +40,8 @@ nix fmt            # Fix formatting
 
 ### Package placement
 
-- **`home.packages`**: User dev tools, linters, CLIs, language runtimes
-- **`environment.systemPackages`** (nix-darwin): Core bootstrapping (git, vim), macOS-only system tools, GUI apps, audio libs
-- **AI packages** (nix-ai): Claude Code, Gemini, Copilot, MCP servers
+See the `nix-package-placement` rule — auto-loads for `.nix` files, contains the full
+decision matrix for all four repos including homebrew constraints and on-demand patterns.
 
 ## Architecture
 

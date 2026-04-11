@@ -19,7 +19,8 @@
     "tflint",
     "venv",
     "worktree",
-    "worktrees"
+    "worktrees",
+    "mkshell"
   ],
   "ignorePaths": [
     "flake.lock",
