@@ -9,6 +9,13 @@
 #
 # Platform: macOS (BSD ls flags used)
 
+let
+  # Doppler wrapper that launches claude with 'ai-ci-automation/prd' secrets
+  # injected (GEMINI_API_KEY for Google Gemini / PAL MCP, OPENROUTER_API_KEY
+  # for OpenRouter, etc.). Bound once here so every alias that wants the
+  # same AI MCP context reuses the same command string.
+  dopplerClaude = "doppler run -p ai-ci-automation -c prd -- claude";
+in
 {
   # ===========================================================================
   # Directory Listing (macOS/BSD ls)
@@ -76,23 +83,21 @@
   # ===========================================================================
   # AI CLI Tools (Doppler for secrets injection)
   # ===========================================================================
-  # Doppler injects secrets from 'ai-ci-automation' project (prd config):
-  #   - GEMINI_API_KEY (Google Gemini - used by PAL MCP)
-  #   - OPENROUTER_API_KEY (OpenRouter - unified model access)
+  # Interactive Claude Code with ai-ci-automation/prd secrets injected.
+  # See the dopplerClaude binding at the top of this file for what's loaded.
   #
   # Usage:
   #   d-claude             # Interactive Claude Code with injected secrets
   #   d-claude -p "prompt" # Non-interactive with prompt
   #
-  d-claude = "doppler run -p ai-ci-automation -c prd -- claude";
+  d-claude = dopplerClaude;
 
-  # Combined aws-vault 'terraform' profile + Doppler ai-ci-automation/prd + claude.
-  # For sessions on infra repos that need both AWS credentials AND AI MCP secrets
-  # (PAL, Google Workspace, etc.) loaded at launch time.
+  # aws-vault 'terraform' profile layered on top of d-claude. For sessions on
+  # infra repos that need BOTH AWS credentials AND AI MCP secrets loaded.
   #
   # Usage:
   #   tf-claude             # AWS terraform profile + AI secrets + interactive claude
-  tf-claude = "aws-vault exec terraform -- doppler run -p ai-ci-automation -c prd -- claude";
+  tf-claude = "aws-vault exec terraform -- ${dopplerClaude}";
 
   # ===========================================================================
   # tmux (session management)
