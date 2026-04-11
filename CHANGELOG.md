@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.19.0](https://github.com/JacobPEvans/nix-home/compare/v1.18.0...v1.19.0) (2026-04-11)
+
+
+### Features
+
+* **packages:** audit package placement — remove project-scoped tools from global env ([#146](https://github.com/JacobPEvans/nix-home/issues/146)) ([e90c4b0](https://github.com/JacobPEvans/nix-home/commit/e90c4b02f79593335cae48e5f0108b1cd600bb81))
+
+
+### Bug Fixes
+
+* **docs:** drop "quartet" and "all four repos" language ([#148](https://github.com/JacobPEvans/nix-home/issues/148)) ([a7d9a1a](https://github.com/JacobPEvans/nix-home/commit/a7d9a1aa0bdb625a93d00dceafe681a5706897b1))
+
 ## [1.18.0](https://github.com/JacobPEvans/nix-home/compare/v1.17.0...v1.18.0) (2026-04-11)
 
 
