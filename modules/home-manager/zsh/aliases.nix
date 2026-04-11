@@ -86,6 +86,14 @@
   #
   d-claude = "doppler run -p ai-ci-automation -c prd -- claude";
 
+  # Combined aws-vault 'terraform' profile + Doppler ai-ci-automation/prd + claude.
+  # For sessions on infra repos that need both AWS credentials AND AI MCP secrets
+  # (PAL, Google Workspace, etc.) loaded at launch time.
+  #
+  # Usage:
+  #   tf-claude             # AWS terraform profile + AI secrets + interactive claude
+  tf-claude = "aws-vault exec terraform -- doppler run -p ai-ci-automation -c prd -- claude";
+
   # ===========================================================================
   # tmux (session management)
   # ===========================================================================
