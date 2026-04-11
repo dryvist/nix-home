@@ -82,7 +82,7 @@ AI development workflows. It includes OpenTelemetry Collector for traces and log
 and Cribl Edge for log shipping. See [`modules/monitoring/README.md`](modules/monitoring/README.md)
 for architecture details, components, and quick start instructions.
 
-## Part of a Quartet
+## Related Repos
 
 **nix-home** manages your user-level development environment using home-manager modules.
 It provides shell config, editor settings, CLI dev tools, linters, and dotfiles.
