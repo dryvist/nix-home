@@ -40,8 +40,11 @@ nix fmt            # Fix formatting
 
 ### Package placement
 
-See the `nix-package-placement` rule — auto-loads for `.nix` files, contains the full
-decision matrix for all four repos including homebrew constraints and on-demand patterns.
+See the `nix-package-placement` rule — lives in
+[ai-assistant-instructions/agentsmd/rules/nix-package-placement.md](https://github.com/JacobPEvans/ai-assistant-instructions/blob/main/agentsmd/rules/nix-package-placement.md)
+and auto-loads via path-scoping when `.nix` / `flake.*` files are in context.
+Contains the full decision matrix for all four repos including homebrew constraints
+and on-demand patterns.
 
 ## Architecture
 

@@ -64,14 +64,6 @@ lib.optionals pkgs.stdenv.isLinux [
   zellij # Modern terminal multiplexer (Rust, layout engine)
 
   # ==========================================================================
-  # Visualization & Diagramming
-  # ==========================================================================
-  # CLI tools for generating diagrams from text/code.
-
-  # d2 and mermaid-cli removed — use `nix run nixpkgs#d2` and `nix run nixpkgs#mermaid-cli`
-  # for occasional diagramming (zero install, zero residue)
-
-  # ==========================================================================
   # Document Processing (Claude document-skills)
   # ==========================================================================
   # Runtime dependencies for /document-skills:{docx,xlsx,pptx} — text
@@ -92,15 +84,11 @@ lib.optionals pkgs.stdenv.isLinux [
   # Shell
   shellcheck # Shell script static analysis (POSIX, bash)
   shfmt # Shell script formatter
-  # bats removed — Bash testing belongs in project devenvs (nix-devenv shells/ansible)
 
   # Documentation
   cspell # Spell checker for code and documentation
-  lychee # Link checker for markdown and HTML — kept global: pre-commit uses language: system
+  lychee # Link checker — kept global: consumed by downstream repo pre-commit hooks (`language: system`)
   markdownlint-cli2 # Markdown linter (README, docs exist everywhere)
-
-  # CI/CD
-  # actionlint removed — GitHub Actions linting belongs in project devenvs (nix-devenv shells/kubernetes)
 
   # Nix (2025 official tooling)
   nixfmt-rfc-style # Official Nix formatter (RFC 166, v1.1.0+)
@@ -157,27 +145,24 @@ lib.optionals pkgs.stdenv.isLinux [
   # Type checking and analysis tools for Python development.
   pyright # Static type checker for Python
 
-  # Python interpreters: Single version (python314) — python312 removed (no unique users;
-  # brew provides python@3.12 as a transitive dep of gemini-cli/node/etc.)
+  # Single Python interpreter (python314) — python312 removed (no unique users
+  # in the quartet; `uv run --python 3.12` covers ad-hoc 3.12 needs).
   # NOTE: python3 cannot be overridden at the overlay level on Darwin because
-  # it is used by stdenv bootstrapping (AvailabilityVersions). Reference python314 explicitly.
-  # For Python 3.9 (Splunk, EOL): Use `uv run --python 3.9` (on-demand download)
-  # For Python 3.12: Use brew python@3.12 or `uv run --python 3.12`
+  # it's used by stdenv bootstrapping. Reference python314 explicitly.
 
-  # uv: For running EOL Python versions (3.9) not in nixpkgs
+  # uv: For running alternate Python versions on-demand (EOL or pinned)
   # Usage: uv run --python 3.9 pytest tests/
   uv
 
   # ==========================================================================
   # Python Environment
   # ==========================================================================
-  # Create a unified Python environment with all required packages.
-  # This ensures all modules can be imported in the same interpreter.
-  # Using python314.withPackages (overlay provides grip package).
+  # Unified Python environment for credential/secret scripts, GitHub automation,
+  # and Claude document-skills runtime. All modules importable from one interpreter.
+  # Note: this repo's flake also exports `grip` as a standalone package
+  # (nix run .#grip) via overlays/python-packages.nix + packages/grip.nix.
   (python314.withPackages (ps: [
     ps.cryptography # Cryptographic recipes and primitives
-    # grip removed — use `nix run nixpkgs#python3Packages.grip` for occasional markdown preview
-    # pipx removed — antipattern in Nix; use `nix run` or project devenv instead
     ps.pygithub # GitHub API v3 Python library
     # Claude document-skills dependencies
     ps.pandas # xlsx: data manipulation
