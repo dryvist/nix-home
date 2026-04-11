@@ -146,7 +146,7 @@ lib.optionals pkgs.stdenv.isLinux [
   pyright # Static type checker for Python
 
   # Single Python interpreter (python314) — python312 removed (no unique users
-  # in the quartet; `uv run --python 3.12` covers ad-hoc 3.12 needs).
+  # across the nix repos; `uv run --python 3.12` covers ad-hoc 3.12 needs).
   # NOTE: python3 cannot be overridden at the overlay level on Darwin because
   # it's used by stdenv bootstrapping. Reference python314 explicitly.
 
