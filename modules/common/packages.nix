@@ -68,7 +68,7 @@ lib.optionals pkgs.stdenv.isLinux [
   # ==========================================================================
   # CLI tools for generating diagrams from text/code.
 
-  # d2 and mermaid-cli removed — use `nix run nixpkgs#d2` / `nix run nixpkgs#nodePackages.mermaid-cli`
+  # d2 and mermaid-cli removed — use `nix run nixpkgs#d2` and `nix run nixpkgs#mermaid-cli`
   # for occasional diagramming (zero install, zero residue)
 
   # ==========================================================================
