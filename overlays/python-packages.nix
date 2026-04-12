@@ -15,9 +15,7 @@
 { nixpkgs-unstable }:
 final: prev:
 let
-  pkgsUnstable = import nixpkgs-unstable {
-    inherit (prev.stdenv.hostPlatform) system;
-  };
+  pkgsUnstable = nixpkgs-unstable.legacyPackages.${prev.stdenv.hostPlatform.system};
 
   gripOverride = python-final: _python-prev: {
     grip = python-final.callPackage ../packages/grip.nix { };
