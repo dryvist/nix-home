@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/JacobPEvans/nix-home/compare/v1.19.0...v1.20.0) (2026-04-12)
+
+
+### Features
+
+* **cspell:** migrate to shared org-wide dictionary hierarchy ([f0ec4c6](https://github.com/JacobPEvans/nix-home/commit/f0ec4c65b3ff1eebd4fe3f1a7f336d9a18238740))
+
 ## [1.19.0](https://github.com/JacobPEvans/nix-home/compare/v1.18.0...v1.19.0) (2026-04-11)
 
 
