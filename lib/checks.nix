@@ -69,8 +69,7 @@
 
   # Verify the home-manager module evaluates without errors
   # Catches: broken imports, missing args, type errors, assertion failures
-  # Note: uses unsafeDiscardStringContext to eval without building the result —
-  # building the activation package requires packages not in the binary cache.
+  # Note: uses unsafeDiscardStringContext — forces eval without building packages absent from binary cache.
   module-eval =
     let
       # Use a pkgs instance with allowUnfree for the module eval check since
