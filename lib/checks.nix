@@ -69,6 +69,7 @@
 
   # Verify the home-manager module evaluates without errors
   # Catches: broken imports, missing args, type errors, assertion failures
+  # Note: uses unsafeDiscardStringContext — forces eval without building packages absent from binary cache.
   module-eval =
     let
       # Use a pkgs instance with allowUnfree for the module eval check since
@@ -107,6 +108,9 @@
           }
         ];
       };
+      # Force full evaluation without building — avoids OOM from direnv fish tests
+      # (direnv-2.37.1 is absent from binary cache, its fish test gets SIGKILL'd).
+      evalResult = builtins.unsafeDiscardStringContext "${hmConfig.activationPackage}";
     in
-    hmConfig.activationPackage;
+    pkgs.writeText "module-eval" evalResult;
 }
