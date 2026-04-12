@@ -19,5 +19,8 @@
     "MD060": false
   },
   "fix": true,
-  "gitignore": true
+  "gitignore": true,
+  "ignores": [
+    ".github/aw/**"
+  ]
 }

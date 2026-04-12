@@ -6,6 +6,7 @@
     "https://raw.githubusercontent.com/JacobPEvans/.github/main/cspell/base.json"
   ],
   "words": [
+    "agentics",
     "ahls",
     "ahlt",
     "aitk",
@@ -20,6 +21,7 @@
     "flakelock",
     "gdrive",
     "ghostty",
+    "githubnext",
     "gittower",
     "gmailctl",
     "gnugrep",
@@ -50,8 +52,10 @@
   "ignorePaths": [
     "flake.lock",
     "*.lock",
+    "*.lock.yml",
     "node_modules",
     ".git",
+    ".github/aw/**",
     "CHANGELOG.md"
   ]
 }
