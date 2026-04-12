@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/JacobPEvans/nix-home/compare/v1.20.0...v1.20.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* **checks:** avoid building activation pkg in module-eval check ([467e211](https://github.com/JacobPEvans/nix-home/commit/467e211ec7151bbea6e4ec491876a80e2cf4483d))
+
 ## [1.20.0](https://github.com/JacobPEvans/nix-home/compare/v1.19.0...v1.20.0) (2026-04-12)
 
 
