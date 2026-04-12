@@ -15,3 +15,78 @@ jobs:
     secrets:
       GH_ACTION_JACOBPEVANS_APP_ID: ${{ secrets.GH_ACTION_JACOBPEVANS_APP_ID }}
       GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+  # Notify downstream repos when a new release is published.
+  # The reusable _release-please.yml doesn't expose release outputs, so we
+  # check the API for a release created on the current commit instead.
+  notify-downstream:
+    needs: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check for new release on this commit
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          # release-please tags the merge commit. Check if any release points
+          # at the commit that triggered this workflow run.
+          TAG=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq \
+            "[.[] | select(.draft == false)] | first | .tag_name // empty")
+
+          if [[ -z "$TAG" ]]; then
+            echo "No releases found"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Resolve the tag to a commit SHA and compare
+          TAG_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
+            --jq '.object.sha' 2>/dev/null || echo "")
+
+          # Annotated tags need one more dereference
+          if [[ -n "$TAG_SHA" ]]; then
+            OBJ_TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" \
+              --jq '.object.type' 2>/dev/null || echo "commit")
+            if [[ "$OBJ_TYPE" == "commit" ]]; then
+              RESOLVED=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" \
+                --jq '.object.sha' 2>/dev/null || echo "$TAG_SHA")
+              TAG_SHA="$RESOLVED"
+            fi
+          fi
+
+          if [[ "$TAG_SHA" == "$COMMIT_SHA" ]]; then
+            echo "Release ${TAG} matches current commit"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Latest release ${TAG} (${TAG_SHA}) does not match current commit (${COMMIT_SHA})"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate GitHub App Token (cross-repo dispatch)
+        if: steps.check.outputs.released == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.GH_ACTION_JACOBPEVANS_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          repositories: nix-darwin
+
+      - name: Dispatch flake-input-updated to downstream repos
+        if: steps.check.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ steps.check.outputs.tag }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          for downstream in nix-darwin; do
+            echo "Dispatching flake-input-updated to ${downstream} (input=${REPO_NAME}, version=${TAG})"
+            gh api "repos/JacobPEvans/${downstream}/dispatches" \
+              -f event_type=flake-input-updated \
+              -f "client_payload[input_name]=${REPO_NAME}" \
+              -f "client_payload[version]=${TAG}" \
+              -f "client_payload[source_repo]=${REPO_NAME}"
+          done
