@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/JacobPEvans/nix-home/compare/v1.21.0...v1.21.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* **gh-aw:** recompile workflows with v0.68.1 ([cfa817f](https://github.com/JacobPEvans/nix-home/commit/cfa817f16ef470039b67919cf90d319a95dad1f0))
+
 ## [1.21.0](https://github.com/JacobPEvans/nix-home/compare/v1.20.1...v1.21.0) (2026-04-12)
 
 
