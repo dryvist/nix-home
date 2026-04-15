@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.2](https://github.com/JacobPEvans/nix-home/compare/v1.21.1...v1.21.2) (2026-04-15)
+
+
+### Bug Fixes
+
+* add automation bots to AI Moderator skip-bots ([#170](https://github.com/JacobPEvans/nix-home/issues/170)) ([aea22e8](https://github.com/JacobPEvans/nix-home/commit/aea22e8e9ef462d02c9b443d67b35defab63f5cb))
+
 ## [1.21.1](https://github.com/JacobPEvans/nix-home/compare/v1.21.0...v1.21.1) (2026-04-13)
 
 
