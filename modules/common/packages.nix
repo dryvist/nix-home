@@ -86,7 +86,6 @@ lib.optionals pkgs.stdenv.isLinux [
   shfmt # Shell script formatter
 
   # Documentation
-  cspell # Spell checker for code and documentation
   lychee # Link checker — kept global: consumed by downstream repo pre-commit hooks (`language: system`)
   markdownlint-cli2 # Markdown linter (README, docs exist everywhere)
 

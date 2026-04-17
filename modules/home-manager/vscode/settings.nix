@@ -90,9 +90,6 @@ in
   # NOTE: Continue extension removed - redundant with Copilot and caused dirty settings.json issue
   # (Continue auto-added yaml.schemas entries that Nix couldn't pre-declare)
 
-  # Code Spell Checker
-  "cSpell.userWords" = [ "sourcetype" ];
-
   # Rainbow CSV
   "rainbow_csv.highlight_rows" = true;
   "rainbow_csv.virtual_alignment_vertical_grid" = true;
