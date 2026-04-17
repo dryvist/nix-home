@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.3](https://github.com/JacobPEvans/nix-home/compare/v1.21.2...v1.21.3) (2026-04-17)
+
+
+### Bug Fixes
+
+* remove cspell spell checker entirely ([#182](https://github.com/JacobPEvans/nix-home/issues/182)) ([4f3b3b4](https://github.com/JacobPEvans/nix-home/commit/4f3b3b4b097580488c6330a88b326b00a834933a))
+
 ## [1.21.2](https://github.com/JacobPEvans/nix-home/compare/v1.21.1...v1.21.2) (2026-04-15)
 
 
