@@ -1,4 +1,3 @@
-<!-- cspell:words APPL powermetrics pmset ioreg sourcetype crbl -->
 # Cribl Edge on macOS (Native Installation)
 
 Native Cribl Edge installation for collecting logs, metrics, and power data from macOS hosts.
