@@ -106,14 +106,19 @@ As of Cribl Edge 4.16.0+, macOS Edge is **generally available** (no longer Previ
 
 ### Mac Pack
 
-The [cc-edge-the-mac-pack-io](https://github.com/JacobPEvans/cc-edge-the-mac-pack-io) pack uses Exec sources to collect 9 inputs:
+The [cc-edge-the-mac-pack-io](https://github.com/JacobPEvans/cc-edge-the-mac-pack-io) pack uses Exec
+sources to collect 9 inputs (7 system health + 2 power):
 
-- **System health** (60s intervals): Memory pressure, disk I/O, VM stats, thermal status, process top 20, WindowServer health, Jetsam events
-- **Power metrics** (5 min intervals): Per-process energy impact, CPU/GPU/ANE power draw, thermal pressure via `powermetrics`
-- **Battery status** (60s intervals): Charge %, power source, charging state, cycle count, capacity, health %, temperature via `pmset` + `ioreg`
+- **System health** (60s intervals, 7 inputs): Memory pressure, disk I/O, VM stats, thermal
+  status, process top 20, WindowServer health, Jetsam events
+- **Power metrics** (5 min intervals): Per-process energy impact, CPU/GPU/ANE power draw,
+  thermal pressure via `powermetrics`
+- **Battery status** (60s intervals): Charge %, power source, charging state, cycle count,
+  capacity, health %, temperature via `pmset` + `ioreg`
 
 Supersedes `cc-edge-macos-power` and `cc-edge-macos-system` (both archived).
-Data flows through Cribl Stream to Splunk (`index=os`, `sourcetype=macos:system:*` and `macos:power:*`).
+Data flows through Cribl Stream to Splunk (`index=os`,
+`sourcetype=macos:system:*` or `sourcetype=macos:power:*`).
 
 Install the pack:
 
