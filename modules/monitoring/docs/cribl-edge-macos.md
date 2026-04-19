@@ -104,20 +104,30 @@ As of Cribl Edge 4.16.0+, macOS Edge is **generally available** (no longer Previ
 - Exec sources (run arbitrary commands on a schedule)
 - System metrics collection
 
-### Power Monitoring Pack
+### Mac Pack
 
-The [cc-edge-macos-power](https://github.com/JacobPEvans/cc-edge-macos-power) pack uses Exec sources to collect:
+The [cc-edge-the-mac-pack-io](https://github.com/JacobPEvans/cc-edge-the-mac-pack-io) pack uses Exec
+sources to collect 9 inputs across two categories:
 
-- **Power metrics** (5 min intervals): Per-process energy impact, CPU/GPU/ANE power draw, thermal pressure via `powermetrics`
-- **Battery status** (1 min intervals): Charge %, power source, charging state, cycle count, capacity, health %, temperature via `pmset` + `ioreg`
+**System health (7 inputs, 1 min intervals):** Memory pressure, disk I/O, VM stats, thermal
+status, process top 20, WindowServer health, Jetsam events
 
-Data flows through Cribl Stream to Splunk (`index=os`, `sourcetype=macos:power:*`).
+**Power (2 inputs):**
+
+- **Power metrics** (5 min intervals): Per-process energy impact, CPU/GPU/ANE power draw,
+  thermal pressure via `powermetrics`
+- **Battery status** (1 min intervals): Charge %, power source, charging state, cycle count,
+  capacity, health %, temperature via `pmset` + `ioreg`
+
+Supersedes `cc-edge-macos-power` and `cc-edge-macos-system` (both archived).
+Data flows through Cribl Stream to Splunk (`index=os`,
+`sourcetype=macos:system:*` or `sourcetype=macos:power:*`).
 
 Install the pack:
 
 ```bash
-sudo curl -L -o /opt/cribl/state/packs/cc-edge-macos-power.crbl https://github.com/JacobPEvans/cc-edge-macos-power/releases/latest/download/cc-edge-macos-power.crbl
-curl -X POST http://localhost:9000/api/v1/packs -H "Content-Type: application/json" -d '{"source":"cc-edge-macos-power.crbl"}'
+sudo curl -L -o /opt/cribl/state/packs/cc-edge-the-mac-pack-io.crbl https://github.com/JacobPEvans/cc-edge-the-mac-pack-io/releases/latest/download/cc-edge-the-mac-pack-io.crbl
+curl -X POST http://localhost:9000/api/v1/packs -H "Content-Type: application/json" -d '{"source":"cc-edge-the-mac-pack-io.crbl"}'
 curl -X POST http://localhost:9000/api/v1/version/commit
 curl -X POST http://localhost:9000/api/v1/system/settings/restart
 ```
