@@ -13,7 +13,7 @@ on:
     types: [opened]
     forks: "*"
   skip-roles: [admin, maintainer, write, triage]
-  skip-bots: [github-actions, copilot]
+  skip-bots: [github-actions, copilot, dependabot]
 
 rate-limit:
   max: 5
@@ -61,7 +61,6 @@ Perform the following detection analyses on the content:
 ### 1. Generic Spam Detection
 
 Analyze for spam indicators:
-
 - Promotional content or advertisements
 - Irrelevant links or URLs
 - Repetitive text patterns
@@ -73,7 +72,6 @@ Analyze for spam indicators:
 ### 2. Link Spam Detection
 
 Analyze for link spam indicators:
-
 - Multiple unrelated links
 - Links to promotional websites
 - Short URL services used to hide destinations (bit.ly, tinyurl, etc.)
@@ -85,7 +83,6 @@ Analyze for link spam indicators:
 ### 3. AI-Generated Content Detection
 
 Analyze for AI-generated content indicators:
-
 - Use of em-dashes ( - ) in casual contexts
 - Excessive use of emoji, especially in technical discussions
 - Perfect grammar and punctuation in informal settings
@@ -98,7 +95,6 @@ Analyze for AI-generated content indicators:
 - Responses that sound like they're trying too hard to be engaging
 
 Human-written content typically has:
-
 - Natural imperfections in grammar and spelling
 - Casual internet language and slang
 - Specific technical details and personal experiences

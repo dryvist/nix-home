@@ -120,13 +120,11 @@ Your workflow has already collected and tested all links in the previous step. U
 ## Step 1: Review Link Check Results
 
 The link check step has already run and created a report at `/tmp/link-check-results.md`. Read this file to see:
-
 - All links found in the documentation
 - Which links are working (✅) and which are broken (❌)
 - HTTP status codes for each link
 
 Use bash to read the file:
-
 ```bash
 cat /tmp/link-check-results.md
 ```
@@ -134,13 +132,11 @@ cat /tmp/link-check-results.md
 ## Step 2: Load Cache Memory
 
 Check cache memory for previously identified unfixable broken links:
-
 - Load the cache memory to see if there are any broken links we've tried to fix before but couldn't
 - These are links that are permanently broken or removed from the internet
 - Skip these links to avoid repeated attempts
 
 The cache memory should store a JSON object with this structure:
-
 ```json
 {
   "unfixable_links": [
@@ -184,7 +180,6 @@ For each broken link found in the test results (but NOT in the unfixable list):
 ## Step 4: Update Cache Memory
 
 After processing all broken links:
-
 - Update the cache memory with any new unfixable links
 - Update the "last_run" timestamp
 - Save the updated cache memory
@@ -194,7 +189,6 @@ After processing all broken links:
 Based on your work:
 
 **If you fixed any links:**
-
 - Use the `create-pull-request` safe output to create a PR with your fixes
 - In the PR body, include:
   - A summary of how many links were fixed
@@ -203,7 +197,6 @@ Based on your work:
 - Title format: "Fix broken documentation links"
 
 **If no links needed fixing:**
-
 - Use the `noop` safe output with a clear message like:
   - "All documentation links are working correctly" (if no broken links found)
   - "All broken links are in the unfixable list, no new fixes available" (if broken links exist but can't be fixed)
