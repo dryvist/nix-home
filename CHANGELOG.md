@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.21.4](https://github.com/JacobPEvans/nix-home/compare/v1.21.3...v1.21.4) (2026-04-24)
+
+
+### Bug Fixes
+
+* **ci:** add gh-aw-pin-refresh workflow and recompile lock files ([39c26e1](https://github.com/JacobPEvans/nix-home/commit/39c26e1362fe0b5578f73f3fc1186a8176e5e69f)), closes [#190](https://github.com/JacobPEvans/nix-home/issues/190)
+* **deps:** refresh gh-aw action SHA pins ([219fc47](https://github.com/JacobPEvans/nix-home/commit/219fc47c03643d51250bdbcbf4bf139f48fbb27f))
+* **deps:** refresh gh-aw action SHA pins ([#198](https://github.com/JacobPEvans/nix-home/issues/198)) ([9aef301](https://github.com/JacobPEvans/nix-home/commit/9aef301910df218ede8de3a38ac6a3c852476832))
+
 ## [1.21.3](https://github.com/JacobPEvans/nix-home/compare/v1.21.2...v1.21.3) (2026-04-17)
 
 
