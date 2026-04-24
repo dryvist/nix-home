@@ -9,13 +9,6 @@
 #
 # Platform: macOS (BSD ls flags used)
 
-let
-  # Doppler wrapper that launches claude with 'ai-ci-automation/prd' secrets
-  # injected (GEMINI_API_KEY for Google Gemini / PAL MCP, OPENROUTER_API_KEY
-  # for OpenRouter, etc.). Bound once here so every alias that wants the
-  # same AI MCP context reuses the same command string.
-  dopplerClaude = "doppler run -p ai-ci-automation -c prd -- claude";
-in
 {
   # ===========================================================================
   # Directory Listing (macOS/BSD ls)
@@ -81,23 +74,13 @@ in
   avr = "aws-vault remove"; # Remove profile from vault
 
   # ===========================================================================
-  # AI CLI Tools (Doppler for secrets injection)
+  # AI CLI Tools (Claude)
   # ===========================================================================
-  # Interactive Claude Code with ai-ci-automation/prd secrets injected.
-  # See the dopplerClaude binding at the top of this file for what's loaded.
-  #
-  # Usage:
-  #   d-claude             # Interactive Claude Code with injected secrets
-  #   d-claude -p "prompt" # Non-interactive with prompt
-  #
-  d-claude = dopplerClaude;
-
-  # aws-vault 'terraform' profile layered on top of d-claude. For sessions on
-  # infra repos that need BOTH AWS credentials AND AI MCP secrets loaded.
-  #
-  # Usage:
-  #   tf-claude             # AWS terraform profile + AI secrets + interactive claude
-  tf-claude = "aws-vault exec terraform -- ${dopplerClaude}";
+  # d-claude, tf-claude, claude-latest, claude-d, claude-latest-d and related
+  # Claude-specific wrappers now live in nix-ai's modules/ai-aliases.zsh
+  # (sourced by programs.zsh.initContent via nix-ai's modules/ai-shell.nix).
+  # The MLX aliases below stay here — they configure the local MLX dev env
+  # that lives in nix-home, not Claude Code.
 
   # ===========================================================================
   # tmux (session management)
