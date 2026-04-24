@@ -74,12 +74,13 @@
   avr = "aws-vault remove"; # Remove profile from vault
 
   # ===========================================================================
-  # AI CLI Tools
+  # AI CLI Tools (Claude)
   # ===========================================================================
   # d-claude, tf-claude, claude-latest, claude-d, claude-latest-d and related
-  # AI-tool wrappers live in nix-ai's modules/ai-aliases.zsh (sourced by
-  # programs.zsh.initContent via nix-ai's modules/ai-shell.nix). Keeping them
-  # there centralizes AI-tool surface area in the nix-ai repo.
+  # Claude-specific wrappers now live in nix-ai's modules/ai-aliases.zsh
+  # (sourced by programs.zsh.initContent via nix-ai's modules/ai-shell.nix).
+  # The MLX aliases below stay here — they configure the local MLX dev env
+  # that lives in nix-home, not Claude Code.
 
   # ===========================================================================
   # tmux (session management)
