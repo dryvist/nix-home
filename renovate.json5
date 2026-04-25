@@ -2,9 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "local>JacobPEvans/.github:renovate-presets"
+    "local>JacobPEvans/.github:renovate-presets",
   ],
   "nix": {
-    "enabled": true
-  }
+    "enabled": true,
+  },
 }
