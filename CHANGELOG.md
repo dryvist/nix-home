@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.21.5](https://github.com/JacobPEvans/nix-home/compare/v1.21.4...v1.21.5) (2026-04-26)
+
+
+### Bug Fixes
+
+* **ci:** standardize deps-update-flake naming + renovate v5 ([#201](https://github.com/JacobPEvans/nix-home/issues/201)) ([12609c0](https://github.com/JacobPEvans/nix-home/commit/12609c0ec605ba69d557f0910f4629b099aade1a))
+* **deps:** refresh gh-aw action SHA pins ([249734a](https://github.com/JacobPEvans/nix-home/commit/249734a92a38174db7313ce7ac0b82d9c2e2288d))
+
 ## [1.21.4](https://github.com/JacobPEvans/nix-home/compare/v1.21.3...v1.21.4) (2026-04-24)
 
 
