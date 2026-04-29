@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.7](https://github.com/JacobPEvans/nix-home/compare/v1.21.6...v1.21.7) (2026-04-29)
+
+
+### Bug Fixes
+
+* **ci:** drop RunsOn from nix-validate gate path ([#209](https://github.com/JacobPEvans/nix-home/issues/209)) ([ede4e18](https://github.com/JacobPEvans/nix-home/commit/ede4e18b1b339307d1b849f0509349fb0a808fa7))
+
 ## [1.21.6](https://github.com/JacobPEvans/nix-home/compare/v1.21.5...v1.21.6) (2026-04-29)
 
 
