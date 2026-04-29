@@ -92,17 +92,17 @@
   # ===========================================================================
   # MLX (Apple Silicon ML Inference Server)
   # ===========================================================================
-  # On-demand MLX inference — no LaunchAgent, started manually when needed.
-  # Port 11435 avoids conflicts: Ollama (:11434), Open WebUI (:8080).
-  # mlx-server dir lives at ~/git/nix-ai/main/mlx-server/.
+  # The MLX stack is an always-on LaunchAgent (vllm-mlx + llama-swap on port
+  # 11434, defined in JacobPEvans/nix-ai modules/mlx/). These aliases switch
+  # the active backend by ROLE NAME; physical model IDs live in
+  # services.aiStack.models (nix-ai modules/ai-stack/default.nix):
   #
-  # First-time setup: run `mlx-env` once to create the venv and install packages.
-  # Subsequent use: mlx-coder / mlx-rag source the existing venv directly.
+  #   mlx-coder -> services.aiStack.models.coding
+  #   mlx-rag   -> services.aiStack.models."large-context"
   #
-  # mlx-update: upgrades all MLX packages in-place (update uv.lock, then sync venv).
-  #
-  mlx-env = "cd ~/git/nix-ai/main/mlx-server && nix develop";
-  mlx-coder = "cd ~/git/nix-ai/main/mlx-server && source .venv/bin/activate && mlx_lm.server --model mlx-community/Qwen2.5-Coder-32B-Instruct-4bit --port 11435 --host 127.0.0.1";
-  mlx-rag = "cd ~/git/nix-ai/main/mlx-server && source .venv/bin/activate && mlx_lm.server --model mlx-community/c4ai-command-r-plus-08-2024-4bit --port 11435 --host 127.0.0.1";
-  mlx-update = "cd ~/git/nix-ai/main/mlx-server && nix develop --command bash -c 'uv lock --upgrade && uv sync'";
+  # The aliases call `mlx-switch`, which is provided by the nix-ai MLX
+  # module. They guard against `mlx-switch` being missing so this nix-home
+  # module remains usable without nix-ai installed.
+  mlx-coder = "command -v mlx-switch >/dev/null && mlx-switch coding || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
+  mlx-rag = "command -v mlx-switch >/dev/null && mlx-switch large-context || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
 }
