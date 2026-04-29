@@ -74,12 +74,11 @@ jobs:
     name: Nix Validate
     needs: changes
     if: needs.changes.outputs.nix == 'true'
+    # No `runner_label:` — keep this on ubuntu-latest. A self-hosted runner
+    # on a `needs:` of `Merge Gate` can queue forever with no terminal state,
+    # which prevents `gate` from ever running and leaves required-status
+    # absent. Opt into RunsOn only on workflows outside the gate path.
     uses: JacobPEvans/.github/.github/workflows/_nix-validate.yml@main
-    with:
-      # Only route same-repo PRs to the self-hosted RunsOn runner. Fork PRs
-      # fall back to ubuntu-latest so untrusted code from forks never lands
-      # on a runner with AWS credentials in scope.
-      runner_label: ${{ github.event.pull_request.head.repo.full_name == github.repository && format('runs-on={0}/runner=2cpu-linux-x64', github.run_id) || 'ubuntu-latest' }}
 
   markdown-lint:
     name: Markdown Lint
