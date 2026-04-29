@@ -92,17 +92,16 @@
   # ===========================================================================
   # MLX (Apple Silicon ML Inference Server)
   # ===========================================================================
-  # On-demand MLX inference — no LaunchAgent, started manually when needed.
-  # Port 11435 avoids conflicts: Ollama (:11434), Open WebUI (:8080).
-  # mlx-server dir lives at ~/git/nix-ai/main/mlx-server/.
+  # The MLX stack is now an always-on LaunchAgent (vllm-mlx + llama-swap on
+  # port 11434, see nix-ai/modules/mlx/). These aliases switch the active
+  # backend by ROLE NAME; physical model IDs live in services.aiStack.models.
   #
-  # First-time setup: run `mlx-env` once to create the venv and install packages.
-  # Subsequent use: mlx-coder / mlx-rag source the existing venv directly.
+  #   mlx-coder    -> services.aiStack.models.coding
+  #   mlx-rag      -> services.aiStack.models.large-context
+  #   mlx-default  -> restart proxy and reload the "default" role
   #
-  # mlx-update: upgrades all MLX packages in-place (update uv.lock, then sync venv).
-  #
-  mlx-env = "cd ~/git/nix-ai/main/mlx-server && nix develop";
-  mlx-coder = "cd ~/git/nix-ai/main/mlx-server && source .venv/bin/activate && mlx_lm.server --model mlx-community/Qwen2.5-Coder-32B-Instruct-4bit --port 11435 --host 127.0.0.1";
-  mlx-rag = "cd ~/git/nix-ai/main/mlx-server && source .venv/bin/activate && mlx_lm.server --model mlx-community/c4ai-command-r-plus-08-2024-4bit --port 11435 --host 127.0.0.1";
-  mlx-update = "cd ~/git/nix-ai/main/mlx-server && nix develop --command bash -c 'uv lock --upgrade && uv sync'";
+  # Override the role -> physical mapping in nix-ai/modules/ai-stack/default.nix
+  # without touching aliases.
+  mlx-coder = "mlx-switch coding";
+  mlx-rag = "mlx-switch large-context";
 }
