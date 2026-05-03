@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.9](https://github.com/JacobPEvans/nix-home/compare/v1.21.8...v1.21.9) (2026-05-03)
+
+
+### Bug Fixes
+
+* **overlays:** skip flaky aarch64-darwin tests for markitdown audio chain ([#214](https://github.com/JacobPEvans/nix-home/issues/214)) ([f482721](https://github.com/JacobPEvans/nix-home/commit/f482721b38f47449485321223824b7409b53e1a2))
+
 ## [1.21.8](https://github.com/JacobPEvans/nix-home/compare/v1.21.7...v1.21.8) (2026-05-03)
 
 
