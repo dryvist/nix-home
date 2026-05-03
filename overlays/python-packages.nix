@@ -19,14 +19,21 @@ let
   # markitdown's transitive ffmpeg-headless build doesn't pull in a kvazaar
   # whose CMake test suite gets SIGKILLed by the macOS Nix sandbox.
   # legacyPackages doesn't accept overlays, so import directly. See
-  # overlays/kvazaar-skip-tests.nix for the rationale.
+  # overlays/darwin-test-skips.nix for the rationale.
   pkgsUnstable = import nixpkgs-unstable {
     inherit (prev.stdenv.hostPlatform) system;
-    overlays = [ (import ./kvazaar-skip-tests.nix) ];
+    overlays = [ (import ./darwin-test-skips.nix) ];
   };
 
-  gripOverride = python-final: _python-prev: {
+  # Skip flaky audio tests on aarch64-darwin. openai-whisper's test_audio
+  # fails to load JFK audio sample (RuntimeError: Failed to load audio) in
+  # the macOS Nix sandbox — same audio-pipeline sandbox issue as the
+  # darwin-test-skips kvazaar/chromaprint overlay.
+  pythonPackageOverrides = python-final: python-prev: {
     grip = python-final.callPackage ../packages/grip.nix { };
+    openai-whisper = python-prev.openai-whisper.overridePythonAttrs (_: {
+      doCheck = false;
+    });
   };
 in
 {
@@ -34,7 +41,7 @@ in
   # and other packages are updated for Python 3.14 compatibility.
   # Consumers should reference python314 explicitly (not python3).
   python314 = pkgsUnstable.python314.override {
-    packageOverrides = gripOverride;
+    packageOverrides = pythonPackageOverrides;
   };
   python314Packages = final.python314.pkgs;
 }
