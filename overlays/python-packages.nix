@@ -15,7 +15,15 @@
 { nixpkgs-unstable }:
 final: prev:
 let
-  pkgsUnstable = nixpkgs-unstable.legacyPackages.${prev.stdenv.hostPlatform.system};
+  # Construct pkgsUnstable with the kvazaar test-skip overlay applied so
+  # markitdown's transitive ffmpeg-headless build doesn't pull in a kvazaar
+  # whose CMake test suite gets SIGKILLed by the macOS Nix sandbox.
+  # legacyPackages doesn't accept overlays, so import directly. See
+  # overlays/kvazaar-skip-tests.nix for the rationale.
+  pkgsUnstable = import nixpkgs-unstable {
+    inherit (prev.stdenv.hostPlatform) system;
+    overlays = [ (import ./kvazaar-skip-tests.nix) ];
+  };
 
   gripOverride = python-final: _python-prev: {
     grip = python-final.callPackage ../packages/grip.nix { };
