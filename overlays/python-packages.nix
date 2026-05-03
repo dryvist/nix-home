@@ -25,15 +25,33 @@ let
     overlays = [ (import ./darwin-test-skips.nix) ];
   };
 
-  # Skip flaky audio tests on aarch64-darwin. openai-whisper's test_audio
-  # fails to load JFK audio sample (RuntimeError: Failed to load audio) in
-  # the macOS Nix sandbox — same audio-pipeline sandbox issue as the
-  # darwin-test-skips kvazaar/chromaprint overlay.
+  # Skip flaky audio tests/import-checks on aarch64-darwin. Multiple python
+  # audio packages get SIGKILLed in the macOS Nix sandbox during their test
+  # or pythonImportsCheck phases — same sandbox issue as the kvazaar/
+  # chromaprint overlay in darwin-test-skips.nix.
+  #
+  # Affected and the failure mode:
+  #   - openai-whisper: test_audio.py::test_audio fails to load JFK sample
+  #   - av (PyAV ffmpeg bindings): pythonImportsCheckPhase SIGKILLed on
+  #     `import av` (sandbox kills the av subprocess that loads ffmpeg libs)
+  #   - faster-whisper: same sandbox kill on its import / test phases (av is
+  #     a runtime dep, so disable proactively)
+  #
+  # Setting both doCheck and doInstallCheck = false skips checkPhase and
+  # the python-imports-check setup-hook (which lives in installCheckPhase).
+  skipDarwinChecks =
+    python-prev: name:
+    python-prev.${name}.overridePythonAttrs (_: {
+      doCheck = false;
+      doInstallCheck = false;
+      pythonImportsCheck = [ ];
+    });
+
   pythonPackageOverrides = python-final: python-prev: {
     grip = python-final.callPackage ../packages/grip.nix { };
-    openai-whisper = python-prev.openai-whisper.overridePythonAttrs (_: {
-      doCheck = false;
-    });
+    openai-whisper = skipDarwinChecks python-prev "openai-whisper";
+    av = skipDarwinChecks python-prev "av";
+    faster-whisper = skipDarwinChecks python-prev "faster-whisper";
   };
 in
 {
