@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.10](https://github.com/JacobPEvans/nix-home/compare/v1.21.9...v1.21.10) (2026-05-03)
+
+
+### Bug Fixes
+
+* **ci:** remove deprecated app-id secret passthrough ([806e7bc](https://github.com/JacobPEvans/nix-home/commit/806e7bc3387d5de51696f288158110ca956bae0b))
+
 ## [1.21.9](https://github.com/JacobPEvans/nix-home/compare/v1.21.8...v1.21.9) (2026-05-03)
 
 
