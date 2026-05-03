@@ -15,10 +15,43 @@
 { nixpkgs-unstable }:
 final: prev:
 let
-  pkgsUnstable = nixpkgs-unstable.legacyPackages.${prev.stdenv.hostPlatform.system};
+  # Construct pkgsUnstable with the kvazaar test-skip overlay applied so
+  # markitdown's transitive ffmpeg-headless build doesn't pull in a kvazaar
+  # whose CMake test suite gets SIGKILLed by the macOS Nix sandbox.
+  # legacyPackages doesn't accept overlays, so import directly. See
+  # overlays/darwin-test-skips.nix for the rationale.
+  pkgsUnstable = import nixpkgs-unstable {
+    inherit (prev.stdenv.hostPlatform) system;
+    overlays = [ (import ./darwin-test-skips.nix) ];
+  };
 
-  gripOverride = python-final: _python-prev: {
+  # Skip flaky audio tests/import-checks on aarch64-darwin. Multiple python
+  # audio packages get SIGKILLed in the macOS Nix sandbox during their test
+  # or pythonImportsCheck phases — same sandbox issue as the kvazaar/
+  # chromaprint overlay in darwin-test-skips.nix.
+  #
+  # Affected and the failure mode:
+  #   - openai-whisper: test_audio.py::test_audio fails to load JFK sample
+  #   - av (PyAV ffmpeg bindings): pythonImportsCheckPhase SIGKILLed on
+  #     `import av` (sandbox kills the av subprocess that loads ffmpeg libs)
+  #   - faster-whisper: same sandbox kill on its import / test phases (av is
+  #     a runtime dep, so disable proactively)
+  #
+  # Setting both doCheck and doInstallCheck = false skips checkPhase and
+  # the python-imports-check setup-hook (which lives in installCheckPhase).
+  skipDarwinChecks =
+    python-prev: name:
+    python-prev.${name}.overridePythonAttrs (_: {
+      doCheck = false;
+      doInstallCheck = false;
+      pythonImportsCheck = [ ];
+    });
+
+  pythonPackageOverrides = python-final: python-prev: {
     grip = python-final.callPackage ../packages/grip.nix { };
+    openai-whisper = skipDarwinChecks python-prev "openai-whisper";
+    av = skipDarwinChecks python-prev "av";
+    faster-whisper = skipDarwinChecks python-prev "faster-whisper";
   };
 in
 {
@@ -26,7 +59,7 @@ in
   # and other packages are updated for Python 3.14 compatibility.
   # Consumers should reference python314 explicitly (not python3).
   python314 = pkgsUnstable.python314.override {
-    packageOverrides = gripOverride;
+    packageOverrides = pythonPackageOverrides;
   };
   python314Packages = final.python314.pkgs;
 }
