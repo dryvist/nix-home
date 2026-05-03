@@ -50,6 +50,7 @@
         (import ./overlays/python-packages.nix { inherit nixpkgs-unstable; })
         (import ./overlays/merge-json-settings.nix)
         (import ./overlays/install-document-skills-npm-deps.nix)
+        (import ./overlays/kvazaar-skip-tests.nix)
       ];
 
       # Quality checks (formatting, linting, dead code)
