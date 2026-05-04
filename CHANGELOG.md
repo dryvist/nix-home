@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.11](https://github.com/JacobPEvans/nix-home/compare/v1.21.10...v1.21.11) (2026-05-04)
+
+
+### Bug Fixes
+
+* **deps:** refresh gh-aw action SHA pins ([#219](https://github.com/JacobPEvans/nix-home/issues/219)) ([f66e219](https://github.com/JacobPEvans/nix-home/commit/f66e21918bfc28f2f1b5f5f1866b10e423ed93e0))
+
 ## [1.21.10](https://github.com/JacobPEvans/nix-home/compare/v1.21.9...v1.21.10) (2026-05-03)
 
 
