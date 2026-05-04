@@ -16,8 +16,9 @@
 { pkgs, lib, ... }:
 
 let
-  # Exact pins for reproducibility — bump deliberately.
+  # renovate: datasource=npm depName=docx
   docxVersion = "9.6.1";
+  # renovate: datasource=npm depName=pptxgenjs
   pptxgenjsVersion = "4.0.1";
 
   installScript = "${pkgs.install-document-skills-npm-deps}/bin/install-document-skills-npm-deps";
