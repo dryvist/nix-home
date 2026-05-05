@@ -48,6 +48,9 @@ let
     };
   };
 
+  # gpg-agent config (long cache TTL + pinentry-mac on Darwin)
+  gpgAgentFiles = import ./git/gpg-agent.nix { inherit pkgs lib; };
+
   # Shell aliases
   shellAliases = import ./zsh/aliases.nix;
 
@@ -78,7 +81,7 @@ in
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
     packages = commonPackages;
 
-    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers;
+    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers // gpgAgentFiles;
 
     sessionVariables = {
       EDITOR = "vim";
