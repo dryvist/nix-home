@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.12](https://github.com/JacobPEvans/nix-home/compare/v1.21.11...v1.21.12) (2026-05-05)
+
+
+### Bug Fixes
+
+* **renovate:** annotate docx and pptxgenjs version pins for tracking ([#221](https://github.com/JacobPEvans/nix-home/issues/221)) ([818130b](https://github.com/JacobPEvans/nix-home/commit/818130b1478fc2e7d7d9b6a3b091452573ba0634))
+
 ## [1.21.11](https://github.com/JacobPEvans/nix-home/compare/v1.21.10...v1.21.11) (2026-05-04)
 
 
