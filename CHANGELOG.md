@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/JacobPEvans/nix-home/compare/v1.21.12...v1.22.0) (2026-05-06)
+
+
+### Features
+
+* **gpg-agent:** unattended signing config for AI sessions ([#223](https://github.com/JacobPEvans/nix-home/issues/223)) ([311f46b](https://github.com/JacobPEvans/nix-home/commit/311f46b38fc6645596d1b507ff91ff8acbc5abd7))
+
 ## [1.21.12](https://github.com/JacobPEvans/nix-home/compare/v1.21.11...v1.21.12) (2026-05-05)
 
 
