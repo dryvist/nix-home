@@ -48,6 +48,9 @@ let
     };
   };
 
+  # gpg-agent config (long cache TTL + pinentry-mac on Darwin)
+  gpgAgentConfig = import ./git/gpg-agent.nix { inherit pkgs lib; };
+
   # Shell aliases
   shellAliases = import ./zsh/aliases.nix;
 
@@ -78,7 +81,8 @@ in
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
     packages = commonPackages;
 
-    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers;
+    file =
+      npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers // gpgAgentConfig.files;
 
     sessionVariables = {
       EDITOR = "vim";
@@ -89,7 +93,8 @@ in
       SCCACHE_CACHE_SIZE = "5G";
     };
 
-    activation = vscodeWritableConfig.activation // documentSkillsConfig.activation;
+    activation =
+      vscodeWritableConfig.activation // documentSkillsConfig.activation // gpgAgentConfig.activation;
   };
 
   programs = {
