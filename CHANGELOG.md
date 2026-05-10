@@ -80,13 +80,6 @@
 * **deps:** refresh gh-aw action SHA pins ([219fc47](https://github.com/JacobPEvans/nix-home/commit/219fc47c03643d51250bdbcbf4bf139f48fbb27f))
 * **deps:** refresh gh-aw action SHA pins ([#198](https://github.com/JacobPEvans/nix-home/issues/198)) ([9aef301](https://github.com/JacobPEvans/nix-home/commit/9aef301910df218ede8de3a38ac6a3c852476832))
 
-## [1.21.3](https://github.com/JacobPEvans/nix-home/compare/v1.21.2...v1.21.3) (2026-04-17)
-
-
-### Bug Fixes
-
-* remove cspell spell checker entirely ([#182](https://github.com/JacobPEvans/nix-home/issues/182)) ([4f3b3b4](https://github.com/JacobPEvans/nix-home/commit/4f3b3b4b097580488c6330a88b326b00a834933a))
-
 ## [1.21.2](https://github.com/JacobPEvans/nix-home/compare/v1.21.1...v1.21.2) (2026-04-15)
 
 
@@ -121,7 +114,6 @@
 * **aliases:** add tf-claude combo launcher (aws-vault + doppler) ([#144](https://github.com/JacobPEvans/nix-home/issues/144)) ([432cba4](https://github.com/JacobPEvans/nix-home/commit/432cba4e47bbf24d434cb9e230aa98ef5ba3bf8c))
 * **aws:** add per-project assume-role profiles for Terraform ([#87](https://github.com/JacobPEvans/nix-home/issues/87)) ([5013ccf](https://github.com/JacobPEvans/nix-home/commit/5013ccf1ee734d4c90e50a390f9a4b5fba450d20))
 * consolidate package updates into single workflow job ([#46](https://github.com/JacobPEvans/nix-home/issues/46)) ([7eb38c1](https://github.com/JacobPEvans/nix-home/commit/7eb38c1a63313ffa86aafa416de17f0d6e635e29))
-* **cspell:** migrate to shared org-wide dictionary hierarchy ([f0ec4c6](https://github.com/JacobPEvans/nix-home/commit/f0ec4c65b3ff1eebd4fe3f1a7f336d9a18238740))
 * disable automatic triggers on Claude-executing workflows ([df000b1](https://github.com/JacobPEvans/nix-home/commit/df000b1a0a90aa71716a5fa17b93c6cf9a166c56))
 * initial nix-home repository ([9088cfe](https://github.com/JacobPEvans/nix-home/commit/9088cfe724e675cde2f82d8d5cdf1f16d0f25e5b))
 * make python3 resolve to Python 3.14 via overlay ([#68](https://github.com/JacobPEvans/nix-home/issues/68)) ([47c8e9a](https://github.com/JacobPEvans/nix-home/commit/47c8e9afdb9f613c110c86b72f40798b25056128))
@@ -182,13 +174,6 @@
 ### Bug Fixes
 
 * **checks:** avoid building activation pkg in module-eval check ([467e211](https://github.com/JacobPEvans/nix-home/commit/467e211ec7151bbea6e4ec491876a80e2cf4483d))
-
-## [1.20.0](https://github.com/JacobPEvans/nix-home/compare/v1.19.0...v1.20.0) (2026-04-12)
-
-
-### Features
-
-* **cspell:** migrate to shared org-wide dictionary hierarchy ([f0ec4c6](https://github.com/JacobPEvans/nix-home/commit/f0ec4c65b3ff1eebd4fe3f1a7f336d9a18238740))
 
 ## [1.19.0](https://github.com/JacobPEvans/nix-home/compare/v1.18.0...v1.19.0) (2026-04-11)
 
