@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.4](https://github.com/JacobPEvans/nix-home/compare/v1.22.3...v1.22.4) (2026-05-11)
+
+
+### Bug Fixes
+
+* **checks:** allow broken in test-only pkgsWithUnfree for arrow-cpp on darwin ([#234](https://github.com/JacobPEvans/nix-home/issues/234)) ([c77ff5d](https://github.com/JacobPEvans/nix-home/commit/c77ff5daba0d963fc1f0ca0c2f70f7c874f9e69e))
+
 ## [1.22.3](https://github.com/JacobPEvans/nix-home/compare/v1.22.2...v1.22.3) (2026-05-11)
 
 
