@@ -73,22 +73,28 @@
   module-eval =
     let
       # Use a pkgs instance with allowUnfree for the module eval check since
-      # the module enables vscode (unfree). The problems.handlers override is
-      # required on darwin because ps.pandas transitively pulls arrow-cpp via
-      # pyarrow's ARROW_HOME attribute, and arrow-cpp has meta.broken on darwin
-      # in nixpkgs 25.11 — caught by `nix flake check --all-systems` when
-      # evaluating the aarch64-darwin output from a linux runner. nixpkgs 25.11
-      # uses the new `problems.handlers` mechanism (see error message guidance);
-      # legacy `allowBroken = true` is not sufficient for the per-package
-      # broken handler.
-      # This is test-only; real deployments set their own nixpkgs config.
+      # the module enables vscode (unfree). On darwin, ps.pandas / ps.markitdown
+      # transitively pull arrow-cpp via pyarrow's ARROW_HOME attribute; arrow-cpp
+      # has meta.broken on darwin in nixpkgs 25.11 — caught by `nix flake check
+      # --all-systems` when evaluating the aarch64-darwin output from a linux
+      # runner. Neither legacy `config.allowBroken = true` nor the new
+      # `config.problems.handlers` mechanism works on the 25.11-darwin branch,
+      # so override `meta.broken = false` via a test-only overlay.
+      # This is test-only; real deployments use their own nixpkgs config.
+      unbreakArrowCpp = _final: prev: {
+        arrow-cpp = prev.arrow-cpp.overrideAttrs (old: {
+          meta = old.meta // {
+            broken = false;
+          };
+        });
+      };
       pkgsWithUnfree = import nixpkgs {
         inherit (pkgs.stdenv.hostPlatform) system;
         config.allowUnfree = true;
-        config.problems.handlers = {
-          arrow-cpp.broken = "ignore";
-        };
-        overlays = [ overlay ];
+        overlays = [
+          overlay
+          unbreakArrowCpp
+        ];
       };
       hmConfig = home-manager.lib.homeManagerConfiguration {
         pkgs = pkgsWithUnfree;
