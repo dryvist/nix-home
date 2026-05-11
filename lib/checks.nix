@@ -73,11 +73,15 @@
   module-eval =
     let
       # Use a pkgs instance with allowUnfree for the module eval check since
-      # the module enables vscode (unfree). This is test-only; real deployments
-      # set allowUnfree in their nixpkgs config.
+      # the module enables vscode (unfree). allowBroken is required on darwin
+      # because ps.pandas transitively pulls arrow-cpp, which has meta.broken
+      # on darwin in nixpkgs 25.11 — caught by `nix flake check --all-systems`
+      # when evaluating the aarch64-darwin output from a linux runner.
+      # This is test-only; real deployments set their own nixpkgs config.
       pkgsWithUnfree = import nixpkgs {
         inherit (pkgs.stdenv.hostPlatform) system;
         config.allowUnfree = true;
+        config.allowBroken = true;
         overlays = [ overlay ];
       };
       hmConfig = home-manager.lib.homeManagerConfiguration {
