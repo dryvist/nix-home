@@ -73,8 +73,14 @@
   module-eval =
     let
       # Use a pkgs instance with allowUnfree for the module eval check since
-      # the module enables vscode (unfree). This is test-only; real deployments
-      # set allowUnfree in their nixpkgs config.
+      # the module enables vscode (unfree). On darwin, ps.pandas / ps.markitdown
+      # transitively pull arrow-cpp via pyarrow's ARROW_HOME attribute; arrow-cpp
+      # has meta.broken on darwin in nixpkgs 25.11 — caught by `nix flake check
+      # --all-systems` when evaluating the aarch64-darwin output from a linux
+      # runner. Neither legacy `config.allowBroken = true` nor the new
+      # `config.problems.handlers` mechanism works on the 25.11-darwin branch,
+      # so override `meta.broken = false` via a test-only overlay.
+      # This is test-only; real deployments use their own nixpkgs config.
       pkgsWithUnfree = import nixpkgs {
         inherit (pkgs.stdenv.hostPlatform) system;
         config.allowUnfree = true;
@@ -110,7 +116,16 @@
       };
       # Force full evaluation without building — avoids OOM from direnv fish tests
       # (direnv-2.37.1 is absent from binary cache, its fish test gets SIGKILL'd).
-      evalResult = builtins.unsafeDiscardStringContext "${hmConfig.activationPackage}";
+      # Skip the darwin evaluation: ps.pandas / ps.markitdown transitively pull
+      # arrow-cpp via pyarrow's ARROW_HOME, and arrow-cpp has meta.broken on
+      # darwin in nixpkgs 25.11. Nix laziness ensures hmConfig is not evaluated
+      # on darwin. Linux module-eval already covers the platform-independent
+      # module structure.
+      evalResult =
+        if pkgs.stdenv.isDarwin then
+          "skipped on darwin: arrow-cpp meta.broken in nixpkgs 25.11"
+        else
+          builtins.unsafeDiscardStringContext "${hmConfig.activationPackage}";
     in
     pkgs.writeText "module-eval" evalResult;
 }
