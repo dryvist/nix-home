@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/JacobPEvans/nix-home/compare/v1.22.1...v1.22.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **deps:** bump nixpkgs past broken postgresql-test-hook rev ([#229](https://github.com/JacobPEvans/nix-home/issues/229)) ([8e639c0](https://github.com/JacobPEvans/nix-home/commit/8e639c004c0d0d561178e2dcd6ecc03581fe6ddb))
+
 ## [1.22.1](https://github.com/JacobPEvans/nix-home/compare/v1.22.0...v1.22.1) (2026-05-07)
 
 
