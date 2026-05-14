@@ -106,11 +106,10 @@
   mlx-coder = "command -v mlx-switch >/dev/null && mlx-switch coding || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
   mlx-rag = "command -v mlx-switch >/dev/null && mlx-switch large-context || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
 
-  # Force-release wired memory held by local LLM processes when the system
-  # is thrashing. SIGKILLs vllm-mlx (which retains Metal/GPU buffers in
-  # unified memory even after llama-swap's /unload — these don't show up in
-  # ps RSS) and screenpipe's pi-coding-agent. llama-swap respawns vllm-mlx
-  # on the next inference request with a fresh allocation.
-  # Docs: ~/git/mlx-benchmarks/main/docs/quick-reset.md
-  clear-mem = "pkill -9 -f 'vllm-mlx serve' 2>/dev/null; pkill -f pi-coding-agent 2>/dev/null; sleep 1; echo '--- after clear-mem ---'; vm_stat | grep -E 'Pages (wired|free)'; sysctl vm.swapusage";
+  # Refresh memory held by large local LLMs for a performance boost.
+  # On Apple Silicon unified memory, MLX retains buffer allocations across
+  # requests for efficient reuse; over long sessions this accumulates beyond
+  # the active working set. Stopping the vllm-mlx backend returns that memory
+  # to the OS; llama-swap respawns it cleanly on the next inference request.
+  clear-mem = "pkill -9 -f 'vllm-mlx serve' 2>/dev/null; sleep 1; echo '--- after clear-mem ---'; vm_stat | grep -E 'Pages (wired|free)'; sysctl vm.swapusage";
 }
