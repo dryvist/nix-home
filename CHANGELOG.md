@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.6](https://github.com/JacobPEvans/nix-home/compare/v1.22.5...v1.22.6) (2026-05-14)
+
+
+### Bug Fixes
+
+* **flake:** scope checks to x86_64-linux for --all-systems compatibility ([#241](https://github.com/JacobPEvans/nix-home/issues/241)) ([d85361e](https://github.com/JacobPEvans/nix-home/commit/d85361ea12f0ffed1893e9b942ee036eaa6d8d25))
+
 ## [1.22.5](https://github.com/JacobPEvans/nix-home/compare/v1.22.4...v1.22.5) (2026-05-14)
 
 
