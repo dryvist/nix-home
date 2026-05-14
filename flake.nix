@@ -53,19 +53,33 @@
         (import ./overlays/darwin-test-skips.nix)
       ];
 
-      # Quality checks (formatting, linting, dead code)
-      checks = forAllSystems (
-        system:
+      # Quality checks (formatting, linting, dead code, module-eval).
+      #
+      # Scoped to x86_64-linux only so `nix flake check --all-systems` succeeds
+      # from a single linux runner. All checks here are either source-only
+      # (formatting, statix, deadnix, shellcheck — identical source across
+      # systems) or wrap evaluation in a writeText (module-eval), so running
+      # them once is sufficient and produces a derivation buildable on the
+      # runner. Other systems intentionally have no `checks` entries.
+      #
+      # Cross-platform breakage (e.g. darwin-only `meta.broken` in nixpkgs) is
+      # still caught by `--all-systems` evaluating `packages.<system>`,
+      # `devShells.<system>`, `formatter.<system>`, and `overlays` for every
+      # declared system — those outputs continue to be defined via
+      # `forAllSystems` below.
+      checks =
         let
+          system = "x86_64-linux";
           pkgs = nixpkgs.legacyPackages.${system};
         in
-        import ./lib/checks.nix {
-          inherit pkgs nixpkgs home-manager;
-          src = ./.;
-          homeModule = self.homeManagerModules.default;
-          overlay = self.overlays.default;
-        }
-      );
+        {
+          ${system} = import ./lib/checks.nix {
+            inherit pkgs nixpkgs home-manager;
+            src = ./.;
+            homeModule = self.homeManagerModules.default;
+            overlay = self.overlays.default;
+          };
+        };
 
       # Development shells
       devShells = forAllSystems (
