@@ -36,6 +36,8 @@ let
   #     `import av` (sandbox kills the av subprocess that loads ffmpeg libs)
   #   - faster-whisper: same sandbox kill on its import / test phases (av is
   #     a runtime dep, so disable proactively)
+  #   - speechrecognition: pytestCheckPhase SIGKILLed during test collection
+  #     (newer 3.16.x ships a pytest suite that exercises audio subprocesses)
   #
   # Setting both doCheck and doInstallCheck = false skips checkPhase and
   # the python-imports-check setup-hook (which lives in installCheckPhase).
@@ -52,6 +54,7 @@ let
     openai-whisper = skipDarwinChecks python-prev "openai-whisper";
     av = skipDarwinChecks python-prev "av";
     faster-whisper = skipDarwinChecks python-prev "faster-whisper";
+    speechrecognition = skipDarwinChecks python-prev "speechrecognition";
   };
 in
 {
