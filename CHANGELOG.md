@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.7](https://github.com/JacobPEvans/nix-home/compare/v1.22.6...v1.22.7) (2026-05-15)
+
+
+### Bug Fixes
+
+* **python:** skip speechrecognition tests on darwin ([#245](https://github.com/JacobPEvans/nix-home/issues/245)) ([730c3bf](https://github.com/JacobPEvans/nix-home/commit/730c3bf6c92107d8b27246a5fbacf62c418e18a7))
+
 ## [1.22.6](https://github.com/JacobPEvans/nix-home/compare/v1.22.5...v1.22.6) (2026-05-14)
 
 
