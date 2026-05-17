@@ -71,6 +71,14 @@ let
       ;
   };
 
+  # GitHub PAT keychain helpers (gh_pat / with_gh_pat / elevate_unlock)
+  ghConfig = import ./gh/config.nix {
+    inherit
+      pkgs
+      userConfig
+      ;
+  };
+
   # Linter configurations
   linterFiles = import ./linters/markdownlint.nix { inherit config; };
 in
@@ -142,6 +150,7 @@ in
 
         # --- Shell modules ---
         ${lib.optionalString pkgs.stdenv.isDarwin "source ${awsConfig.initScript}"}
+        ${lib.optionalString pkgs.stdenv.isDarwin "source ${ghConfig.initScript}"}
         source ${./zsh/git-functions.zsh}
         source ${./zsh/docker-functions.zsh}
         source ${./zsh/process-cleanup.zsh}
