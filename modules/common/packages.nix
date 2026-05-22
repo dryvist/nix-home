@@ -24,6 +24,14 @@ lib.optionals pkgs.stdenv.isLinux [
   # Framework for managing git pre-commit hooks - essential for code quality
   pre-commit
 
+  # Lefthook: Some upstream repos (e.g., docs.jacobpevans.com via Mintlify
+  # tooling) drop `lefthook`-generated hook stubs into `.git/hooks/`. Those
+  # stubs print "Can't find lefthook in PATH" warnings during ordinary git
+  # operations when the binary isn't installed. Keep it on PATH globally so
+  # the stubs run as intended (lefthook is a no-op without a `lefthook.yml`,
+  # matching pre-commit's behavior without `.pre-commit-config.yaml`).
+  lefthook
+
   # Git Workflow
   (pkgs.callPackage ./git-flow-next.nix { }) # git-flow branching workflow — required for all non-personal repos
   git-bug # Distributed bug tracker embedded in git (git bug command)
