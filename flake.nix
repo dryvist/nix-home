@@ -12,6 +12,16 @@
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Source-only input: orbstack-kubernetes manifests + deploy scripts that
+    # modules/monitoring/monitoring-deploy executes. Pinned via flake.lock so
+    # deploys are reproducible across this nix-home generation. Override
+    # locally with `--override-input orbstack-kubernetes path:<checkout>` for
+    # development.
+    orbstack-kubernetes = {
+      url = "github:JacobPEvans/orbstack-kubernetes";
+      flake = false;
+    };
   };
 
   outputs =
@@ -20,6 +30,7 @@
       nixpkgs,
       nixpkgs-unstable,
       home-manager,
+      orbstack-kubernetes,
       ...
     }:
     let
@@ -36,6 +47,11 @@
       # Main home-manager module (cross-platform non-AI config)
       # Darwin modules imported unconditionally - they use mkEnableOption + mkIf,
       # so launchd config is only evaluated when explicitly enabled on macOS.
+      #
+      # `_module.args.orbstackKubernetesSrc` exposes the pinned source-only
+      # flake input to modules that need it (modules/monitoring), so the
+      # deploy commands resolve manifests from the Nix store rather than
+      # requiring a local clone of orbstack-kubernetes.
       homeManagerModules.default = {
         imports = [
           ./modules/home-manager/common.nix
@@ -43,6 +59,7 @@
           ./modules/monitoring
           ./modules/home-manager/darwin
         ];
+        _module.args.orbstackKubernetesSrc = orbstack-kubernetes;
       };
 
       # Python packages overlay
