@@ -87,6 +87,10 @@ in
     sessionVariables = {
       EDITOR = "vim";
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+      # Workspace roots. Reference these in docs, scripts, and commands
+      # instead of hard-coding /Users/<you>/git/...
+      GIT_HOME = "${config.home.homeDirectory}/git";
+      GIT_HOME_PUBLIC = "${config.home.homeDirectory}/git/public";
     }
     // lib.optionalAttrs pkgs.stdenv.isDarwin {
       HF_HOME = "/Volumes/HuggingFace";
