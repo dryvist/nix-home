@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/JacobPEvans/nix-home/compare/v1.22.9...v1.23.0) (2026-05-25)
+
+
+### Features
+
+* add GIT_HOME and GIT_HOME_PUBLIC sessionVariables ([#261](https://github.com/JacobPEvans/nix-home/issues/261)) ([b716868](https://github.com/JacobPEvans/nix-home/commit/b71686844d599eb050d3cf3a1152261e9ab9fe97))
+
 ## [1.22.9](https://github.com/JacobPEvans/nix-home/compare/v1.22.8...v1.22.9) (2026-05-21)
 
 
