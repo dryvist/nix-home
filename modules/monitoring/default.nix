@@ -1,8 +1,8 @@
 # Monitoring Infrastructure Module
 #
 # Provides deployment scripts and OTEL configuration for the monitoring stack.
-# Kubernetes manifests are managed in the kubernetes-monitoring repository:
-#   https://github.com/JacobPEvans/kubernetes-monitoring
+# Kubernetes manifests are managed in the orbstack-kubernetes repository:
+#   https://github.com/JacobPEvans/orbstack-kubernetes
 #
 # Usage:
 #   imports = [ ./modules/monitoring ];
@@ -10,6 +10,7 @@
   config,
   lib,
   pkgs,
+  orbstackKubernetesSrc,
   ...
 }:
 
@@ -25,8 +26,17 @@ in
 
       repoPath = lib.mkOption {
         type = lib.types.str;
-        default = "${config.home.homeDirectory}/git/kubernetes-monitoring/main";
-        description = "Path to the kubernetes-monitoring repository worktree";
+        default = "${orbstackKubernetesSrc}";
+        description = ''
+          Path to the orbstack-kubernetes source tree.
+
+          Defaults to the `orbstack-kubernetes` flake input (a Nix store
+          path), which makes deploys reproducible against this nix-home
+          generation. Override to point at a local checkout if you need to
+          test manifest changes against a deploy, or use
+          `--override-input orbstack-kubernetes path:<checkout>` on the
+          consuming flake for the same effect at the flake level.
+        '';
       };
 
       namespace = lib.mkOption {
@@ -99,31 +109,17 @@ in
     home = {
       # Helper scripts for Kubernetes-based monitoring
       packages = lib.mkIf cfg.kubernetes.enable [
-        (pkgs.writeShellScriptBin "monitoring-deploy" ''
-          set -euo pipefail
-
-          REPO_PATH="${cfg.kubernetes.repoPath}"
-          export KUBE_CONTEXT="${cfg.kubernetes.context}"
-
-          if [ ! -d "$REPO_PATH" ]; then
-            echo "ERROR: kubernetes-monitoring repo not found at $REPO_PATH"
-            echo "Clone it:"
-            echo "  mkdir -p ~/git/kubernetes-monitoring"
-            echo "  git clone git@github.com:JacobPEvans/kubernetes-monitoring.git ~/git/kubernetes-monitoring/main"
-            exit 1
-          fi
-
-          echo "Deploying monitoring stack from: $REPO_PATH"
-          cd "$REPO_PATH"
-
-          # Doppler project/config stored in SOPS, deploy-doppler reads them
-          if [ -f secrets.enc.yaml ]; then
-            make deploy-doppler
-          else
-            echo "WARNING: No secrets.enc.yaml found, deploying without secrets"
-            make deploy
-          fi
-        '')
+        # NOTE: There is no `monitoring-deploy` wrapper here on purpose.
+        # The deploy pipeline lives in orbstack-kubernetes/Makefile (which
+        # calls scripts/deploy-doppler.sh → scripts/deploy.sh). Wrapping
+        # it from nix-home added no abstraction value beyond putting a
+        # name on $PATH — and the underlying scripts mutate the source
+        # tree (`generate-overlay.sh` writes back to `k8s/overlays/local/`),
+        # which conflicts with serving the source from the read-only Nix
+        # store. To deploy: `cd <orbstack-kubernetes worktree> && make
+        # deploy-doppler`. The `orbstack-kubernetes` flake input above
+        # keeps the manifests pinned + reachable for any downstream
+        # consumer that needs the path (e.g. `monitoring.kubernetes.repoPath`).
 
         (pkgs.writeShellScriptBin "monitoring-status" ''
           set -euo pipefail
