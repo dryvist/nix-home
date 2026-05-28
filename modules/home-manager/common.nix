@@ -13,8 +13,8 @@
     };
     user = {
       name = "jevans";
-      email = "20714140+JacobPEvans@users.noreply.github.com";
-      fullName = "JacobPEvans";
+      email = "20714140+JacobPEvans-personal@users.noreply.github.com";
+      fullName = "JacobPEvans-personal";
     };
     git = {
       editor = "vim";
