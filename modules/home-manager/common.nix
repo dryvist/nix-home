@@ -94,6 +94,7 @@ in
       # instead of hard-coding /Users/<you>/git/...
       GIT_HOME = "${config.home.homeDirectory}/git";
       GIT_HOME_PUBLIC = "${config.home.homeDirectory}/git/public";
+      GIT_HOME_PRIVATE = "${config.home.homeDirectory}/git/dryvist-private";
     }
     // lib.optionalAttrs pkgs.stdenv.isDarwin {
       HF_HOME = "/Volumes/HuggingFace";
