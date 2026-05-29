@@ -13,7 +13,10 @@
     };
     user = {
       name = "jevans";
-      email = "20714140+JacobPEvans@users.noreply.github.com";
+      # Renamed account: noreply email must be ...+JacobPEvans-personal@ or commits
+      # built from this standalone fallback fail signature verification (bad_email).
+      # On the live machine nix-darwin's user-config.nix overrides this default.
+      email = "20714140+JacobPEvans-personal@users.noreply.github.com";
       fullName = "JacobPEvans";
     };
     git = {
