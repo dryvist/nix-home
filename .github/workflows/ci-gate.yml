@@ -78,19 +78,19 @@ jobs:
     # on a `needs:` of `Merge Gate` can queue forever with no terminal state,
     # which prevents `gate` from ever running and leaves required-status
     # absent. Opt into RunsOn only on workflows outside the gate path.
-    uses: JacobPEvans/.github/.github/workflows/_nix-validate.yml@main
+    uses: JacobPEvans-personal/.github/.github/workflows/_nix-validate.yml@main
 
   markdown-lint:
     name: Markdown Lint
     needs: changes
     if: needs.changes.outputs.markdown == 'true'
-    uses: JacobPEvans/.github/.github/workflows/_markdown-lint.yml@main
+    uses: JacobPEvans-personal/.github/.github/workflows/_markdown-lint.yml@main
 
   file-size:
     name: File Size
     needs: changes
     if: needs.changes.outputs.nix == 'true' || needs.changes.outputs.markdown == 'true'
-    uses: JacobPEvans/.github/.github/workflows/_file-size.yml@main
+    uses: JacobPEvans-personal/.github/.github/workflows/_file-size.yml@main
 
   # ==========================================================================
   # MERGE GATE - The ONLY required check in branch protection
