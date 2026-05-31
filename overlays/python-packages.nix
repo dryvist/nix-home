@@ -1,7 +1,7 @@
 # Python Package Overlays
 #
 # Replaces python314 with nixpkgs-unstable's version where all packages
-# are Python 3.14-compatible. nixpkgs-25.11 ships outdated PyO3/pydantic-core/
+# are Python 3.14-compatible. nixpkgs-26.05 ships outdated PyO3/pydantic-core/
 # astor that can't build against Python 3.14's C API changes.
 #
 # Using the entire python314 (not individual packages) avoids Python derivation
