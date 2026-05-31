@@ -31,13 +31,20 @@
       inherit (userConfig.git) editor;
       autocrlf = "input"; # LF on commit, unchanged on checkout (Unix-style)
       whitespace = "trailing-space,space-before-tab"; # Highlight whitespace issues
-      hooksPath = "${config.home.homeDirectory}/.git-templates/hooks"; # Global hooks for ALL repos
+      # core.hooksPath intentionally NOT set globally. Setting it makes
+      # `pre-commit install` (cachix/git-hooks.nix installationScript) refuse
+      # to install per-repo hooks with "Cowardly refusing to install hooks
+      # with core.hooksPath set". Pre-commit-using repos rely on per-repo
+      # .git/hooks/ populated by their dev shell. Repos without a Nix dev
+      # shell still get template hooks via init.templateDir below.
     };
 
     # Repository initialization
     init = {
       inherit (userConfig.git) defaultBranch;
-      # Auto-install hooks on new clones (Layer 1 of pre-commit enforcement)
+      # Seed new clones/inits with template hooks via git's native template
+      # mechanism. Files in ~/.git-templates/hooks are copied into .git/hooks/
+      # on `git init`/`git clone`. Passive — doesn't override per-repo hooks.
       templateDir = "${config.home.homeDirectory}/.git-templates";
     };
 
