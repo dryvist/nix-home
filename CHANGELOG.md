@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.24.0](https://github.com/dryvist/nix-home/compare/v1.23.1...v1.24.0) (2026-06-01)
+
+
+### Features
+
+* **home:** add GIT_HOME_PRIVATE sessionVariable ([#268](https://github.com/dryvist/nix-home/issues/268)) ([b6f3cd2](https://github.com/dryvist/nix-home/commit/b6f3cd2f872c4abf801deefadacbd7ccbb273108))
+
+
+### Bug Fixes
+
+* **ci:** repoint release-please caller to org-native reusable workflow ([#274](https://github.com/dryvist/nix-home/issues/274)) ([56d9791](https://github.com/dryvist/nix-home/commit/56d9791c5c7d6dfb761ad1b00f63d95fba981237))
+* **ci:** retarget reusable-workflow uses: refs to current org homes ([#270](https://github.com/dryvist/nix-home/issues/270)) ([fc124db](https://github.com/dryvist/nix-home/commit/fc124db8b4296bc16b72058ccd74997f2436d644))
+* **identity:** update standalone fallback git email to renamed account ([#271](https://github.com/dryvist/nix-home/issues/271)) ([36bdd10](https://github.com/dryvist/nix-home/commit/36bdd10672708728cfcac1a6a82ea8704375302c))
+
 ## [1.23.1](https://github.com/JacobPEvans/nix-home/compare/v1.23.0...v1.23.1) (2026-05-25)
 
 
