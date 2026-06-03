@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.25.0](https://github.com/dryvist/nix-home/compare/v1.24.0...v1.25.0) (2026-06-03)
+
+
+### Features
+
+* **aws:** generate tf-* profiles from a names list; add tf-unifi ([#279](https://github.com/dryvist/nix-home/issues/279)) ([1afb777](https://github.com/dryvist/nix-home/commit/1afb7777b433911f4aede750d2183b10b24c34b5))
+* **aws:** tofu + tofu-admin identities; group tf-* by base ([#282](https://github.com/dryvist/nix-home/issues/282)) ([225b28d](https://github.com/dryvist/nix-home/commit/225b28dbfcaa6c7888a9524cbf2975dd8aa70250))
+
 ## [1.24.0](https://github.com/dryvist/nix-home/compare/v1.23.1...v1.24.0) (2026-06-01)
 
 
