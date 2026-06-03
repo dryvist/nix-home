@@ -48,16 +48,30 @@ let
       name = "iam-user";
       comment = "IAM admin - bootstrap only, not for daily use";
     }
+    {
+      name = "tofu";
+      comment = "tofu base identity - new projects; assumes tf-* roles, no resource permissions";
+    }
+    {
+      name = "tofu-admin";
+      comment = "tofu-admin - standalone one-time state-bucket bootstrap user (own creds)";
+    }
   ];
 
-  # Per-project Terraform profiles, generated from ./tf-projects.nix. Each
-  # assumes role/tf-<name> via the shared `terraform` base identity (no MFA).
-  tfProfiles = map (name: {
-    name = "tf-${name}";
-    comment = "tf-${name}: assumes role/tf-${name} via the terraform base identity";
-    source_profile = "terraform";
-    role_arn = "arn:aws:iam::${accountIdPlaceholder}:role/tf-${name}";
-  }) (import ./tf-projects.nix);
+  # Per-project profiles, generated from ./tf-projects.nix and grouped by the
+  # base identity each assumes from (no MFA). New projects live under `tofu`;
+  # legacy projects stay under `terraform` until migrated.
+  tfProjects = import ./tf-projects.nix;
+  mkTfProfiles =
+    base: names:
+    map (name: {
+      name = "tf-${name}";
+      comment = "tf-${name}: assumes role/tf-${name} via the ${base} base identity";
+      source_profile = base;
+      role_arn = "arn:aws:iam::${accountIdPlaceholder}:role/tf-${name}";
+    }) names;
+  tfProfiles =
+    (mkTfProfiles "terraform" tfProjects.terraform) ++ (mkTfProfiles "tofu" tfProjects.tofu);
 
   profiles = baseProfiles ++ tfProfiles;
 
