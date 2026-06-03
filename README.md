@@ -92,7 +92,7 @@ Consumed as a flake input by nix-darwin (macOS) and usable standalone on Linux.
 |------|-------|-------------|
 | **nix-home** (you are here) | User environment (dotfiles, dev tools, LaunchAgents) | home-manager |
 | [nix-ai](https://github.com/JacobPEvans/nix-ai) | AI CLI ecosystem (Claude, Gemini, Copilot, MCP) | home-manager |
-| [nix-devenv](https://github.com/JacobPEvans/nix-devenv) | Reusable dev shells (Terraform, Ansible, K8s, AI/ML) | nix develop / flake init |
+| [nix-devenv](https://github.com/JacobPEvans/nix-devenv) | Reusable dev shells (OpenTofu, Ansible, K8s, AI/ML) | nix develop / flake init |
 | [nix-darwin](https://github.com/JacobPEvans/nix-darwin) | macOS system config (Dock, Finder, Homebrew, security) | nix-darwin |
 
 ## License
