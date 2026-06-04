@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.2](https://github.com/dryvist/nix-home/compare/v1.26.1...v1.26.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **git:** drop global core.hooksPath; rely on init.templateDir + per-repo install ([9ae3a57](https://github.com/dryvist/nix-home/commit/9ae3a5718975480dad3a00dcd6df0990a1858d86))
+
 ## [1.26.1](https://github.com/dryvist/nix-home/compare/v1.26.0...v1.26.1) (2026-06-04)
 
 
