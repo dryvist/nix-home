@@ -7,7 +7,8 @@
 # - Security: Security-focused checks
 #
 # These tools run via .pre-commit-config.yaml during git commit.
-# Installation: `pre-commit install` (handled by core.hooksPath in git config)
+# Installation: per-repo `pre-commit install`, typically invoked from the
+# repo's Nix dev shellHook (e.g. cachix/git-hooks.nix installationScript).
 # Manual run: `pre-commit run --all-files`
 #
 # This module is a single source of truth for all pre-commit tooling,

@@ -1,10 +1,13 @@
-# Git Hooks (Global via core.hooksPath)
+# Git Hooks (Template via init.templateDir)
 #
-# These hooks apply to ALL git repos via core.hooksPath (set in common.nix).
+# These hooks are seeded into new clones / `git init` runs via
+# init.templateDir (set in git/config.nix). They are NOT set as
+# core.hooksPath — see the comment in git/config.nix for why.
 # They delegate to pre-commit framework if .pre-commit-config.yaml exists.
 #
 # Layer 1 of 3-layer defense:
-#   1. Global hooks (this) - fast local feedback on ALL repos
+#   1. Template hooks (this) - seeded on new clones; pre-commit install
+#      (run by per-repo Nix dev shells) handles existing repos
 #   2. AI deny list - blocks --no-verify bypass attempts
 #   3. GitHub branch protection - server-side guarantee
 
