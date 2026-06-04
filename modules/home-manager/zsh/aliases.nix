@@ -67,9 +67,9 @@
   #   av terraform -- terraform plan # Run terraform with specific profile
   #   avl                            # List all profiles in vault
   #   avd aws sts get-caller-identity # Quick check with default profile
-  av = "aws-vault exec"; # Execute command with profile credentials
+  av = "aws-vault exec --duration=14400"; # Execute command with profile credentials (4h session)
   avl = "aws-vault list"; # List profiles stored in vault
-  avd = "aws-vault exec default --"; # Execute with default profile
+  avd = "aws-vault exec --duration=14400 default --"; # Execute with default profile (4h session)
   ava = "aws-vault add"; # Add new profile credentials to vault
   avr = "aws-vault remove"; # Remove profile from vault
 
