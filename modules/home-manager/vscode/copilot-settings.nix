@@ -149,7 +149,7 @@ _:
 
   # === MODEL SELECTION (Introduced February 2025) ===
   # Copilot CLI and VS Code now support model selection
-  # Including Claude Sonnet 4.5 in public preview
+  # Including Claude Sonnet in public preview
   # This is typically configured via the Copilot UI, not settings.json
 
   # === NOTES ===
