@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.0](https://github.com/dryvist/nix-home/compare/v1.25.0...v1.26.0) (2026-06-04)
+
+
+### Features
+
+* **ci:** dispatch flake-input update to nix-darwin on release ([#284](https://github.com/dryvist/nix-home/issues/284)) ([e62977e](https://github.com/dryvist/nix-home/commit/e62977e9b3018cf320f733df7fb704cdd386a255))
+
 ## [1.25.0](https://github.com/dryvist/nix-home/compare/v1.24.0...v1.25.0) (2026-06-03)
 
 
