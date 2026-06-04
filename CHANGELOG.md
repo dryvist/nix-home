@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.1](https://github.com/dryvist/nix-home/compare/v1.26.0...v1.26.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **aws:** set --duration=14400 on av and avd aliases ([#286](https://github.com/dryvist/nix-home/issues/286)) ([3e5f5bc](https://github.com/dryvist/nix-home/commit/3e5f5bcfeb27832a3f678ff494040dbc5e9a8cc1))
+
 ## [1.26.0](https://github.com/dryvist/nix-home/compare/v1.25.0...v1.26.0) (2026-06-04)
 
 
