@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.3](https://github.com/dryvist/nix-home/compare/v1.26.2...v1.26.3) (2026-06-05)
+
+
+### Bug Fixes
+
+* **zsh:** use 4h unit in aws-vault duration aliases ([#291](https://github.com/dryvist/nix-home/issues/291)) ([8f81223](https://github.com/dryvist/nix-home/commit/8f812232ef2bfbb2c06a610e0e538a75e748ab0a))
+
 ## [1.26.2](https://github.com/dryvist/nix-home/compare/v1.26.1...v1.26.2) (2026-06-04)
 
 
