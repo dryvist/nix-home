@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.0](https://github.com/dryvist/nix-home/compare/v1.26.3...v1.27.0) (2026-06-07)
+
+
+### Features
+
+* add awscli2 to nix-home packages ([#294](https://github.com/dryvist/nix-home/issues/294)) ([ca30348](https://github.com/dryvist/nix-home/commit/ca3034806fea5aa5c8550437e54baf114841fdf6))
+
 ## [1.26.3](https://github.com/dryvist/nix-home/compare/v1.26.2...v1.26.3) (2026-06-05)
 
 
