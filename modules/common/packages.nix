@@ -116,6 +116,7 @@ lib.optionals pkgs.stdenv.isLinux [
   bws # Bitwarden Secrets Manager CLI (for machine secrets)
   doppler # Doppler secrets manager CLI (for CI/CD and team secrets)
   aws-vault # AWS credential management — session credentials backed by the OS keychain/credential store (used by av/avl/avd/ava/avr aliases)
+  awscli2 # AWS CLI v2 — provides the `aws` command
 
   # ==========================================================================
   # Remote Shell
