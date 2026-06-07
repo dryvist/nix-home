@@ -11,6 +11,13 @@
 {
   enable = true;
 
+  # Global ignore patterns (written to the XDG global excludes file).
+  # AI tools create native worktrees in their own dotdirs; never track them.
+  ignores = [
+    ".claude/worktrees/"
+    ".gemini/worktrees/"
+  ];
+
   # GPG signing configuration
   # NOTE: Key ID is a public identifier, not the private key (safe to commit)
   signing = {

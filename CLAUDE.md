@@ -6,7 +6,7 @@ Cross-platform home-manager modules for development environment tools.
 
 1. **Flakes-only**: Never use `nix-env` or imperative Nix commands
 2. **Cross-platform**: Modules must work on Darwin and Linux (4 systems)
-3. **Worktrees required**: Run `/init-worktree` before any work
+3. **Worktrees required**: work in a worktree before any changes
 4. **No direct main commits**: Always use feature branches
 
 ## Build Validation
