@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.1](https://github.com/dryvist/nix-home/compare/v1.27.0...v1.27.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **ci:** repoint shared reusable workflows to dryvist org ([#298](https://github.com/dryvist/nix-home/issues/298)) ([db86ea4](https://github.com/dryvist/nix-home/commit/db86ea46d041eb708f4eac45fb758d04e1c7439b))
+
 ## [1.27.0](https://github.com/dryvist/nix-home/compare/v1.26.3...v1.27.0) (2026-06-07)
 
 
