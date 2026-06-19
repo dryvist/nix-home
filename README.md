@@ -59,42 +59,17 @@ sharedModules = [ nix-home.homeManagerModules.default ];
 | `devShells.default` | Nix development tools |
 | `formatter` | nixfmt-tree |
 
-## Dev shells
-
-Per-repo dev shells have moved to [nix-devenv](https://github.com/JacobPEvans/nix-devenv).
-Scaffold a new repo or use a pre-built shell from there:
-
-```sh
-# Scaffold a new repo's dev environment from a nix-devenv template
-nix flake init -t github:JacobPEvans/nix-devenv#mkshell
-
-# Or use a pre-built shell directly
-nix develop github:JacobPEvans/nix-devenv?dir=shells/ansible
-
-# Or use community templates for standard languages
-nix flake init -t github:the-nix-way/dev-templates#go
-```
-
-### Monitoring
+## Monitoring
 
 The `modules/monitoring/` module deploys a Kubernetes-based observability stack for
 AI development workflows. It includes OpenTelemetry Collector for traces and log ingestion,
 and Cribl Edge for log shipping. See [`modules/monitoring/README.md`](modules/monitoring/README.md)
 for architecture details, components, and quick start instructions.
 
-## Related Repos
-
-**nix-home** manages your user-level development environment using home-manager modules.
-It provides shell config, editor settings, CLI dev tools, linters, and dotfiles.
-Consumed as a flake input by nix-darwin (macOS) and usable standalone on Linux.
-
-| Repo | Scope | Installs via |
-|------|-------|-------------|
-| **nix-home** (you are here) | User environment (dotfiles, dev tools, LaunchAgents) | home-manager |
-| [nix-ai](https://github.com/JacobPEvans/nix-ai) | AI CLI ecosystem (Claude, Gemini, Copilot, MCP) | home-manager |
-| [nix-devenv](https://github.com/JacobPEvans/nix-devenv) | Reusable dev shells (OpenTofu, Ansible, K8s, AI/ML) | nix develop / flake init |
-| [nix-darwin](https://github.com/JacobPEvans/nix-darwin) | macOS system config (Dock, Finder, Homebrew, security) | nix-darwin |
-
 ## License
 
 MIT
+
+---
+
+> Part of a [larger ecosystem of ~40 repos](https://docs.jacobpevans.com) — see how it all fits together.
