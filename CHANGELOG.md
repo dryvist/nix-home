@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.0](https://github.com/dryvist/nix-home/compare/v1.27.1...v1.28.0) (2026-06-19)
+
+
+### Features
+
+* **python:** include PyYAML in shared environment ([#300](https://github.com/dryvist/nix-home/issues/300)) ([9fbee5e](https://github.com/dryvist/nix-home/commit/9fbee5edd15300ba769438371177d1e53042aa8d))
+
 ## [1.27.1](https://github.com/dryvist/nix-home/compare/v1.27.0...v1.27.1) (2026-06-12)
 
 
