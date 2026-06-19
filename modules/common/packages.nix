@@ -172,6 +172,7 @@ lib.optionals pkgs.stdenv.isLinux [
   (python314.withPackages (ps: [
     ps.cryptography # Cryptographic recipes and primitives
     ps.pygithub # GitHub API v3 Python library
+    ps.pyyaml # YAML parser/emitter for Python automation
     # Claude document-skills dependencies
     ps.pandas # xlsx: data manipulation
     ps.openpyxl # xlsx: formulas and formatting
