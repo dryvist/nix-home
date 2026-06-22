@@ -28,8 +28,8 @@
 #   Imports:
 #     - JacobPEvans/.github/.github/workflows/shared/repo-health-audit-config.md@main
 #   Includes:
-#     - /tmp/gh-aw-include-1641559417.md
-#     - /tmp/gh-aw-include-3279441797.md
+#     - /tmp/gh-aw-include-2522796427.md
+#     - /tmp/gh-aw-include-2565881774.md
 #
 # Secrets used:
 #   - COPILOT_GITHUB_TOKEN
@@ -55,7 +55,7 @@
 name: "Repo Health Audit"
 "on":
   schedule:
-  - cron: "54 19 * * *"
+  - cron: "27 19 * * *"
     # Friendly format: daily (scattered)
   workflow_dispatch:
     inputs:
@@ -214,7 +214,7 @@ jobs:
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           cat << 'GH_AW_PROMPT_b2968f7f97c5d780_EOF'
           </system>
-          {{#runtime-import .github/b501c97c70e6c1e2f29491c0dc3d73b3ad79134e/.github_workflows_shared_repo-health-audit-config.md}}
+          {{#runtime-import .github/f26b5770c3a297e12b253506f5e3f7c800236620/.github_workflows_shared_repo-health-audit-config.md}}
           {{#runtime-import .github/workflows/repo-health-audit.md}}
           GH_AW_PROMPT_b2968f7f97c5d780_EOF
           } > "$GH_AW_PROMPT"
