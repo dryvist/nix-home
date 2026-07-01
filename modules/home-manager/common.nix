@@ -7,32 +7,19 @@
   config,
   pkgs,
   lib,
-  userConfig ? {
-    nix = {
-      homeManagerStateVersion = "25.11";
-    };
-    user = {
-      name = "jevans";
-      # Renamed account: noreply email must be ...+JacobPEvans-personal@ or commits
-      # built from this standalone fallback fail signature verification (bad_email).
-      # On the live machine nix-darwin's user-config.nix overrides this default.
-      email = "20714140+JacobPEvans-personal@users.noreply.github.com";
-      fullName = "JacobPEvans";
-    };
-    git = {
-      editor = "vim";
-      defaultBranch = "main";
-    };
-    gpg = {
-      signingKey = "";
-    };
-  },
+  # Standalone fallback identity/state. On a real machine nix-darwin passes its
+  # own userConfig; this default lives in one place (see lib/user-defaults.nix).
+  userConfig ? import ../../lib/user-defaults.nix,
   ...
 }:
 
 let
-  # Universal packages (pre-commit, linters, dev tools) shared across all systems
-  commonPackages = import ../common/packages.nix { inherit pkgs; };
+  # Resolved feature toggles from the host profile (modules/home-manager/profiles).
+  features = config.home-profile.features;
+
+  # Universal packages, composed from domain groups and gated by the profile.
+  # The `workstation` preset enables every group (parity with the old flat list).
+  commonPackages = import ../common/packages.nix { inherit pkgs lib features; };
 
   # Git aliases
   gitAliases = import ./git/aliases.nix;
@@ -50,9 +37,6 @@ let
       executable = true;
     };
   };
-
-  # gpg-agent config (long cache TTL + pinentry-mac on Darwin)
-  gpgAgentConfig = import ./git/gpg-agent.nix { inherit pkgs lib; };
 
   # Shell aliases
   shellAliases = import ./zsh/aliases.nix;
@@ -84,8 +68,7 @@ in
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
     packages = commonPackages;
 
-    file =
-      npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers // gpgAgentConfig.files;
+    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers;
 
     sessionVariables = {
       EDITOR = "vim";
@@ -96,18 +79,21 @@ in
       GIT_HOME_PUBLIC = "${config.home.homeDirectory}/git/public";
       GIT_HOME_PRIVATE = "${config.home.homeDirectory}/git/dryvist-private";
     }
-    // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    // lib.optionalAttrs (pkgs.stdenv.isDarwin && config.home-profile.preset == "workstation") {
+      # Workstation-only: external HuggingFace volume + local build-cache tuning.
+      # A headless server has neither the /Volumes mount nor the sccache workload.
       HF_HOME = "/Volumes/HuggingFace";
       SCCACHE_CACHE_SIZE = "5G";
     };
 
     activation =
-      vscodeWritableConfig.activation // documentSkillsConfig.activation // gpgAgentConfig.activation;
+      (lib.optionalAttrs features.vscode.enable vscodeWritableConfig.activation)
+      // (lib.optionalAttrs features.documentSkills.enable documentSkillsConfig.activation);
   };
 
   programs = {
     vscode = {
-      enable = true;
+      enable = features.vscode.enable;
       profiles.default.userSettings = { };
     };
 
@@ -153,7 +139,7 @@ in
         source ${./zsh/git-functions.zsh}
         source ${./zsh/docker-functions.zsh}
         source ${./zsh/process-cleanup.zsh}
-        source ${./zsh/session-logging.zsh}  # MUST be last
+        ${lib.optionalString features.sessionLogging.enable "source ${./zsh/session-logging.zsh}  # MUST be last"}
       '';
     };
 

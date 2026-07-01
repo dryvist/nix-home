@@ -72,6 +72,9 @@
   # Note: uses unsafeDiscardStringContext — forces eval without building packages absent from binary cache.
   module-eval =
     let
+      # Frozen home-manager state version — single source (lib/user-defaults.nix).
+      stateVersion = (import ./user-defaults.nix).nix.homeManagerStateVersion;
+
       # Use a pkgs instance with allowUnfree for the module eval check since
       # the module enables vscode (unfree). On darwin, ps.pandas / ps.markitdown
       # transitively pull arrow-cpp via pyarrow's ARROW_HOME attribute; arrow-cpp
@@ -90,7 +93,7 @@
         pkgs = pkgsWithUnfree;
         extraSpecialArgs = {
           userConfig = {
-            nix.homeManagerStateVersion = "25.11";
+            nix.homeManagerStateVersion = stateVersion;
             user = {
               name = "test-user";
               email = "test@example.com";
@@ -109,7 +112,7 @@
             home = {
               username = "test-user";
               homeDirectory = "/home/test-user";
-              stateVersion = "25.11";
+              inherit stateVersion;
             };
           }
         ];
