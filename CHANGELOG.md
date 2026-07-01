@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.4](https://github.com/dryvist/nix-home/compare/v1.28.3...v1.28.4) (2026-07-01)
+
+
+### Bug Fixes
+
+* **ci:** pin GitHub Actions to commit SHAs (resolve CodeQL actions/unpinned-tag) ([#326](https://github.com/dryvist/nix-home/issues/326)) ([293d4d8](https://github.com/dryvist/nix-home/commit/293d4d805c228f3b2f931eeda8c8cbdbd7644668))
+
 ## [1.28.3](https://github.com/dryvist/nix-home/compare/v1.28.2...v1.28.3) (2026-06-29)
 
 
