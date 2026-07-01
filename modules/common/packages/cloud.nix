@@ -1,12 +1,13 @@
-# Cloud & object-storage CLIs — installed on every host.
+# Cloud CLIs — installed on every host.
 #
-# AWS credential/session tooling and S3-compatible object storage clients.
+# AWS credential/session tooling. `awscli2` doubles as the S3-compatible client
+# for object storage (e.g. rustfs), so no dedicated object-storage CLI is
+# shipped here (minio-client was dropped with the migration off MinIO).
 
 { pkgs }:
 
 with pkgs;
 [
   aws-vault # AWS credential management — session credentials backed by the OS keychain/credential store (used by av/avl/avd/ava/avr aliases)
-  awscli2 # AWS CLI v2 — provides the `aws` command
-  minio-client # MinIO/S3 client (mc) — upload, download, manage objects + bucket policies
+  awscli2 # AWS CLI v2 — provides the `aws` command (also the S3 client for rustfs)
 ]

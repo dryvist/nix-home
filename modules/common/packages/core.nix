@@ -92,9 +92,8 @@ with pkgs;
   # ==========================================================================
   # Python Tools
   # ==========================================================================
-  # Type checking and on-demand interpreter management. The heavy document
-  # env (python314.withPackages) lives in python-env.nix, gated by profile.
-  pyright # Static type checker for Python
+  # On-demand interpreter management. Type checking (pyright) and the heavy
+  # document env (python314.withPackages) are grouped together in python-env.nix.
 
   # uv: For running alternate Python versions on-demand (EOL or pinned)
   # Usage: uv run --python 3.9 pytest tests/
