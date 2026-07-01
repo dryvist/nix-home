@@ -19,7 +19,7 @@
     # locally with `--override-input orbstack-kubernetes path:<checkout>` for
     # development.
     orbstack-kubernetes = {
-      url = "github:JacobPEvans/orbstack-kubernetes";
+      url = "github:dryvist/orbstack-kubernetes";
       flake = false;
     };
   };
@@ -54,10 +54,12 @@
       # requiring a local clone of orbstack-kubernetes.
       homeManagerModules.default = {
         imports = [
+          ./modules/home-manager/profiles
           ./modules/home-manager/common.nix
           ./modules/home-manager/tmux.nix
           ./modules/monitoring
           ./modules/home-manager/darwin
+          ./modules/home-manager/git/gpg-agent.nix
         ];
         _module.args.orbstackKubernetesSrc = orbstack-kubernetes;
       };

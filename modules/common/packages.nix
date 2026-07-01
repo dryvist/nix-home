@@ -1,182 +1,36 @@
-# Common Packages
+# Common Packages — profile-gated composer
 #
-# Universal dev tools installed on ALL systems (macOS, Linux, etc.)
-# Canonical source of truth for user-level development packages.
+# Canonical source of truth for user-level development packages, split into
+# domain groups under ./packages/ so a host profile can drop the groups a
+# headless server does not need.
 #
 # Usage:
-#   - nix-home: imported in home-manager/common.nix → home.packages
+#   - nix-home: imported in home-manager/common.nix → home.packages, with the
+#     resolved `home-profile.features` passed in as `features`.
 #   - nix-darwin: consumed via nix-home (no local copy)
 #
-# NOTE: This file returns a function that takes pkgs and returns a list of packages.
+# Always installed: core, security, cloud.
+# Gated by feature toggle: document-processing, python-env, google-workspace.
+# The `workstation` preset enables every feature, so its package set is
+# identical to the pre-split flat list.
 
-{ pkgs }:
+{
+  pkgs,
+  lib,
+  features,
+}:
 
-with pkgs;
-lib.optionals pkgs.stdenv.isLinux [
-  # LibreOffice: CLI soffice for docx/xlsx/pptx → PDF conversion (document-skills).
-  # Not built for aarch64-darwin in nixpkgs — macOS uses the homebrew cask instead.
-  libreoffice
-]
-++ [
-  # ==========================================================================
-  # Git & Pre-commit Hooks
-  # ==========================================================================
-  # Framework for managing git pre-commit hooks - essential for code quality
-  pre-commit
-
-  # Lefthook: Some upstream repos (e.g., docs.jacobpevans.com via Mintlify
-  # tooling) drop `lefthook`-generated hook stubs into `.git/hooks/`. Those
-  # stubs print "Can't find lefthook in PATH" warnings during ordinary git
-  # operations when the binary isn't installed. Keep it on PATH globally so
-  # the stubs run as intended (lefthook is a no-op without a `lefthook.yml`,
-  # matching pre-commit's behavior without `.pre-commit-config.yaml`).
-  lefthook
-
-  # Git Workflow
-  (pkgs.callPackage ./git-flow-next.nix { }) # git-flow branching workflow — required for all non-personal repos
-  git-bug # Distributed bug tracker embedded in git (git bug command)
-
-  # ==========================================================================
-  # JavaScript Runtimes
-  # ==========================================================================
-  # bun: fast all-in-one runtime (provides bunx) — general CLI/script use.
-  # nodejs: needed globally for Claude document-skills, which generate scripts
-  # that `require('docx')` / `require('pptxgenjs')` and are executed with
-  # `node`. Those npm libs are installed to ~/.npm-packages via npm install -g
-  # in a home.activation entry (see modules/home-manager/document-skills.nix).
-  bun
-  nodejs
-
-  # ==========================================================================
-  # Modern CLI Tools
-  # ==========================================================================
-  # Popular alternatives to traditional Unix tools. Enhance productivity
-  # for both humans and AI assistants (syntax highlighting, fuzzy finding).
-
-  bat # Better cat with syntax highlighting
-  delta # Better git diff viewer with syntax highlighting
-  eza # Modern ls replacement with git integration
-  fd # Faster, user-friendly find alternative
-  fzf # Fuzzy finder for interactive selection
-  gnugrep # GNU grep with zgrep for compressed files
-  gnutar # GNU tar as 'gtar' (Mac-safe tar without ._* files)
-  btop # Modern process monitor with graphs (replaces htop for daily use)
-  htop # Interactive process viewer (better top)
-  jq # JSON parsing for config files and API responses
-  ncdu # NCurses disk usage analyzer
-  ripgrep # Fast grep alternative (rg) - essential for AI agents
-  tldr # Simplified, community-driven man pages
-  tree # Directory tree visualization
-  watchexec # File watcher that re-executes commands on changes
-  yq # YAML parsing (like jq but for YAML/XML/TOML)
-  zellij # Modern terminal multiplexer (Rust, layout engine)
-
-  # ==========================================================================
-  # Document Processing (Claude document-skills)
-  # ==========================================================================
-  # Runtime dependencies for /document-skills:{docx,xlsx,pptx} — text
-  # extraction, PDF conversion, and PDF→image thumbnails. Python libs live
-  # in the python314.withPackages env below; npm libs (docx, pptxgenjs) are
-  # installed via bun in modules/home-manager/document-skills.nix.
-  # NOTE: libreoffice is Linux-only here — see conditional block at top of
-  # this file. On macOS it's installed as a homebrew cask by nix-darwin.
-  pandoc # Universal document converter (docx text extraction)
-  poppler-utils # `pdftoppm` for PDF → image thumbnails
-
-  # ==========================================================================
-  # Universal Linters
-  # ==========================================================================
-  # These are the most common linters used across projects. They support
-  # pre-commit hooks and should be available on any development machine.
-
-  # Shell
-  shellcheck # Shell script static analysis (POSIX, bash)
-  shfmt # Shell script formatter
-
-  # Documentation
-  lychee # Link checker — kept global: consumed by downstream repo pre-commit hooks (`language: system`)
-  markdownlint-cli2 # Markdown linter (README, docs exist everywhere)
-
-  # Nix (2025 official tooling)
-  nixfmt-rfc-style # Official Nix formatter (RFC 166, v1.1.0+)
-  statix # Nix linter - catches anti-patterns
-  deadnix # Find unused code in .nix files
-  treefmt # Multi-language formatter runner
-  nix-tree # Browse Nix store dependencies interactively
-
-  # JSON
-  check-jsonschema # JSON Schema validator CLI (for settings validation)
-
-  # ==========================================================================
-  # Security & Credential Management
-  # ==========================================================================
-  # Password management and secure credential storage for all environments.
-
-  bitwarden-cli # CLI for Bitwarden password manager (bw command)
-  bws # Bitwarden Secrets Manager CLI (for machine secrets)
-  doppler # Doppler secrets manager CLI (for CI/CD and team secrets)
-  aws-vault # AWS credential management — session credentials backed by the OS keychain/credential store (used by av/avl/avd/ava/avr aliases)
-  awscli2 # AWS CLI v2 — provides the `aws` command
-
-  # ==========================================================================
-  # Remote Shell
-  # ==========================================================================
-  # Resilient mobile shell using UDP - survives network handoffs.
-  mosh
-
-  # ==========================================================================
-  # Google Workspace CLI Tools
-  # ==========================================================================
-  # CLI tools for managing Gmail filters, Google Drive sync, and file management.
-
-  gmailctl # Declarative Gmail filter management via Jsonnet (apply/diff/test)
-  rclone # Cloud storage sync — Google Drive, S3, and 70+ backends
-  gdrive3 # Google Drive CLI — upload, download, list, share, sync
-
-  # ==========================================================================
-  # Object Storage CLIs
-  # ==========================================================================
-  # S3-compatible object storage clients for upload, download, and bucket management.
-
-  minio-client # MinIO/S3 client (mc) — upload, download, manage objects + bucket policies
-
-  # ==========================================================================
-  # HTTP & API Tools
-  # ==========================================================================
-  # Tools for testing and working with HTTP APIs and web services.
-  # NOTE: RapidAPI (GUI) moved to home.packages for macOS with copyApps.
-  # See hosts/macbook-m4/home.nix
-
-  # ==========================================================================
-  # Python Tools
-  # ==========================================================================
-  # Type checking and analysis tools for Python development.
-  pyright # Static type checker for Python
-
-  # Single Python interpreter (python314) — python312 removed (no unique users
-  # across the nix repos; `uv run --python 3.12` covers ad-hoc 3.12 needs).
-  # NOTE: python3 cannot be overridden at the overlay level on Darwin because
-  # it's used by stdenv bootstrapping. Reference python314 explicitly.
-
-  # uv: For running alternate Python versions on-demand (EOL or pinned)
-  # Usage: uv run --python 3.9 pytest tests/
-  uv
-
-  # ==========================================================================
-  # Python Environment
-  # ==========================================================================
-  # Unified Python environment for credential/secret scripts, GitHub automation,
-  # and Claude document-skills runtime. All modules importable from one interpreter.
-  # Note: this repo's flake also exports `grip` as a standalone package
-  # (nix run .#grip) via overlays/python-packages.nix + packages/grip.nix.
-  (python314.withPackages (ps: [
-    ps.cryptography # Cryptographic recipes and primitives
-    ps.pygithub # GitHub API v3 Python library
-    ps.pyyaml # YAML parser/emitter for Python automation
-    # Claude document-skills dependencies
-    ps.pandas # xlsx: data manipulation
-    ps.openpyxl # xlsx: formulas and formatting
-    ps.pillow # pptx: thumbnail grids
-    ps.markitdown # pptx: text extraction
-  ]))
-]
+let
+  core = import ./packages/core.nix { inherit pkgs; };
+  security = import ./packages/security.nix { inherit pkgs; };
+  cloud = import ./packages/cloud.nix { inherit pkgs; };
+  documentProcessing = import ./packages/document-processing.nix { inherit pkgs lib; };
+  pythonEnv = import ./packages/python-env.nix { inherit pkgs; };
+  googleWorkspace = import ./packages/google-workspace.nix { inherit pkgs; };
+in
+core
+++ security
+++ cloud
+++ lib.optionals features.documentSkills.enable documentProcessing
+++ lib.optionals features.heavyPython.enable pythonEnv
+++ lib.optionals features.googleWorkspace.enable googleWorkspace

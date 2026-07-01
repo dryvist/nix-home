@@ -59,6 +59,28 @@ sharedModules = [ nix-home.homeManagerModules.default ];
 | `devShells.default` | Nix development tools |
 | `formatter` | nixfmt-tree |
 
+### Profiles
+
+One codebase drives both a full daily driver and a headless server via a **host
+profile**. A consuming host picks a preset (typically in nix-darwin):
+
+```nix
+home-profile.preset = "server"; # headless: no VS Code, document-skills, GUI pinentry
+# home-profile.preset = "workstation"; # default: everything on
+```
+
+Presets only set feature defaults, so any individual feature can be overridden
+regardless of preset:
+
+```nix
+home-profile.preset = "server";
+home-profile.features.vscode.enable = true; # keep VS Code on this box anyway
+```
+
+Feature toggles: `vscode`, `documentSkills`, `heavyPython`, `googleWorkspace`,
+`sessionLogging`, `pinentryGui`. The `server` preset also switches gpg-agent to
+a TTY pinentry so signing works without a GUI.
+
 ## Monitoring
 
 The `modules/monitoring/` module deploys a Kubernetes-based observability stack for
