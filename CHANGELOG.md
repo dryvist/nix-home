@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/dryvist/nix-home/compare/v1.28.4...v1.29.0) (2026-07-01)
+
+
+### Features
+
+* **profiles:** workstation/server host profiles for two-machine setup ([#325](https://github.com/dryvist/nix-home/issues/325)) ([ce50efa](https://github.com/dryvist/nix-home/commit/ce50efa093b72139f5927c530a4cf5444f85f495))
+
 ## [1.28.4](https://github.com/dryvist/nix-home/compare/v1.28.3...v1.28.4) (2026-07-01)
 
 
