@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.1](https://github.com/dryvist/nix-home/compare/v1.29.0...v1.29.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* point callers at renamed cc- reusable workflows ([cdb60df](https://github.com/dryvist/nix-home/commit/cdb60df6c8c7185eb355b9275d6f48561010a3cf))
+
 ## [1.29.0](https://github.com/dryvist/nix-home/compare/v1.28.4...v1.29.0) (2026-07-01)
 
 
