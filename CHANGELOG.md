@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.0](https://github.com/dryvist/nix-home/compare/v1.30.0...v1.31.0) (2026-07-03)
+
+
+### Features
+
+* add issue-backlog-sweep caller ([#339](https://github.com/dryvist/nix-home/issues/339)) ([47c8496](https://github.com/dryvist/nix-home/commit/47c849692ace496e1b32e4fef80d0fad2a5e36f8))
+
 ## [1.30.0](https://github.com/dryvist/nix-home/compare/v1.29.2...v1.30.0) (2026-07-03)
 
 
