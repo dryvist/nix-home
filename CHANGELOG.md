@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.0](https://github.com/dryvist/nix-home/compare/v1.29.2...v1.30.0) (2026-07-03)
+
+
+### Features
+
+* add AI PR care caller (dep review + release highlights) ([#336](https://github.com/dryvist/nix-home/issues/336)) ([aafdc83](https://github.com/dryvist/nix-home/commit/aafdc83e82786acc25c496813c61f4e863d36f91))
+
 ## [1.29.2](https://github.com/dryvist/nix-home/compare/v1.29.1...v1.29.2) (2026-07-02)
 
 
