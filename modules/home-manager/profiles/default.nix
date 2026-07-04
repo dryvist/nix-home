@@ -49,7 +49,6 @@ in
       documentSkills.enable = mkFeature "Claude document-skills runtime (docx/pptx npm deps + pandoc/poppler)";
       heavyPython.enable = mkFeature "the python314.withPackages document env (pandas/pillow/markitdown)";
       googleWorkspace.enable = mkFeature "Google Workspace CLIs (gmailctl, rclone, gdrive3)";
-      sessionLogging.enable = mkFeature "terminal session logging via script(1)";
       pinentryGui.enable = mkFeature "GUI pinentry (pinentry-mac); disable for headless TTY pinentry";
       awsConfig.enable = mkFeature "AWS ~/.aws/config generation from the macOS Keychain at shell init";
     };
@@ -63,7 +62,6 @@ in
     documentSkills.enable = lib.mkDefault workstation;
     heavyPython.enable = lib.mkDefault workstation;
     googleWorkspace.enable = lib.mkDefault workstation;
-    sessionLogging.enable = lib.mkDefault workstation;
     pinentryGui.enable = lib.mkDefault workstation;
     awsConfig.enable = lib.mkDefault workstation;
   };

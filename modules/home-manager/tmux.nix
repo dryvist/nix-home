@@ -5,6 +5,12 @@
 
 { pkgs, ... }:
 
+let
+  # Auto-start script shipped by the tmux-logging plugin itself — a vendored
+  # script, not a custom one. A freshly created pane is never already logging,
+  # so invoking the toggle once per new pane always STARTS logging.
+  tmuxLoggingToggle = "${pkgs.tmuxPlugins.logging}/share/tmux-plugins/logging/scripts/toggle_logging.sh";
+in
 {
   programs.tmux = {
     enable = true;
@@ -33,6 +39,17 @@
           set -g @continuum-save-interval '15'
         '';
       }
+      {
+        plugin = logging;
+        # Automatic session logging: the plugin strips ANSI codes and writes one
+        # timestamped file per pane to @logging-path. Panes are auto-started via
+        # the hooks in extraConfig below. Also binds manual controls
+        # (prefix+Shift-P toggle, prefix+Alt-p screen capture, prefix+Alt-Shift-p
+        # save full history).
+        extraConfig = ''
+          set -g @logging-path "$HOME/logs"
+        '';
+      }
       yank
     ];
 
@@ -58,6 +75,17 @@
       set -g status-right " #H  %H:%M "
       set -g status-left-length 20
       set -g status-right-length 30
+
+      # --- Automatic session logging (tmux-logging plugin) ---
+      # Start logging on every new pane using the plugin's own toggle script.
+      # A new pane is never already logging, so toggle == start (verified: no
+      # double-fire between these hooks). One ANSI-stripped log per pane -> ~/logs.
+      set-hook -g after-new-session  'run-shell "${tmuxLoggingToggle}"'
+      set-hook -g after-new-window   'run-shell "${tmuxLoggingToggle}"'
+      set-hook -g after-split-window 'run-shell "${tmuxLoggingToggle}"'
     '';
   };
+
+  # tmux-logging writes to @logging-path (~/logs); ensure the directory exists.
+  home.file."logs/.keep".text = "";
 }

@@ -140,8 +140,6 @@ in
         ) "source ${awsConfig.initScript}"}
         source ${./zsh/git-functions.zsh}
         source ${./zsh/docker-functions.zsh}
-        source ${./zsh/process-cleanup.zsh}
-        ${lib.optionalString features.sessionLogging.enable "source ${./zsh/session-logging.zsh}  # MUST be last"}
       '';
     };
 
