@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0](https://github.com/dryvist/nix-home/compare/v1.31.0...v1.32.0) (2026-07-04)
+
+
+### Features
+
+* **profiles:** gate aws-config keychain generator behind server preset ([#341](https://github.com/dryvist/nix-home/issues/341)) ([77e34c3](https://github.com/dryvist/nix-home/commit/77e34c31d7ed06fe643ee77a8f9f4787ad30499c))
+
 ## [1.31.0](https://github.com/dryvist/nix-home/compare/v1.30.0...v1.31.0) (2026-07-03)
 
 
