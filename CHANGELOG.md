@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.1](https://github.com/dryvist/nix-home/compare/v1.33.0...v1.33.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* nixfmt-rfc-style -&gt; nixfmt (nixpkgs deprecation alias) ([#343](https://github.com/dryvist/nix-home/issues/343)) ([557e343](https://github.com/dryvist/nix-home/commit/557e3434407704cf4b08bf05f86641f1e84209c2))
+
 ## [1.33.0](https://github.com/dryvist/nix-home/compare/v1.32.0...v1.33.0) (2026-07-04)
 
 
