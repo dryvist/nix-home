@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.0](https://github.com/dryvist/nix-home/compare/v1.32.0...v1.33.0) (2026-07-04)
+
+
+### Features
+
+* enable issues:labeled trigger to close the auto-resolve loop ([#344](https://github.com/dryvist/nix-home/issues/344)) ([2f600a3](https://github.com/dryvist/nix-home/commit/2f600a35fd5d75e82f0c117bd1ecb99c64d01af4))
+
 ## [1.32.0](https://github.com/dryvist/nix-home/compare/v1.31.0...v1.32.0) (2026-07-04)
 
 
