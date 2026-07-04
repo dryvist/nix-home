@@ -9,13 +9,13 @@
   overlay,
 }:
 {
-  # Check Nix formatting with nixfmt-rfc-style
+  # Check Nix formatting with nixfmt
   # Uses treefmt configured with nixfmt formatter
   # Copy source to writable $TMPDIR since treefmt needs to write temp files
   formatting =
     pkgs.runCommand "check-formatting"
       {
-        nativeBuildInputs = [ pkgs.nixfmt-rfc-style ];
+        nativeBuildInputs = [ pkgs.nixfmt ];
       }
       ''
         cp -r ${src} $TMPDIR/src

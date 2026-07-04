@@ -48,11 +48,11 @@
         }
         {
           id = "nix-fmt-check";
-          name = "Nix formatting (nixfmt-rfc-style)";
+          name = "Nix formatting (nixfmt)";
           command = "nixfmt --check";
           description = "Formats Nix code to RFC style";
           fileTypes = [ "nix" ];
-          package = "pkgs.nixfmt-rfc-style";
+          package = "pkgs.nixfmt";
         }
         {
           id = "markdownlint-cli2";
@@ -191,10 +191,10 @@
       language = "Rust";
     };
     nixfmtRfcStyle = {
-      name = "nixfmt-rfc-style";
+      name = "nixfmt";
       description = "Opinionated Nix formatter following RFC style";
       homepage = "https://github.com/NixOS/nixfmt";
-      package = "pkgs.nixfmt-rfc-style";
+      package = "pkgs.nixfmt";
       language = "Rust";
     };
     markdownlintCli2 = {

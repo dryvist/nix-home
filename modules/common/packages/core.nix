@@ -74,7 +74,7 @@ with pkgs;
   markdownlint-cli2 # Markdown linter (README, docs exist everywhere)
 
   # Nix (2025 official tooling)
-  nixfmt-rfc-style # Official Nix formatter (RFC 166, v1.1.0+)
+  nixfmt # Official Nix formatter (RFC 166, v1.1.0+; formerly pkgs.nixfmt-rfc-style)
   statix # Nix linter - catches anti-patterns
   deadnix # Find unused code in .nix files
   treefmt # Multi-language formatter runner
