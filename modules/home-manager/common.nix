@@ -135,7 +135,9 @@ in
         export PATH="$HOME/.local/bin:$PATH"
 
         # --- Shell modules ---
-        ${lib.optionalString pkgs.stdenv.isDarwin "source ${awsConfig.initScript}"}
+        ${lib.optionalString (
+          pkgs.stdenv.isDarwin && features.awsConfig.enable
+        ) "source ${awsConfig.initScript}"}
         source ${./zsh/git-functions.zsh}
         source ${./zsh/docker-functions.zsh}
         source ${./zsh/process-cleanup.zsh}

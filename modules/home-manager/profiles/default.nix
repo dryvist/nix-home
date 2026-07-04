@@ -51,6 +51,7 @@ in
       googleWorkspace.enable = mkFeature "Google Workspace CLIs (gmailctl, rclone, gdrive3)";
       sessionLogging.enable = mkFeature "terminal session logging via script(1)";
       pinentryGui.enable = mkFeature "GUI pinentry (pinentry-mac); disable for headless TTY pinentry";
+      awsConfig.enable = mkFeature "AWS ~/.aws/config generation from the macOS Keychain at shell init";
     };
   };
 
@@ -64,5 +65,6 @@ in
     googleWorkspace.enable = lib.mkDefault workstation;
     sessionLogging.enable = lib.mkDefault workstation;
     pinentryGui.enable = lib.mkDefault workstation;
+    awsConfig.enable = lib.mkDefault workstation;
   };
 }
