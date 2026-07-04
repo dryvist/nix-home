@@ -79,10 +79,15 @@ in
       GIT_HOME_PUBLIC = "${config.home.homeDirectory}/git/public";
       GIT_HOME_PRIVATE = "${config.home.homeDirectory}/git/dryvist-private";
     }
-    // lib.optionalAttrs (pkgs.stdenv.isDarwin && config.home-profile.preset == "workstation") {
-      # Workstation-only: external HuggingFace volume + local build-cache tuning.
-      # A headless server has neither the /Volumes mount nor the sccache workload.
+    // lib.optionalAttrs pkgs.stdenv.isDarwin {
+      # Every Mac keeps its HuggingFace cache on a dedicated APFS volume (created
+      # by nix-darwin apfs-volumes, identical across hosts) so the CLI, the model
+      # server, and disk cleanup all reference one path per machine.
       HF_HOME = "/Volumes/HuggingFace";
+    }
+    // lib.optionalAttrs (pkgs.stdenv.isDarwin && config.home-profile.preset == "workstation") {
+      # Workstation-only: local build-cache tuning; a headless server has no
+      # sccache workload.
       SCCACHE_CACHE_SIZE = "5G";
     };
 
