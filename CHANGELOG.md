@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/dryvist/nix-home/compare/v1.33.1...v1.34.0) (2026-07-05)
+
+
+### Features
+
+* **darwin:** set HF_HOME on all Macs, not just workstations ([#349](https://github.com/dryvist/nix-home/issues/349)) ([8725a98](https://github.com/dryvist/nix-home/commit/8725a9897e5fcb2797f79d1d76bd45f56bb59dbf))
+
 ## [1.33.1](https://github.com/dryvist/nix-home/compare/v1.33.0...v1.33.1) (2026-07-04)
 
 
