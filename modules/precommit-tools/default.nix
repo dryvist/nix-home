@@ -61,7 +61,7 @@
           description = "Lints markdown files; auto-fixes enabled in config";
           fileTypes = [ "markdown" ];
           package = "pkgs.markdownlint-cli2";
-          configFile = ".markdownlint-cli2.jsonc";
+          configFile = ".markdownlint-cli2.yaml";
         }
       ];
     };

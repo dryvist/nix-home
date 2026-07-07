@@ -126,8 +126,12 @@ Data flows through Cribl Stream to Splunk (`index=os`,
 Install the pack:
 
 ```bash
-sudo curl -L -o /opt/cribl/state/packs/cc-edge-the-mac-pack-io.crbl https://github.com/JacobPEvans/cc-edge-the-mac-pack-io/releases/latest/download/cc-edge-the-mac-pack-io.crbl
-curl -X POST http://localhost:9000/api/v1/packs -H "Content-Type: application/json" -d '{"source":"cc-edge-the-mac-pack-io.crbl"}'
+sudo curl -L \
+  -o /opt/cribl/state/packs/cc-edge-the-mac-pack-io.crbl \
+  https://github.com/JacobPEvans/cc-edge-the-mac-pack-io/releases/latest/download/cc-edge-the-mac-pack-io.crbl
+curl -X POST http://localhost:9000/api/v1/packs \
+  -H "Content-Type: application/json" \
+  -d '{"source":"cc-edge-the-mac-pack-io.crbl"}'
 curl -X POST http://localhost:9000/api/v1/version/commit
 curl -X POST http://localhost:9000/api/v1/system/settings/restart
 ```
@@ -137,7 +141,7 @@ curl -X POST http://localhost:9000/api/v1/system/settings/restart
 Native macOS Edge connects to Cribl Stream in OrbStack via NodePort:
 
 | Target | URL |
-|--------|-----|
+| --- | --- |
 | Stream HEC | `http://localhost:30088/services/collector` |
 | Stream UI | `http://localhost:30900` |
 
@@ -146,7 +150,7 @@ Configure the Edge output to use the Stream HEC URL above with token `edge-inter
 ## Ports
 
 | Port | Purpose |
-|------|---------|
+| --- | --- |
 | 9420 | API / OTEL input |
 | 9000 | Web UI |
 

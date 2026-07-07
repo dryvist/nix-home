@@ -56,7 +56,9 @@ sudo chmod 755 /Applications/CriblEdge.app/Contents/MacOS/cribl
 
 **Result**: Service crashed with "Cannot find module 'aws-sdk/global.bundle'"
 
-**Why it failed**: The cribl binary expects supporting files (*.bundle.js, @aws-sdk/, etc.) in the same directory. It also tries to write logs relative to its location.
+**Why it failed**: The cribl binary expects supporting files
+(*.bundle.js, @aws-sdk/, etc.) in the same directory. It also tries to
+write logs relative to its location.
 
 ---
 
