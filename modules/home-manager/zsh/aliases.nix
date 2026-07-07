@@ -36,8 +36,11 @@
   # ===========================================================================
   # REQUIRES SUDO: darwin-rebuild modifies system-level configurations
   # This activates both system (nix-darwin) and user (home-manager) configs
-  # Usage: d-r            # darwin-rebuild switch (standard rebuild)
-  d-r = "sudo darwin-rebuild switch --flake .";
+  # Pulls the canonical remote flake so a rebuild never depends on local
+  # checkout state; darwin-rebuild resolves darwinConfigurations.<hostName>
+  # from the machine's hostname, so one alias serves every host.
+  # Usage: d-r            # darwin-rebuild switch from github:dryvist/nix-darwin
+  d-r = "sudo darwin-rebuild switch --flake github:dryvist/nix-darwin --refresh --no-write-lock-file --print-build-logs";
 
   # NO SUDO: Updates flake.lock to latest nixpkgs (must commit before d-r)
   # Usage: nf-u            # update flake in current directory
