@@ -11,7 +11,7 @@ Switch machines? One command. Everything's back.
 ## What it manages
 
 | Tool | What you get |
-|------|-------------|
+| --- | --- |
 | **Git** | Aliases, GPG signing, hooks, merge drivers |
 | **Zsh** | Oh-my-zsh, aliases, autosuggestions, syntax highlighting, custom functions |
 | **VS Code** | Writable settings merge, extensions, keybindings |
@@ -52,7 +52,7 @@ sharedModules = [ nix-home.homeManagerModules.default ];
 ### Flake outputs
 
 | Output | Description |
-|--------|-------------|
+| --- | --- |
 | `homeManagerModules.default` | Full cross-platform module |
 | `overlays.default` | Python package overrides |
 | `checks` | Formatting, linting, dead code, module eval (4 systems) |
