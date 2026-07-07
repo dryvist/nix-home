@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.0](https://github.com/dryvist/nix-home/compare/v1.34.1...v1.35.0) (2026-07-07)
+
+
+### Features
+
+* **zsh:** d-r rebuilds from the canonical remote flake ([#355](https://github.com/dryvist/nix-home/issues/355)) ([7f89b5d](https://github.com/dryvist/nix-home/commit/7f89b5d3cc3d90f08cab4539a2803205ec26d146))
+
 ## [1.34.1](https://github.com/dryvist/nix-home/compare/v1.34.0...v1.34.1) (2026-07-06)
 
 
