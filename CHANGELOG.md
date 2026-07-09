@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.1](https://github.com/dryvist/nix-home/compare/v1.35.0...v1.35.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* **deps:** refresh gh-aw action SHA pins [aw:gh-aw-pin-refresh] ([#361](https://github.com/dryvist/nix-home/issues/361)) ([ecfd293](https://github.com/dryvist/nix-home/commit/ecfd29396908ac8d57c9345effb477d0c32df2ee))
+
 ## [1.35.0](https://github.com/dryvist/nix-home/compare/v1.34.1...v1.35.0) (2026-07-07)
 
 
