@@ -104,30 +104,37 @@
     # Git-flow branch model, read by git-flow-next (installed in
     # packages/core.nix). See the git-flow rule:
     # https://github.com/JacobPEvans/ai-assistant-instructions/blob/main/agentsmd/rules/git-flow.md
-    gitflow.branch = {
-      main = {
+    #
+    # home-manager's git settings type only nests section -> subsection -> key
+    # (3 levels), so each `gitflow.branch.<name>` subsection is written as a
+    # single quoted attribute name here — renders as `[gitflow "branch.main"]`,
+    # which is exactly what the dotted key `gitflow.branch.main.type` (as used
+    # in git-flow-next's own docs) parses to under git's own section/subsection
+    # rules (subsection is just a literal string, dots and all).
+    gitflow = {
+      "branch.main" = {
         type = "base";
         upstreamStrategy = "merge"; # main takes merge commits only, never squash/rebase
       };
-      develop = {
+      "branch.develop" = {
         type = "base";
         parent = "main";
         upstreamStrategy = "squash"; # ordinary feature PRs squash-merge into develop
         autoUpdate = true;
       };
-      feature = {
+      "branch.feature" = {
         type = "topic";
         parent = "develop";
         prefix = "feature/";
       };
-      release = {
+      "branch.release" = {
         type = "topic";
         parent = "main"; # release branches finish (merge-commit) into main
         startPoint = "develop"; # but branch off develop
         prefix = "release/";
         tag = true;
       };
-      hotfix = {
+      "branch.hotfix" = {
         type = "topic";
         parent = "main";
         prefix = "hotfix/";
