@@ -17,7 +17,7 @@
 
 let
   # renovate: datasource=npm depName=docx
-  docxVersion = "9.6.1";
+  docxVersion = "9.7.1";
   # renovate: datasource=npm depName=pptxgenjs
   pptxgenjsVersion = "4.0.1";
 
