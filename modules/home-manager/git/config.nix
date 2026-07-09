@@ -111,21 +111,26 @@
     # which is exactly what the dotted key `gitflow.branch.main.type` (as used
     # in git-flow-next's own docs) parses to under git's own section/subsection
     # rules (subsection is just a literal string, dots and all).
+    # upstreamStrategy belongs on the CHILD branch type, not the parent — it's
+    # how that branch type merges into its own `parent` on finish (see
+    # git-flow-next's cmd/finish.go: it reads the branch-being-finished's own
+    # UpstreamStrategy as the merge strategy into branchConfig.Parent).
     gitflow = {
       "branch.main" = {
         type = "base";
-        upstreamStrategy = "merge"; # main takes merge commits only, never squash/rebase
+        # No parent, so no upstreamStrategy — main only ever receives
+        # merge-commit PRs, enforced by GitHub branch protection, not this file.
       };
       "branch.develop" = {
         type = "base";
         parent = "main";
-        upstreamStrategy = "squash"; # ordinary feature PRs squash-merge into develop
         autoUpdate = true;
       };
       "branch.feature" = {
         type = "topic";
         parent = "develop";
         prefix = "feature/";
+        upstreamStrategy = "squash"; # ordinary feature PRs squash-merge into develop
       };
       "branch.release" = {
         type = "topic";
@@ -133,12 +138,14 @@
         startPoint = "develop"; # but branch off develop
         prefix = "release/";
         tag = true;
+        upstreamStrategy = "merge";
       };
       "branch.hotfix" = {
         type = "topic";
         parent = "main";
         prefix = "hotfix/";
         tag = true;
+        upstreamStrategy = "merge";
       };
     };
 
