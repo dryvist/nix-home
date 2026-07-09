@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.0](https://github.com/dryvist/nix-home/compare/v1.35.1...v1.36.0) (2026-07-09)
+
+
+### Features
+
+* **git:** configure global git-flow-next branch model ([#363](https://github.com/dryvist/nix-home/issues/363)) ([0fdf073](https://github.com/dryvist/nix-home/commit/0fdf0731221a79c20e0b3e4a40c0dff2ee4aa858))
+
 ## [1.35.1](https://github.com/dryvist/nix-home/compare/v1.35.0...v1.35.1) (2026-07-09)
 
 
