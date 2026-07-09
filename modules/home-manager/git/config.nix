@@ -101,6 +101,40 @@
     # Sign all tags (security policy)
     tag.gpgSign = true;
 
+    # Git-flow branch model, read by git-flow-next (installed in
+    # packages/core.nix). See the git-flow rule:
+    # https://github.com/JacobPEvans/ai-assistant-instructions/blob/main/agentsmd/rules/git-flow.md
+    gitflow.branch = {
+      main = {
+        type = "base";
+        upstreamStrategy = "merge"; # main takes merge commits only, never squash/rebase
+      };
+      develop = {
+        type = "base";
+        parent = "main";
+        upstreamStrategy = "squash"; # ordinary feature PRs squash-merge into develop
+        autoUpdate = true;
+      };
+      feature = {
+        type = "topic";
+        parent = "develop";
+        prefix = "feature/";
+      };
+      release = {
+        type = "topic";
+        parent = "main"; # release branches finish (merge-commit) into main
+        startPoint = "develop"; # but branch off develop
+        prefix = "release/";
+        tag = true;
+      };
+      hotfix = {
+        type = "topic";
+        parent = "main";
+        prefix = "hotfix/";
+        tag = true;
+      };
+    };
+
     # Helpful features
     help.autocorrect = 10; # Auto-correct typos after 1 second
     status.showStash = true; # Show stash count in git status
