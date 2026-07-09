@@ -101,6 +101,54 @@
     # Sign all tags (security policy)
     tag.gpgSign = true;
 
+    # Git-flow branch model, read by git-flow-next (installed in
+    # packages/core.nix). See the git-flow rule:
+    # https://github.com/JacobPEvans/ai-assistant-instructions/blob/main/agentsmd/rules/git-flow.md
+    #
+    # home-manager's git settings type only nests section -> subsection -> key
+    # (3 levels), so each `gitflow.branch.<name>` subsection is written as a
+    # single quoted attribute name here — renders as `[gitflow "branch.main"]`,
+    # which is exactly what the dotted key `gitflow.branch.main.type` (as used
+    # in git-flow-next's own docs) parses to under git's own section/subsection
+    # rules (subsection is just a literal string, dots and all).
+    # upstreamStrategy belongs on the CHILD branch type, not the parent — it's
+    # how that branch type merges into its own `parent` on finish (see
+    # git-flow-next's cmd/finish.go: it reads the branch-being-finished's own
+    # UpstreamStrategy as the merge strategy into branchConfig.Parent).
+    gitflow = {
+      "branch.main" = {
+        type = "base";
+        # No parent, so no upstreamStrategy — main only ever receives
+        # merge-commit PRs, enforced by GitHub branch protection, not this file.
+      };
+      "branch.develop" = {
+        type = "base";
+        parent = "main";
+        autoUpdate = true;
+      };
+      "branch.feature" = {
+        type = "topic";
+        parent = "develop";
+        prefix = "feature/";
+        upstreamStrategy = "squash"; # ordinary feature PRs squash-merge into develop
+      };
+      "branch.release" = {
+        type = "topic";
+        parent = "main"; # release branches finish (merge-commit) into main
+        startPoint = "develop"; # but branch off develop
+        prefix = "release/";
+        tag = true;
+        upstreamStrategy = "merge";
+      };
+      "branch.hotfix" = {
+        type = "topic";
+        parent = "main";
+        prefix = "hotfix/";
+        tag = true;
+        upstreamStrategy = "merge";
+      };
+    };
+
     # Helpful features
     help.autocorrect = 10; # Auto-correct typos after 1 second
     status.showStash = true; # Show stash count in git status
