@@ -70,6 +70,20 @@ in
       # True color support (Tc is the tmux-specific true color flag)
       set -ga terminal-overrides ",*256color*:Tc"
 
+      # --- Mobile / Termius ergonomics ---
+      # OSC52: text yanked in tmux lands in the phone's clipboard over SSH.
+      set -g set-clipboard on
+      # Phone soft-keyboards are slow; widen the repeat window so prefix+H/J/K/L
+      # pane resizes chain without re-pressing the prefix each time.
+      set -g repeat-time 600
+      # The Termius keyboard bar covers the bottom rows — keep the status line
+      # (and its window list) visible at the top instead.
+      set -g status-position top
+      # A closed session drops you to another instead of killing the SSH attach.
+      set -g detach-on-destroy off
+      # Match pane numbering to the base-1 window index for muscle-memory parity.
+      setw -g pane-base-index 1
+
       # Minimal status bar
       set -g status-left " [#S] "
       set -g status-right " #H  %H:%M "
