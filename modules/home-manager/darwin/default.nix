@@ -11,5 +11,6 @@
 {
   imports = [
     ./nix-activation-recovery.nix
+    ./tmux-session-autostart.nix
   ];
 }
