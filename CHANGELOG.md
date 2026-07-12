@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.37.0](https://github.com/dryvist/nix-home/compare/v1.36.0...v1.37.0) (2026-07-12)
+
+
+### Features
+
+* **aws:** serve tf-proxmox creds via OpenBao credential_process ([#368](https://github.com/dryvist/nix-home/issues/368)) ([4df7a40](https://github.com/dryvist/nix-home/commit/4df7a40bdf69c2bf62304e8f1ff03280c5b5dfed))
+* **tmux:** mobile/Termius ergonomics ([#365](https://github.com/dryvist/nix-home/issues/365)) ([e90b0d9](https://github.com/dryvist/nix-home/commit/e90b0d9c3976669a087105e4e82bbf7af6dab3f3))
+
+
+### Bug Fixes
+
+* point GIT_HOME_PRIVATE at the new private workspace root ([#366](https://github.com/dryvist/nix-home/issues/366)) ([5545404](https://github.com/dryvist/nix-home/commit/5545404f8be6b7288177d12d16443a6f9d62420f))
+* **tmux-autostart:** move launchd logs from /tmp to ~/Library/Logs ([#369](https://github.com/dryvist/nix-home/issues/369)) ([1501f3d](https://github.com/dryvist/nix-home/commit/1501f3d8fbb2a91da1b64f5814e093216946cfaa))
+
 ## [1.36.0](https://github.com/dryvist/nix-home/compare/v1.35.1...v1.36.0) (2026-07-09)
 
 
