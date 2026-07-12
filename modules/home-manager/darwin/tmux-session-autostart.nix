@@ -38,8 +38,10 @@ in
         RunAtLoad = true;
         KeepAlive = false;
 
-        StandardOutPath = "/tmp/tmux-cc-session-autostart-stdout.log";
-        StandardErrorPath = "/tmp/tmux-cc-session-autostart-stderr.log";
+        # ~/Library/Logs, not /tmp: a world-writable dir with static names
+        # invites symlink attacks, and the logs vanish on reboot.
+        StandardOutPath = "${config.home.homeDirectory}/Library/Logs/tmux-cc-session-autostart.log";
+        StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/tmux-cc-session-autostart.error.log";
       };
     };
   };
