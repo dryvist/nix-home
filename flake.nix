@@ -76,7 +76,7 @@
       #
       # Scoped to x86_64-linux only so `nix flake check --all-systems` succeeds
       # from a single linux runner. All checks here are either source-only
-      # (formatting, statix, deadnix — identical source across
+      # (formatting, statix, deadnix, shellcheck — identical source across
       # systems) or wrap evaluation in a writeText (module-eval), so running
       # them once is sufficient and produces a derivation buildable on the
       # runner. Other systems intentionally have no `checks` entries.
