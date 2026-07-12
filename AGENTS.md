@@ -12,7 +12,7 @@ Cross-platform home-manager modules for development environment tools.
 ## Build Validation
 
 ```bash
-nix flake check    # Runs formatting, statix, deadnix, shellcheck checks
+nix flake check    # Runs formatting, statix, deadnix checks
 nix fmt            # Fix formatting
 ```
 
@@ -23,7 +23,7 @@ nix fmt            # Fix formatting
 - User shell config (zsh, git, direnv)
 - Editor settings (VS Code, Vim config)
 - CLI dev tools (bat, ripgrep, jq, fzf, etc.)
-- Linters and formatters (shellcheck, statix, deadnix)
+- Linters and formatters (statix, deadnix)
 - Programming languages (Python, Bun)
 - Security tools (password manager CLIs, aws-vault)
 - macOS user-level LaunchAgents (under `modules/home-manager/darwin/`)
