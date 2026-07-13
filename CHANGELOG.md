@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.1](https://github.com/dryvist/nix-home/compare/v1.37.0...v1.37.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* **tmux:** robust autostart logging (log paths + PATH for run-shell hooks) ([#372](https://github.com/dryvist/nix-home/issues/372)) ([bf6a4f8](https://github.com/dryvist/nix-home/commit/bf6a4f8bf27288f00a0e78d8313c0d3a9ce08634))
+
 ## [1.37.0](https://github.com/dryvist/nix-home/compare/v1.36.0...v1.37.0) (2026-07-12)
 
 
