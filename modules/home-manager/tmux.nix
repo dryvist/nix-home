@@ -9,7 +9,13 @@ let
   # Auto-start script shipped by the tmux-logging plugin itself — a vendored
   # script, not a custom one. A freshly created pane is never already logging,
   # so invoking the toggle once per new pane always STARTS logging.
-  tmuxLoggingToggle = "${pkgs.tmuxPlugins.logging}/share/tmux-plugins/logging/scripts/toggle_logging.sh";
+  #
+  # The plugin scripts shell out to bare `tmux`, but a run-shell hook inherits
+  # the tmux SERVER's minimal PATH (/usr/bin:/bin:/usr/sbin:/sbin) — which lacks
+  # the nix-installed tmux. Without the prepend, every internal `tmux` call is a
+  # 127 "command not found", and that 127 propagates out of `tmux new-session`
+  # (tripping `set -o errexit` in callers such as the continuity resume script).
+  tmuxLoggingToggle = "PATH=${pkgs.tmux}/bin:\$PATH ${pkgs.tmuxPlugins.logging}/share/tmux-plugins/logging/scripts/toggle_logging.sh";
 in
 {
   programs.tmux = {
