@@ -1,47 +1,20 @@
-# GitHub Copilot Instructions — terraform-proxmox
+# GitHub Copilot Instructions — nix-home
 
-## Repository Purpose
+Cross-platform home-manager modules for developer shell configuration and CLI
+tools. Keep modules flakes-only and compatible with Darwin and Linux.
 
-Infrastructure as code for provisioning VMs and containers on Proxmox VE using
-OpenTofu + Terragrunt. Downstream repos (ansible-proxmox-apps, ansible-splunk) consume
-the outputs.
+## Boundaries
 
-## CRITICAL: OpenTofu, Not Terraform
+- User shell, editor, CLI, language, and security tooling belongs here.
+- System-level macOS configuration belongs in `nix-darwin`.
+- AI tools belong in `nix-ai`.
+- Reusable project development shells belong in `nix-devenv`.
 
-This repo uses **OpenTofu** (`tofu`), not Terraform. Never generate `terraform` CLI commands.
-The binary is `tofu`. All HCL is OpenTofu-compatible.
+## Validation
 
-## Running Commands
+Run `nix flake check` for every change and use `nix fmt` for Nix formatting.
+Never use `nix-env` or commit directly to a default branch.
 
-All commands must be wrapped with aws-vault and Doppler:
-
-```bash
-aws-vault exec terraform -- doppler run -- terragrunt <COMMAND>
-```
-
-For plan/apply:
-
-```bash
-aws-vault exec terraform -- doppler run -- terragrunt plan
-aws-vault exec terraform -- doppler run -- terragrunt apply
-```
-
-## Technology Stack
-
-- **OpenTofu** (not Terraform) — IaC engine
-- **Terragrunt** — wrapper for DRY config and remote state
-- **Doppler** — secrets management (runtime env vars)
-- **aws-vault** — AWS credentials
-- **SOPS/age** — encrypted secrets in repo (`terraform.sops.json`)
-
-## HCL Conventions
-
-- Module inputs in `variables.tf`, outputs in `outputs.tf`, providers in `providers.tf`
-- Use `deployment.json` for environment-specific non-secret config
-- Use `terraform.sops.json` for encrypted secrets (edit with `sops terraform.sops.json`)
-- Terragrunt config in `terragrunt.hcl` at each module root
-
-## CI
-
-The `Terraform CI` workflow validates HCL syntax and runs `tofu validate`.
-Fix all validation errors before merging.
+Infrastructure plans and applies run in homelab-hosted Terrakube workspaces.
+OpenBao supplies their short-lived credentials through the native Terrakube
+integration; local home-manager configuration must not embed workspace secrets.
