@@ -28,8 +28,8 @@
 #   Imports:
 #     - dryvist/.github/.github/workflows/shared/repo-health-audit-config.md@main
 #   Includes:
-#     - /tmp/gh-aw-include-3779244907.md
-#     - /tmp/gh-aw-include-783144904.md
+#     - /tmp/gh-aw-include-1153718079.md
+#     - /tmp/gh-aw-include-2676381274.md
 #
 # Secrets used:
 #   - COPILOT_GITHUB_TOKEN
@@ -214,7 +214,7 @@ jobs:
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           cat << 'GH_AW_PROMPT_5a33d967ba9eb2cc_EOF'
           </system>
-          {{#runtime-import .github/e3934d9dc2b63d1f29e0afa212ad0c1612d307f9/.github_workflows_shared_repo-health-audit-config.md}}
+          {{#runtime-import .github/82d4398a34461ca57fb81e896d50e9bd1c38bb66/.github_workflows_shared_repo-health-audit-config.md}}
           {{#runtime-import .github/workflows/repo-health-audit.md}}
           GH_AW_PROMPT_5a33d967ba9eb2cc_EOF
           } > "$GH_AW_PROMPT"
