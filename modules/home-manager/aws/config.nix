@@ -67,9 +67,10 @@ let
   # secrets engine (dynamic STS, assumed_role). A project listed here gets a
   # `credential_process` profile instead of source_profile/role_arn — the
   # wrapper (nix-darwin `openbao-aws-creds`, on PATH system-wide) reads the
-  # terraform-apply AppRole from openbao.keychain-db and mints short-lived
-  # creds on demand, so no static AWS key exists on the machine. Move a
-  # project here once its aws/roles/<name> exists in OpenBao.
+  # terraform-apply AppRole secret-zero from the ambient environment (injected
+  # by running terragrunt under `doppler run`) and mints short-lived creds on
+  # demand, so no static AWS key exists on the machine. Move a project here
+  # once its aws/roles/<name> exists in OpenBao.
   openbaoStsProjects = {
     proxmox = "openbao-aws-creds tf-proxmox";
   };
