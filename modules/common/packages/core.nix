@@ -66,6 +66,7 @@ with pkgs;
   # pre-commit hooks and should be available on any development machine.
 
   # Shell
+  shellcheck # Shell script static analysis (POSIX, bash)
   shfmt # Shell script formatter
 
   # Documentation
