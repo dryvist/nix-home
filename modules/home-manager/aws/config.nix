@@ -96,7 +96,21 @@ let
   tfProfiles =
     (mkTfProfiles "terraform" tfProjects.terraform) ++ (mkTfProfiles "tofu" tfProjects.tofu);
 
-  profiles = baseProfiles ++ tfProfiles;
+  # OpenBao-brokered broad IaC/admin identity: dynamic STS (assumed_role) for
+  # role/openbao-iac-admin, minted on demand by the `openbao-aws-creds` wrapper
+  # (same credential_process path as the tf-* OpenBao profiles). Not tied to a
+  # single tf project — this is the general "reach any AWS API via OpenBao"
+  # identity; its breadth is capped by a permissions boundary on the AWS role
+  # itself, so no static key ever lives on the machine.
+  openbaoAdminProfiles = [
+    {
+      name = "openbao-iac-admin";
+      comment = "openbao-iac-admin: dynamic STS creds from OpenBao (credential_process, no static key)";
+      credential_process = "openbao-aws-creds openbao-iac-admin";
+    }
+  ];
+
+  profiles = baseProfiles ++ openbaoAdminProfiles ++ tfProfiles;
 
   generateProfile =
     profile:
