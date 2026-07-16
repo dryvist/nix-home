@@ -67,9 +67,10 @@ let
   # secrets engine (dynamic STS, assumed_role). A project listed here gets a
   # `credential_process` profile instead of source_profile/role_arn — the
   # wrapper (nix-darwin `openbao-aws-creds`, on PATH system-wide) reads the
-  # terraform-apply AppRole from openbao.keychain-db and mints short-lived
-  # creds on demand, so no static AWS key exists on the machine. Move a
-  # project here once its aws/roles/<name> exists in OpenBao.
+  # terraform-apply AppRole secret-zero from the ambient environment (injected
+  # by running terragrunt under `doppler run`) and mints short-lived creds on
+  # demand, so no static AWS key exists on the machine. Move a project here
+  # once its aws/roles/<name> exists in OpenBao.
   openbaoStsProjects = {
     proxmox = "openbao-aws-creds tf-proxmox";
   };
@@ -95,7 +96,21 @@ let
   tfProfiles =
     (mkTfProfiles "terraform" tfProjects.terraform) ++ (mkTfProfiles "tofu" tfProjects.tofu);
 
-  profiles = baseProfiles ++ tfProfiles;
+  # OpenBao-brokered broad IaC/admin identity: dynamic STS (assumed_role) for
+  # role/openbao-iac-admin, minted on demand by the `openbao-aws-creds` wrapper
+  # (same credential_process path as the tf-* OpenBao profiles). Not tied to a
+  # single tf project — this is the general "reach any AWS API via OpenBao"
+  # identity; its breadth is capped by a permissions boundary on the AWS role
+  # itself, so no static key ever lives on the machine.
+  openbaoAdminProfiles = [
+    {
+      name = "openbao-iac-admin";
+      comment = "openbao-iac-admin: dynamic STS creds from OpenBao (credential_process, no static key)";
+      credential_process = "openbao-aws-creds openbao-iac-admin";
+    }
+  ];
+
+  profiles = baseProfiles ++ openbaoAdminProfiles ++ tfProfiles;
 
   generateProfile =
     profile:

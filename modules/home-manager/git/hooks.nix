@@ -49,7 +49,7 @@ let
     fi
 
     # Run pre-commit hooks only on files changed in the push (not all files).
-    # Using --from-ref/--to-ref prevents heavy hooks (e.g. terragrunt-plan)
+    # Using --from-ref/--to-ref prevents heavy hooks (e.g. provider validation)
     # from running when only unrelated files (e.g. YAML) are pushed.
     # Reads the ref pairs from stdin as per the git pre-push hook protocol.
     z40=0000000000000000000000000000000000000000
