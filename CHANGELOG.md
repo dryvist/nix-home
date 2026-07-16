@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.38.0](https://github.com/dryvist/nix-home/compare/v1.37.1...v1.38.0) (2026-07-16)
+
+
+### Features
+
+* **aws:** add openbao-iac-admin credential_process profile ([#382](https://github.com/dryvist/nix-home/issues/382)) ([972848a](https://github.com/dryvist/nix-home/commit/972848af2ef2268232b9e553d17c8e1b3c04acd3))
+
+
+### Bug Fixes
+
+* **deps:** refresh gh-aw action SHA pins [aw:gh-aw-pin-refresh] ([#377](https://github.com/dryvist/nix-home/issues/377)) ([aa3ced0](https://github.com/dryvist/nix-home/commit/aa3ced0d8f54f546f510c8cffd34bc3416e31049))
+
 ## [1.37.1](https://github.com/dryvist/nix-home/compare/v1.37.0...v1.37.1) (2026-07-13)
 
 
