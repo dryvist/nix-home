@@ -85,7 +85,7 @@ From nix-darwin, test changes with:
 
 ```bash
 sudo darwin-rebuild switch --flake . \
-  --override-input nix-home ${GIT_HOME_PUBLIC}/nix-home/main
+  --override-input nix-home $GIT_HOME_PUBLIC/nix-home/main
 ```
 
 ## Tooling baseline (inherited from dryvist/.github)
