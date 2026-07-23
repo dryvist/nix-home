@@ -89,12 +89,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Close expired discussions
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -103,7 +103,7 @@ jobs:
             await main();
 
       - name: Close expired issues
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -112,7 +112,7 @@ jobs:
             await main();
 
       - name: Close expired pull requests
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -127,12 +127,12 @@ jobs:
       actions: write
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Cleanup outdated cache-memory entries
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -151,17 +151,17 @@ jobs:
       operation: ${{ steps.record.outputs.operation }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Check admin/maintainer permissions
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -171,12 +171,12 @@ jobs:
             await main();
 
       - name: Install gh-aw
-        uses: github/gh-aw-actions/setup-cli@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup-cli@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           version: v0.68.3
 
       - name: Run operation
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_AW_OPERATION: ${{ inputs.operation }}
@@ -206,19 +206,19 @@ jobs:
       run_url: ${{ steps.record.outputs.run_url }}
     steps:
       - name: Checkout actions folder
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: |
             actions
           persist-credentials: false
 
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Check admin/maintainer permissions
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -228,7 +228,7 @@ jobs:
             await main();
 
       - name: Apply Safe Outputs
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_AW_RUN_URL: ${{ inputs.run_url }}
@@ -252,17 +252,17 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Check admin/maintainer permissions
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -272,12 +272,12 @@ jobs:
             await main();
 
       - name: Install gh-aw
-        uses: github/gh-aw-actions/setup-cli@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup-cli@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           version: v0.68.3
 
       - name: Create missing labels
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           GH_AW_CMD_PREFIX: gh aw
         with:
@@ -296,17 +296,17 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
       - name: Check admin/maintainer permissions
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -316,12 +316,12 @@ jobs:
             await main();
 
       - name: Install gh-aw
-        uses: github/gh-aw-actions/setup-cli@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        uses: github/gh-aw-actions/setup-cli@a5d8b7df9d4f9137bedb3d074d0a0b005f1e1996 # v0.82.13
         with:
           version: v0.68.3
 
       - name: Validate workflows and file issue on findings
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           GH_AW_CMD_PREFIX: gh aw
         with:
