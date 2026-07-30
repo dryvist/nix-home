@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39.0](https://github.com/dryvist/nix-home/compare/v1.38.1...v1.39.0) (2026-07-30)
+
+
+### Features
+
+* **ci:** refresh nixpkgs channel pin on a schedule ([#401](https://github.com/dryvist/nix-home/issues/401)) ([655e239](https://github.com/dryvist/nix-home/commit/655e2396e08ec3bc348973da21fae8d23ca2ed6e))
+
 ## [1.38.1](https://github.com/dryvist/nix-home/compare/v1.38.0...v1.38.1) (2026-07-20)
 
 
