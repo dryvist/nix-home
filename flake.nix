@@ -5,6 +5,11 @@
   description = "Cross-platform home-manager modules (Nix flake)";
 
   inputs = {
+    # Channel branch = intended major-version pin (26.05, stable). Renovate
+    # CANNOT bump this: it updates an input when its ref changes, and a
+    # channel branch's ref never changes. deps-refresh-nixpkgs.yml refreshes
+    # the lock on a schedule instead (deps-update-flake.yml only updates
+    # custom packages, never nixpkgs).
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 

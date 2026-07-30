@@ -1,5 +1,11 @@
 # Automated custom package updates with verified commits
 #
+# Despite the filename, this ONLY updates the two custom packages below via
+# nix-update — it never touches nixpkgs or any other flake input. It runs
+# green daily, which can make the repo look covered when nixpkgs isn't: the
+# nixpkgs channel pin is refreshed separately by deps-refresh-nixpkgs.yml,
+# since Renovate can't bump a channel branch (its ref never changes).
+#
 # Uses JacobPEvans-github-actions App for:
 # - Signed & verified commits via GitHub's REST API
 # - Triggering downstream workflows (CI Gate, Review)
@@ -11,7 +17,7 @@
 # Triggers:
 # - Daily at 8am UTC (schedule)
 # - Manual (workflow_dispatch)
-name: Update custom packages
+name: Update custom packages (git-flow-next, grip only — not nixpkgs)
 
 on:
   schedule:
