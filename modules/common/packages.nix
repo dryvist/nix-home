@@ -18,12 +18,13 @@
   pkgs,
   lib,
   features,
+  homelabContracts,
 }:
 
 let
   core = import ./packages/core.nix { inherit pkgs; };
   security = import ./packages/security.nix { inherit pkgs; };
-  cloud = import ./packages/cloud.nix { inherit pkgs; };
+  cloud = import ./packages/cloud.nix { inherit pkgs homelabContracts; };
   documentProcessing = import ./packages/document-processing.nix { inherit pkgs lib; };
   pythonEnv = import ./packages/python-env.nix { inherit pkgs; };
   googleWorkspace = import ./packages/google-workspace.nix { inherit pkgs; };
