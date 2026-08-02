@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39.1](https://github.com/dryvist/nix-home/compare/v1.39.0...v1.39.1) (2026-08-02)
+
+
+### Bug Fixes
+
+* **ci:** drop unused id-token: write from ci-fix.yml ([#411](https://github.com/dryvist/nix-home/issues/411)) ([4c9bc9f](https://github.com/dryvist/nix-home/commit/4c9bc9fc963f5c483b6fabe511f98baed10130a7))
+
 ## [1.39.0](https://github.com/dryvist/nix-home/compare/v1.38.1...v1.39.0) (2026-07-30)
 
 
