@@ -27,6 +27,15 @@
       url = "github:dryvist/orbstack-kubernetes";
       flake = false;
     };
+
+    # flow-lock / deployment-json: single-writer lease + gated credential
+    # injection for shared desired-state objects. Guests receive these vendored
+    # inside the inventory_resolve Ansible role; a workstation has no such path,
+    # so without this they are absent from PATH.
+    homelab-contracts = {
+      url = "github:dryvist/homelab-contracts";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -36,6 +45,7 @@
       nixpkgs-unstable,
       home-manager,
       orbstack-kubernetes,
+      homelab-contracts,
       ...
     }:
     let
@@ -67,6 +77,7 @@
           ./modules/home-manager/git/gpg-agent.nix
         ];
         _module.args.orbstackKubernetesSrc = orbstack-kubernetes;
+        _module.args.homelabContracts = homelab-contracts;
       };
 
       # Python packages overlay

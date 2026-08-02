@@ -10,6 +10,7 @@
   # Standalone fallback identity/state. On a real machine nix-darwin passes its
   # own userConfig; this default lives in one place (see lib/user-defaults.nix).
   userConfig ? import ../../lib/user-defaults.nix,
+  homelabContracts,
   ...
 }:
 
@@ -19,7 +20,9 @@ let
 
   # Universal packages, composed from domain groups and gated by the profile.
   # The `workstation` preset enables every group (parity with the old flat list).
-  commonPackages = import ../common/packages.nix { inherit pkgs lib features; };
+  commonPackages = import ../common/packages.nix {
+    inherit pkgs lib features homelabContracts;
+  };
 
   # Git aliases
   gitAliases = import ./git/aliases.nix;
