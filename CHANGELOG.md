@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.0](https://github.com/dryvist/nix-home/compare/v1.39.1...v1.40.0) (2026-08-02)
+
+
+### Features
+
+* **packages:** ship flow-lock and deployment-json in the cloud group ([#416](https://github.com/dryvist/nix-home/issues/416)) ([cf97d10](https://github.com/dryvist/nix-home/commit/cf97d108f979f9395fdfe197f40571c417484aa4))
+
 ## [1.39.1](https://github.com/dryvist/nix-home/compare/v1.39.0...v1.39.1) (2026-08-02)
 
 
