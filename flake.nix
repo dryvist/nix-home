@@ -7,9 +7,10 @@
   inputs = {
     # Channel branch = intended major-version pin (26.05, stable). Renovate
     # CANNOT bump this: it updates an input when its ref changes, and a
-    # channel branch's ref never changes. deps-refresh-nixpkgs.yml refreshes
-    # the lock on a schedule instead (deps-update-flake.yml only updates
-    # custom packages, never nixpkgs).
+    # channel branch's ref never changes. deps-flake-lock.yml relocks the whole
+    # file on a schedule instead, so nixpkgs-unstable — which feeds
+    # overlays/python-packages.nix — moves with it (deps-update-flake.yml only
+    # updates packaged programs, never flake.lock).
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
