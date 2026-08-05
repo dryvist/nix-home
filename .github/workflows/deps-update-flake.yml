@@ -1,10 +1,11 @@
 # Automated custom package updates with verified commits
 #
 # Despite the filename, this ONLY updates the two custom packages below via
-# nix-update — it never touches nixpkgs or any other flake input. It runs
-# green daily, which can make the repo look covered when nixpkgs isn't: the
-# nixpkgs channel pin is refreshed separately by deps-refresh-nixpkgs.yml,
-# since Renovate can't bump a channel branch (its ref never changes).
+# nix-update — it edits version and hash strings inside .nix files and never
+# touches flake.lock. It runs green daily, which can make the repo look covered
+# when the flake inputs are not: flake.lock has a single separate writer,
+# deps-flake-lock.yml, because Renovate cannot bump a channel branch (its ref
+# never changes).
 #
 # Uses JacobPEvans-github-actions App for:
 # - Signed & verified commits via GitHub's REST API
