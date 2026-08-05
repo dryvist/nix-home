@@ -1,11 +1,19 @@
 # Refresh the nixpkgs channel pin (scheduled)
 #
-# nixpkgs is pinned to a moving CHANNEL BRANCH (nixpkgs-26.05-darwin, below).
-# Renovate's nix manager bumps an input when its git ref changes — a channel
-# branch's ref never changes, so Renovate never advances this lock.
-# deps-update-flake.yml only updates custom packages (git-flow-next, grip)
-# and never touches nixpkgs; this workflow is the channel-pin refresher,
-# delegated to the org-shared implementation.
+# This flake pins TWO moving CHANNEL BRANCHES: nixpkgs
+# (nixpkgs-26.05-darwin) and nixpkgs-unstable, the latter feeding
+# overlays/python-packages.nix. Renovate's nix manager bumps an input when its
+# git ref changes — a channel branch's ref never changes, so Renovate never
+# advances either lock. deps-update-flake.yml only updates custom packages
+# (git-flow-next, grip) and never touches nixpkgs; this workflow is the
+# channel-pin refresher, delegated to the org-shared implementation.
+#
+# Both channels must be listed. The shared workflow refreshes ONE input per
+# call, so a caller with no `input_name` refreshed nixpkgs only, and
+# nixpkgs-unstable silently stopped moving: it sat at 2026-05-23 while the
+# channel head was 2026-08-03, 72 days behind, across runs that all reported
+# success. nix-ai's caller already used this matrix; this brings nix-home into
+# line with it.
 name: Refresh nixpkgs channel
 
 on:
@@ -17,6 +25,11 @@ permissions: {}
 
 jobs:
   refresh:
+    strategy:
+      matrix:
+        input_name: [nixpkgs, nixpkgs-unstable]
     uses: dryvist/.github/.github/workflows/_refresh-nixpkgs-channel.yml@main
+    with:
+      input_name: ${{ matrix.input_name }}
     secrets:
       GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
