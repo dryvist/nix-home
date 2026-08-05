@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.41.0](https://github.com/dryvist/nix-home/compare/v1.40.0...v1.41.0) (2026-08-05)
+
+
+### Features
+
+* **ci:** relock the whole flake into a single pull request ([#422](https://github.com/dryvist/nix-home/issues/422)) ([013fe22](https://github.com/dryvist/nix-home/commit/013fe22db38d1cbd89977749618403fb1a41227c))
+
 ## [1.40.0](https://github.com/dryvist/nix-home/compare/v1.39.1...v1.40.0) (2026-08-02)
 
 
