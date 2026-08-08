@@ -242,6 +242,32 @@ judge_verdict() {
 }
 
 # ------------------------------------------------------------------ main ---
+# `--scan FILE` screens arbitrary text against the same two tiers and exits
+# 0 (clean) or 1 (blocked). This is the entry point for git's commit-msg and
+# pre-push hooks: `gh` is not involved in a commit, but the content discipline
+# is identical, so both callers share ONE detection implementation rather than
+# drifting copies. Repo/visibility comes from the cwd's origin remote.
+if [ "${1:-}" = "--scan" ]; then
+  [ -r "${2:-}" ] || { printf 'gh-guard: --scan needs a readable file\n' >&2; exit 2; }
+  SCAN_CONTENT="$(cat -- "$2")"
+  SCAN_REPO="$(resolve_repo || true)"
+  [ -z "$SCAN_REPO" ] && die visibility "?" "git" \
+    "Cannot resolve this repository, so its visibility is unknown."
+  repo_is_public "$SCAN_REPO" || exit 0
+  hits_identifier "$SCAN_CONTENT" && die identifier "$SCAN_REPO" "git" \
+    "Content matches a known internal identifier. There is no override for this tier."
+  if smells_narrative "$SCAN_CONTENT"; then
+    set +e; judge_verdict "$SCAN_CONTENT"; rc=$?; set -e
+    case "$rc" in
+      0) : ;;
+      2) die narrative "$SCAN_REPO" "git" "The local judge classified this as operational-security narrative." ;;
+      *) die judge-unavailable "$SCAN_REPO" "git" "The local judge is unreachable; fail-closed by design." ;;
+    esac
+  fi
+  audit clean ALLOW "$SCAN_REPO" "git"
+  exit 0
+fi
+
 if ! is_publish_verb "${1:-}" "${2:-}"; then exec "$GH_REAL" "$@"; fi
 if [ "${1:-}" = "api" ] && ! api_is_publish "$@"; then exec "$GH_REAL" "$@"; fi
 

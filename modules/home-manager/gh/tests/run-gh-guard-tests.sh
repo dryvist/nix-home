@@ -84,5 +84,33 @@ check3 "documented placeholder block"   0 clean issue create -R dryvist/pub --bo
 check3 "semver is not an address"       0 clean issue create -R dryvist/pub --body "bump to v1.24.3 and 10.2.1 tooling"
 check3 "ports and issue refs"           0 clean issue create -R dryvist/pub --body "closes #1771, exposes :8088 and :49152"
 
+# --- --scan mode: the entry point git's commit-msg/pre-push hooks use --------
+# `gh` is not involved in a commit, so this shares the same detection tiers
+# rather than growing a second, drifting implementation.
+# A commit happens inside a git repo, so the scan tests need one; outside a repo
+# the guard correctly refuses on unresolvable visibility (covered separately).
+REPODIR="$HERE/tmprepo"
+rm -rf "$REPODIR"; mkdir -p "$REPODIR"
+git -C "$REPODIR" init -q 2>/dev/null
+git -C "$REPODIR" remote add origin https://github.com/dryvist/testrepo.git 2>/dev/null
+
+scan_check() { # name expect_rc expect_tier file
+  local name="$1" want_rc="$2" want_tier="$3" file="$4" rc tier
+  : >"$GH_GUARD_LOG"
+  ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" "$GUARD" --scan "$file" ) >/dev/null 2>&1; rc=$?
+  tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
+  if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
+    printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s expected rc=%s tier=%s, got rc=%s tier=%s\n' \
+      "$name" "$want_rc" "$want_tier" "$rc" "${tier:-none}"; fail=$((fail + 1))
+  fi
+}
+
+printf '%s\n' "$CLEAN"  >"$HERE/msg-clean.txt"
+printf '%s\n' "$LEAK"   >"$HERE/msg-leak.txt"
+scan_check "commit msg with identifier"  1 identifier "$HERE/msg-leak.txt"
+scan_check "clean commit msg"            0 clean      "$HERE/msg-clean.txt"
+
 printf '\n%s passed, %s failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
