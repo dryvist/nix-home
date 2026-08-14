@@ -17,6 +17,7 @@ Switch machines? One command. Everything's back.
 | **VS Code** | Writable settings merge, extensions, keybindings |
 | **Tmux** | Session management configuration |
 | **Direnv** | Automatic per-project environments |
+| **BWS** | Bitwarden's pinned official Secrets Manager CLI binary; avoids nixpkgs' expensive Rust source build |
 | **Monitoring** | Kubernetes manifests, OpenTelemetry, Cribl Edge |
 | **Linters** | markdownlint, pre-commit configurations |
 | **npm / AWS** | Configuration file management |
@@ -80,6 +81,15 @@ home-profile.features.vscode.enable = true; # keep VS Code on this box anyway
 Feature toggles: `vscode`, `documentSkills`, `heavyPython`, `googleWorkspace`,
 `sessionLogging`, `pinentryGui`. The `server` preset also switches gpg-agent to
 a TTY pinentry so signing works without a GUI.
+
+### BWS package source
+
+`bws` deliberately uses Bitwarden's pinned, checksum-verified release archive
+instead of `pkgs.bws`. The nixpkgs package compiles Rust and runs its upstream
+test graph during a cold Home Manager activation, which repeatedly consumed
+7–13 minutes in CI. The vendor archive preserves declarative, cross-platform
+installation without that source rebuild; do not revert to nixpkgs or loosen
+the 20-minute CI limit—fix the underlying dependency/build regression instead.
 
 ## Monitoring
 
