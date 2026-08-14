@@ -1,11 +1,13 @@
 # Automated custom package updates with verified commits
 #
-# Despite the filename, this ONLY updates the two custom packages below via
-# nix-update — it edits version and hash strings inside .nix files and never
-# touches flake.lock. It runs green daily, which can make the repo look covered
-# when the flake inputs are not: flake.lock has a single separate writer,
-# deps-flake-lock.yml, because Renovate cannot bump a channel branch (its ref
-# never changes).
+# Despite the filename, this ONLY updates git-flow-next and grip via nix-update
+# — it edits version and hash strings inside .nix files and never touches
+# flake.lock. BWS is intentionally excluded: it is Bitwarden's fixed official
+# binary archive, retained outside nixpkgs so its Rust build/test graph cannot
+# regress activation time. It runs green daily, which can make the repo look
+# covered when the flake inputs are not: flake.lock has a single separate
+# writer, deps-flake-lock.yml, because Renovate cannot bump a channel branch
+# (its ref never changes).
 #
 # Uses JacobPEvans-github-actions App for:
 # - Signed & verified commits via GitHub's REST API
@@ -34,6 +36,10 @@ jobs:
     name: Update custom packages
     runs-on: ubuntu-latest
     environment: automation
+    # Intentionally non-negotiable: an update, Nix evaluation, or validation
+    # past 20 minutes is a dependency/cache regression. Do not raise this cap;
+    # fix the root cause so the failed workflow blocks unhealthy updates.
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
