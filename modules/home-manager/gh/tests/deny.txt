@@ -1,0 +1,3 @@
+# Test fixture only — synthetic values, not real identifiers.
+internal.example-corp.test
+node-alpha-7

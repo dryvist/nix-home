@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Test stub standing in for the real gh binary. Never contacts GitHub.
+if [ "$1" = "repo" ] && [ "$2" = "view" ]; then
+  case "$*" in *nameWithOwner*) echo "dryvist/testrepo"; exit 0 ;; esac
+  case "$3" in
+    dryvist/privaterepo) echo PRIVATE ;;
+    dryvist/unknownrepo) exit 1 ;;
+    *) echo PUBLIC ;;
+  esac
+  exit 0
+fi
+echo "REAL-GH-REACHED: $*"
