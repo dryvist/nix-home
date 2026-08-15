@@ -86,7 +86,6 @@
         (import ./overlays/python-packages.nix { inherit nixpkgs-unstable; })
         (import ./overlays/merge-json-settings.nix)
         (import ./overlays/install-document-skills-npm-deps.nix)
-        (import ./overlays/darwin-test-skips.nix)
       ];
 
       # Quality checks (formatting, linting, dead code, module-eval).
