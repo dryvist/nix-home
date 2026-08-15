@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.42.0](https://github.com/dryvist/nix-home/compare/v1.41.0...v1.42.0) (2026-08-15)
+
+
+### Features
+
+* **gh:** package gh-guard publish-boundary gate ([#429](https://github.com/dryvist/nix-home/issues/429)) ([78940a3](https://github.com/dryvist/nix-home/commit/78940a37633ba5ccc1d11c5c346ef83ffd82ddae))
+
+
+### Bug Fixes
+
+* **overlays:** build markitdown with only the pptx converter's dependencies ([#433](https://github.com/dryvist/nix-home/issues/433)) ([704c950](https://github.com/dryvist/nix-home/commit/704c95012bf15bb274a611d630c14ce7345c700b))
+* use Bitwarden release binary ([fdfd8bf](https://github.com/dryvist/nix-home/commit/fdfd8bfe087af500462a96f504d727442c7bcfc3))
+* use Bitwarden release binary ([3a54dc5](https://github.com/dryvist/nix-home/commit/3a54dc5194100c0573a5835d179e8edf95e42dfe))
+
 ## [1.41.0](https://github.com/dryvist/nix-home/compare/v1.40.0...v1.41.0) (2026-08-05)
 
 
