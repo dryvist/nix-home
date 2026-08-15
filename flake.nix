@@ -86,7 +86,6 @@
         (import ./overlays/python-packages.nix { inherit nixpkgs-unstable; })
         (import ./overlays/merge-json-settings.nix)
         (import ./overlays/install-document-skills-npm-deps.nix)
-        (import ./overlays/darwin-test-skips.nix)
       ];
 
       # Quality checks (formatting, linting, dead code, module-eval).
@@ -135,13 +134,18 @@
         }
       );
 
-      # Expose custom packages for nix-update automation
+      # Expose custom packages. nix-update manages git-flow-next and grip; BWS
+      # is an intentionally pinned official binary archive (not nixpkgs source).
       packages = forAllSystems (
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
+          # Official Bitwarden release binary: never replace with `pkgs.bws`.
+          # Its nixpkgs Rust build/test graph made activation builds exceed the
+          # hard 20-minute CI budget; see modules/common/packages/bws.nix.
+          bws = pkgs.callPackage ./modules/common/packages/bws.nix { };
           git-flow-next = pkgs.callPackage ./modules/common/git-flow-next.nix { };
           grip = pkgs.python314.pkgs.callPackage ./packages/grip.nix { };
         }

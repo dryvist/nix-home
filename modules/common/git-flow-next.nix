@@ -7,13 +7,13 @@
 pkgs.buildGoModule rec {
   pname = "git-flow-next";
   # managed by: nix-update (deps-update-packages.yml)
-  version = "1.2.0";
+  version = "2.0.0";
 
   src = fetchFromGitHub {
     owner = "gittower";
     repo = "git-flow-next";
     rev = "v${version}";
-    hash = "sha256-hmBbcd4Wz1nLWgSxX8kOsnrLtzS9hzfrkVQKlCWMIiA=";
+    hash = "sha256-OW29VowVsiSPtwmpNY16U6YxIsBSQjhsEY34iTilE7E=";
   };
 
   vendorHash = "sha256-AsyF7Z/XRpkBNBWULxf3rLfx0/2jCSBAbDFhESFMuPA=";
