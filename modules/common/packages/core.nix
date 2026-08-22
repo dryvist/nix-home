@@ -10,8 +10,22 @@ with pkgs;
   # ==========================================================================
   # Git & Pre-commit Hooks
   # ==========================================================================
-  # Framework for managing git pre-commit hooks - essential for code quality
-  pre-commit
+  # Framework for managing git pre-commit hooks - essential for code quality.
+  #
+  # dotnet-sdk is passed as `emptyDirectory` rather than the real SDK. Upstream
+  # takes it as an argument purely to satisfy the dotnet hook tests, and those
+  # tests are already switched off in the derivation's own `disabledTests`
+  # (`test_dotnet_`) -- so the SDK is never exercised, it only enlarges the
+  # closure. It drags in the whole Swift toolchain, which is absent from the
+  # binary cache for aarch64-darwin, so a rebuild compiles swift/LLVM from
+  # source.
+  #
+  # Note this is an `override`, not an `overrideAttrs`: every test phase and
+  # check input stays exactly as upstream ships it. Nothing is skipped. An
+  # earlier attempt disabled the check phases instead and broke the build --
+  # clearing nativeCheckInputs removed pytest-forked while `--forked` remained
+  # in pytestFlags.
+  (pre-commit.override { dotnet-sdk = emptyDirectory; })
 
   # Lefthook: Some upstream repos (e.g., docs.jacobpevans.com via Mintlify
   # tooling) drop `lefthook`-generated hook stubs into `.git/hooks/`. Those
