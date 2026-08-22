@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.42.1](https://github.com/dryvist/nix-home/compare/v1.42.0...v1.42.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **packages:** cut the Swift toolchain out of the pre-commit closure ([#439](https://github.com/dryvist/nix-home/issues/439)) ([33ef0e4](https://github.com/dryvist/nix-home/commit/33ef0e41e1108b153db2390341622347083a6823))
+* **packages:** pass emptyDirectory for pre-commit's dotnet-sdk argument ([#440](https://github.com/dryvist/nix-home/issues/440)) ([20c3f2f](https://github.com/dryvist/nix-home/commit/20c3f2f9ff1c5e4fed3abb84b608ea6a0c2d49a5))
+
 ## [1.42.0](https://github.com/dryvist/nix-home/compare/v1.41.0...v1.42.0) (2026-08-15)
 
 
