@@ -25,7 +25,11 @@ export GH_GUARD_ACTIVE=1
 DENYLIST="${GH_GUARD_DENYLIST:-$HOME/.config/gh-guard/identifiers.txt}"
 ALLOWLIST="${GH_GUARD_ALLOWLIST:-$HOME/.config/gh-guard/allowed.txt}"
 JUDGE_URL="${GH_GUARD_JUDGE_URL:-http://127.0.0.1:11434/v1/chat/completions}"
-JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-mlx-community/Qwen3.5-9B-MLX-4bit}"
+# Must name a RESIDENT (ttl=0, non-swappable) model. A swap-class model is
+# evicted or TTL-expired mid-scan, and llama-swap answers 429 for the whole
+# cold load, which outlasts the retry budget below and fails the gate closed.
+# Every host carries the "judge" alias on its own resident model.
+JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-judge}"
 LOG="${GH_GUARD_LOG:-$HOME/.local/state/gh-guard/decisions.log}"
 
 # ---------------------------------------------------------------- logging ---
@@ -221,7 +225,7 @@ judge_verdict() {
   payload="$(jq -n --arg m "$JUDGE_MODEL" --arg c "$content" '{
     model:$m, max_tokens:4, temperature:0,
     messages:[
-      {role:"system",content:"You screen text destined for a PUBLIC GitHub artifact. Reply with exactly one word: block if the text discloses operational-security detail (incident or outage narrative, internal topology, hostnames, why something broke, credential or token scope detail). Otherwise reply allow. One word only."},
+      {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\".\n\nAnswer \"block\" if the text contains ANY of:\n- why something broke, failed, or was fixed (incident/outage/root-cause narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names\n- credential detail: token/policy/role scope, TTLs, where a secret is stored\n\nAnswer \"allow\" only if the text merely states WHAT changed, with no operational detail: feature descriptions, dependency bumps, docs edits, config field names.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\n\nOne word only."},
       {role:"user",content:$c}]}')" || return 1
 
   for attempt in 1 2 3 4 5; do
