@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.2](https://github.com/dryvist/nix-home/compare/v1.42.1...v1.42.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* **gh-guard:** judge against the resident model, and sharpen the prompt ([#444](https://github.com/dryvist/nix-home/issues/444)) ([04c9eed](https://github.com/dryvist/nix-home/commit/04c9eed4716564e1b6aa1c6773cd56e4a0054c8f))
+
 ## [1.42.1](https://github.com/dryvist/nix-home/compare/v1.42.0...v1.42.1) (2026-08-22)
 
 
