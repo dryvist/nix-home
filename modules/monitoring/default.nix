@@ -56,9 +56,19 @@ in
       enable = lib.mkEnableOption "OpenTelemetry Collector";
 
       endpoint = lib.mkOption {
-        type = lib.types.str;
-        default = "http://localhost:30317";
-        description = "OTLP endpoint (defaults to gRPC NodePort for OrbStack K8s; use :30318 for http/* protocols)";
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "https://otel.example.internal";
+        description = ''
+          OTLP endpoint. For the http/* protocols this is the BASE url with no
+          `/v1/...` suffix — the exporter appends the signal path itself.
+
+          Null by default, and null means no OTEL variables are exported even
+          when `otel.enable` is true. There is deliberately no fallback: a
+          collector address is site-specific, and this option previously
+          defaulted to a loopback NodePort that no collector served, so every
+          metric and log went nowhere while the configuration looked correct.
+        '';
       };
 
       protocol = lib.mkOption {
@@ -67,8 +77,12 @@ in
           "http/protobuf"
           "http/json"
         ];
-        default = "grpc";
-        description = "OTLP exporter protocol";
+        default = "http/protobuf";
+        description = ''
+          OTLP exporter protocol. Defaults to http/protobuf, which is what a
+          collector fronted by an HTTPS ingress speaks; a gRPC endpoint is a
+          separate port that such a deployment does not expose.
+        '';
       };
 
       logPrompts = lib.mkOption {
@@ -151,8 +165,11 @@ in
         '')
       ];
 
-      # Set OTEL environment variables for Claude Code
-      sessionVariables = lib.mkIf cfg.otel.enable (
+      # Set OTEL environment variables for Claude Code. Gated on a non-null
+      # endpoint as well as `enable`: exporting to a guessed address is
+      # indistinguishable from working telemetry, which is exactly how the old
+      # loopback default went unnoticed.
+      sessionVariables = lib.mkIf (cfg.otel.enable && cfg.otel.endpoint != null) (
         {
           CLAUDE_CODE_ENABLE_TELEMETRY = "1";
           OTEL_EXPORTER_OTLP_ENDPOINT = cfg.otel.endpoint;
