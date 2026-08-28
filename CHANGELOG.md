@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.42.3](https://github.com/dryvist/nix-home/compare/v1.42.2...v1.42.3) (2026-08-28)
+
+
+### Bug Fixes
+
+* **monitoring:** require an OTLP endpoint and default to http/protobuf ([f18fd42](https://github.com/dryvist/nix-home/commit/f18fd42d42bfc526e35bb7a485d1b40e517ca14d))
+* **monitoring:** require an OTLP endpoint and default to http/protobuf ([c2593bd](https://github.com/dryvist/nix-home/commit/c2593bd57001492ad5dd6aa2f25b1200e5ebc595))
+
 ## [1.42.2](https://github.com/dryvist/nix-home/compare/v1.42.1...v1.42.2) (2026-08-27)
 
 
