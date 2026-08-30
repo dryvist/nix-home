@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.0](https://github.com/dryvist/nix-home/compare/v1.42.3...v1.43.0) (2026-08-30)
+
+
+### Features
+
+* **darwin:** add the coding-agent usage collector LaunchAgent ([#455](https://github.com/dryvist/nix-home/issues/455)) ([98dd71b](https://github.com/dryvist/nix-home/commit/98dd71b1249f52d3adf68946a0548c99ae42bdc2))
+
 ## [1.42.3](https://github.com/dryvist/nix-home/compare/v1.42.2...v1.42.3) (2026-08-28)
 
 
