@@ -10,6 +10,7 @@
 
 {
   imports = [
+    ./claude-usage-collector.nix
     ./nix-activation-recovery.nix
     ./tmux-session-autostart.nix
   ];
