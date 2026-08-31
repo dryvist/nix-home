@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.1](https://github.com/dryvist/nix-home/compare/v1.43.0...v1.43.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* harden shell and git reliability ([#459](https://github.com/dryvist/nix-home/issues/459)) ([a1db272](https://github.com/dryvist/nix-home/commit/a1db272f594ee668e266a321a871918852277c99))
+
 ## [1.43.0](https://github.com/dryvist/nix-home/compare/v1.42.3...v1.43.0) (2026-08-30)
 
 
