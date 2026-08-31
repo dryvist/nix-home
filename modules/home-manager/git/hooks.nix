@@ -22,12 +22,10 @@ let
     fi
 
     # Check for pre-commit framework
-    # NOTE: Warning only (not blocking) - pre-commit may not be installed in all environments
-    # Layer 2 (AI deny list) and Layer 3 (GitHub branch protection) provide enforcement
     if ! command -v pre-commit &> /dev/null; then
-      echo "Warning: .pre-commit-config.yaml exists but pre-commit is not installed" >&2
+      echo "ERROR: .pre-commit-config.yaml exists but pre-commit is not installed" >&2
       echo "Add pre-commit to your Nix configuration and rebuild" >&2
-      exit 0
+      exit 1
     fi
 
     # Run pre-commit hooks
@@ -42,10 +40,10 @@ let
     fi
 
     # Check for pre-commit framework
-    # NOTE: Warning only - don't block push, but inform user checks were skipped
     if ! command -v pre-commit &> /dev/null; then
-      echo "Warning: pre-commit not found, skipping pre-push checks." >&2
-      exit 0
+      echo "ERROR: .pre-commit-config.yaml exists but pre-commit is not installed" >&2
+      echo "Add pre-commit to your Nix configuration and rebuild" >&2
+      exit 1
     fi
 
     # Run pre-commit hooks only on files changed in the push (not all files).

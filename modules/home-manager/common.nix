@@ -139,7 +139,7 @@ in
       };
 
       # Cross-platform shell init (NO macOS-specific content)
-      # macOS-specific content (Keychain, macos-setup.zsh, macos oh-my-zsh plugin)
+      # macOS-specific content (Keychain, macOS oh-my-zsh plugin)
       # is added by nix-darwin's home.nix
       initContent = ''
         # --- Environment ---
