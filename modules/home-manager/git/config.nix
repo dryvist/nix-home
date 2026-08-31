@@ -77,12 +77,9 @@
       conflictstyle = "diff3"; # Show original in conflicts (easier resolution)
       ff = "only"; # Only fast-forward merges (use rebase for others)
 
-      # Custom merge driver for flake.lock - auto-regenerate on conflict
-      # Instead of 3-way merge, just regenerate the lock file
+      # flake.lock has no safe text merge; require explicit regeneration.
       flakelock = {
-        name = "Regenerate flake.lock";
-        # %O = ancestor, %A = current (write result here), %B = other
-        # Regenerate lock and copy to merge result
+        name = "Require explicit flake.lock regeneration";
         driver = "${config.home.homeDirectory}/.local/bin/git-merge-flakelock %O %A %B";
       };
     };
