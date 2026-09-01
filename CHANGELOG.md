@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.44.0](https://github.com/dryvist/nix-home/compare/v1.43.1...v1.44.0) (2026-09-01)
+
+
+### Features
+
+* **darwin:** itemize the context injected before a session's first request ([#463](https://github.com/dryvist/nix-home/issues/463)) ([0bf3b2b](https://github.com/dryvist/nix-home/commit/0bf3b2b63644b83a9cc626063df1c831f1f95f87))
+
+
+### Bug Fixes
+
+* **darwin:** gauge HELP text in the metric table; undated records never win ([#465](https://github.com/dryvist/nix-home/issues/465)) ([6465043](https://github.com/dryvist/nix-home/commit/6465043f853de5cdd12c209a70b3d32218b27d66))
+
 ## [1.43.1](https://github.com/dryvist/nix-home/compare/v1.43.0...v1.43.1) (2026-08-31)
 
 
