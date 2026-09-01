@@ -35,6 +35,11 @@ METRICS = {
     "claude_jsonl_context_injection_bytes_total": "Bytes of context injected before the conversation (skill listings, MCP instructions, hook output)",
     "claude_jsonl_context_injections_total": "Count of injected-context attachments",
 }
+# Gauge, not counter: the bytes of each injected kind seen before a session's
+# first request, i.e. what the harness front-loads. The exporter's own
+# `token.usage` metric gives the first request's TOTAL per session but
+# nothing itemizes it; this is the itemization. Latest session per label set.
+BASELINE_METRIC = "claude_jsonl_baseline_injection_bytes"
 
 
 def load_state() -> dict:
@@ -90,8 +95,12 @@ def repo_of(rec: dict) -> str:
     return rest[0] if rest else "other"
 
 
-def scan_file(path: pathlib.Path, offset: int, bump) -> int:
+def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None) -> int:
     """Fold new records from `path` into `bump`. Returns the new offset.
+
+    `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
+    once the first request of a file is seen; a file scanned from its start is
+    the only time that is knowable, so a mid-file watermark yields nothing.
 
     Subagent transcripts live in a `subagents/` subdirectory and are the ONLY
     place their usage is recorded — the parent transcript's `isSidechain` is
@@ -101,6 +110,7 @@ def scan_file(path: pathlib.Path, offset: int, bump) -> int:
     size = path.stat().st_size
     if offset > size:  # truncated or rotated; start over
         offset = 0
+    pre: dict[str, int] | None = {} if offset == 0 else None
     with path.open("r", errors="replace") as fh:
         fh.seek(offset)
         for line in fh:
@@ -119,10 +129,12 @@ def scan_file(path: pathlib.Path, offset: int, bump) -> int:
                 # NB: distinct names — reusing `kind`/`size` here silently
                 # relabels every later message record in the same file.
                 att_kind = att.get("type") or (next(iter(att), "unknown"))
-                att_bytes = len(json.dumps(att, separators=(",", ":")))
+                att_bytes = len(json.dumps(att, separators=(",", ":")).encode("utf-8"))
                 ctx = (repo_of(rec), att_kind)
                 bump("claude_jsonl_context_injection_bytes_total", ctx, att_bytes)
                 bump("claude_jsonl_context_injections_total", ctx, 1)
+                if pre is not None:
+                    pre[att_kind] = pre.get(att_kind, 0) + att_bytes
                 continue
 
             msg = rec.get("message") or {}
@@ -130,6 +142,11 @@ def scan_file(path: pathlib.Path, offset: int, bump) -> int:
             if not usage:
                 continue
             labels = (msg.get("model") or "unknown", repo_of(rec), kind)
+            if pre is not None and msg.get("model") != "<synthetic>":
+                ts = rec.get("timestamp") or ""
+                for att_kind, nbytes in pre.items():
+                    set_gauge((repo_of(rec), kind, att_kind), nbytes, ts)
+                pre = None
             cc = usage.get("cache_creation") or {}
             bump("claude_jsonl_cache_creation_tokens_total", labels + ("5m",),
                  cc.get("ephemeral_5m_input_tokens", 0))
@@ -149,6 +166,7 @@ def scan_file(path: pathlib.Path, offset: int, bump) -> int:
 
 def collect(projects: pathlib.Path, state: dict) -> dict:
     totals: dict[str, int] = dict(state.get("totals", {}))
+    gauges: dict[str, list] = dict(state.get("gauges", {}))  # key -> [value, timestamp]
 
     def bump(metric: str, labels: tuple, value) -> None:
         if not value:
@@ -156,31 +174,42 @@ def collect(projects: pathlib.Path, state: dict) -> dict:
         key = metric + "\x00" + "\x00".join(labels)
         totals[key] = totals.get(key, 0) + int(value)
 
+    def set_gauge(labels: tuple, value, ts: str) -> None:
+        key = BASELINE_METRIC + "\x00" + "\x00".join(labels)
+        if ts >= gauges.get(key, [0, ""])[1]:  # newest session wins, not last file visited
+            gauges[key] = [int(value), ts]
+
     offsets = dict(state.get("offsets", {}))
     for path in projects.rglob("*.jsonl"):
         sp = str(path)
         try:
-            offsets[sp] = scan_file(path, offsets.get(sp, 0), bump)
+            offsets[sp] = scan_file(path, offsets.get(sp, 0), bump, set_gauge)
         except OSError:
             continue
-    return {"offsets": offsets, "totals": totals}
+    return {"offsets": offsets, "totals": totals, "gauges": gauges}
 
 
 def escape(v: str) -> str:
     return v.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def render(totals: dict) -> str:
+def render(totals: dict, gauges: dict | None = None) -> str:
     by_metric: dict[str, list] = {}
     for key, value in totals.items():
         parts = key.split("\x00")
         by_metric.setdefault(parts[0], []).append((parts[1:], value))
+    for key, (value, _ts) in (gauges or {}).items():
+        parts = key.split("\x00")
+        by_metric.setdefault(parts[0], []).append((parts[1:], value))
     out = []
     for metric in sorted(by_metric):
-        out.append(f"# HELP {metric} {METRICS.get(metric, metric)}")
-        out.append(f"# TYPE {metric} counter")
+        is_gauge = metric == BASELINE_METRIC
+        out.append(f"# HELP {metric} {METRICS.get(metric, 'Injected-context bytes before the first request, by kind')}")
+        out.append(f"# TYPE {metric} {'gauge' if is_gauge else 'counter'}")
         for labels, value in sorted(by_metric[metric]):
-            if metric.startswith("claude_jsonl_context_"):
+            if is_gauge:
+                names = ["repo", "agent", "kind"]
+            elif metric.startswith("claude_jsonl_context_"):
                 names = ["repo", "kind"]
             else:
                 names = ["model", "repo", "agent", "ttl"][: len(labels)]
@@ -276,7 +305,13 @@ def selfcheck() -> None:
                        if k.startswith("claude_jsonl_cache_")), "agent label polluted"
         st3 = st5
 
-        body = render(st3["totals"])
+        # attachments before the first request are itemized as a gauge; a
+        # second request in the same file must not change it
+        gk = BASELINE_METRIC + "\x00tofu-proxmox\x00main\x00skill_listing"
+        assert st5["gauges"][gk][0] > 10 and st5["gauges"][gk][1] == ""
+        body = render(st3["totals"], st5["gauges"])
+        assert "# TYPE claude_jsonl_baseline_injection_bytes gauge" in body
+        assert 'claude_jsonl_baseline_injection_bytes{repo="tofu-proxmox",agent="main",kind="skill_listing"}' in body
         assert 'ttl="1h"' in body and 'agent="subagent"' in body
         assert "# TYPE claude_jsonl_cache_creation_tokens_total counter" in body
     print("selfcheck OK")
@@ -294,7 +329,7 @@ def main() -> int:
         return 0
 
     state = collect(PROJECTS, load_state())
-    body = render(state["totals"])
+    body = render(state["totals"], state["gauges"])
     if args.push:
         req = urllib.request.Request(args.push, data=body.encode(), method="POST")
         with urllib.request.urlopen(req, timeout=30) as resp:
