@@ -24,7 +24,7 @@ import urllib.request
 PROJECTS = pathlib.Path.home() / ".claude" / "projects"
 STATE = pathlib.Path.home() / ".cache" / "claude-jsonl-etl" / "state.json"
 
-# metric -> help text. Counters only; all are monotonic totals.
+# metric -> help text. Monotonic counters, plus the one gauge named below.
 METRICS = {
     "claude_jsonl_cache_creation_tokens_total": "Cache-creation input tokens, split by ephemeral TTL",
     "claude_jsonl_cache_read_tokens_total": "Cache-read input tokens",
@@ -34,11 +34,13 @@ METRICS = {
     "claude_jsonl_messages_total": "Assistant messages seen",
     "claude_jsonl_context_injection_bytes_total": "Bytes of context injected before the conversation (skill listings, MCP instructions, hook output)",
     "claude_jsonl_context_injections_total": "Count of injected-context attachments",
+    # Gauge, not counter: the bytes of each injected kind seen before a
+    # session's first request, i.e. what the harness front-loads. The
+    # exporter's own `token.usage` metric gives the first request's TOTAL per
+    # session but nothing itemizes it; this is the itemization. Latest
+    # session per label set.
+    "claude_jsonl_baseline_injection_bytes": "Injected-context bytes before the first request, by kind; newest session per label set",
 }
-# Gauge, not counter: the bytes of each injected kind seen before a session's
-# first request, i.e. what the harness front-loads. The exporter's own
-# `token.usage` metric gives the first request's TOTAL per session but
-# nothing itemizes it; this is the itemization. Latest session per label set.
 BASELINE_METRIC = "claude_jsonl_baseline_injection_bytes"
 
 
@@ -176,7 +178,9 @@ def collect(projects: pathlib.Path, state: dict) -> dict:
 
     def set_gauge(labels: tuple, value, ts: str) -> None:
         key = BASELINE_METRIC + "\x00" + "\x00".join(labels)
-        if ts >= gauges.get(key, [0, ""])[1]:  # newest session wins, not last file visited
+        # Newest session wins, not the last file visited. A record with no
+        # timestamp cannot claim to be newer than anything already recorded.
+        if key not in gauges or (ts and ts >= gauges[key][1]):
             gauges[key] = [int(value), ts]
 
     offsets = dict(state.get("offsets", {}))
@@ -204,7 +208,7 @@ def render(totals: dict, gauges: dict | None = None) -> str:
     out = []
     for metric in sorted(by_metric):
         is_gauge = metric == BASELINE_METRIC
-        out.append(f"# HELP {metric} {METRICS.get(metric, 'Injected-context bytes before the first request, by kind')}")
+        out.append(f"# HELP {metric} {METRICS.get(metric, metric)}")
         out.append(f"# TYPE {metric} {'gauge' if is_gauge else 'counter'}")
         for labels, value in sorted(by_metric[metric]):
             if is_gauge:
@@ -305,6 +309,21 @@ def selfcheck() -> None:
                        if k.startswith("claude_jsonl_cache_")), "agent label polluted"
         st3 = st5
 
+        # gauge ordering: an undated record never overwrites a dated one, a
+        # dated one overwrites an undated one, and a newer date wins
+        probe = {}
+        def sg(labels, value, ts):
+            key = BASELINE_METRIC + "\x00" + "\x00".join(labels)
+            if key not in probe or (ts and ts >= probe[key][1]):
+                probe[key] = [int(value), ts]
+        sg(("r", "main", "k"), 1, "2026-01-02T00:00:00Z")
+        sg(("r", "main", "k"), 2, "")
+        assert probe[BASELINE_METRIC + "\x00r\x00main\x00k"][0] == 1, "undated overwrote dated"
+        sg(("r", "main", "k"), 3, "2026-01-01T00:00:00Z")
+        assert probe[BASELINE_METRIC + "\x00r\x00main\x00k"][0] == 1, "older date overwrote newer"
+        sg(("r", "main", "k2"), 4, "")
+        sg(("r", "main", "k2"), 5, "2026-01-01T00:00:00Z")
+        assert probe[BASELINE_METRIC + "\x00r\x00main\x00k2"][0] == 5, "dated did not replace undated"
         # attachments before the first request are itemized as a gauge; a
         # second request in the same file must not change it
         gk = BASELINE_METRIC + "\x00tofu-proxmox\x00main\x00skill_listing"
