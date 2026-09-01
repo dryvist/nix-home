@@ -129,7 +129,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None) 
                 # NB: distinct names — reusing `kind`/`size` here silently
                 # relabels every later message record in the same file.
                 att_kind = att.get("type") or (next(iter(att), "unknown"))
-                att_bytes = len(json.dumps(att, separators=(",", ":")))
+                att_bytes = len(json.dumps(att, separators=(",", ":")).encode("utf-8"))
                 ctx = (repo_of(rec), att_kind)
                 bump("claude_jsonl_context_injection_bytes_total", ctx, att_bytes)
                 bump("claude_jsonl_context_injections_total", ctx, 1)
