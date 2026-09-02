@@ -1,3 +1,6 @@
+---
+skill-groups: [core, nix]
+---
 # nix-home - AI Agent Instructions
 
 Cross-platform home-manager modules for development environment tools.
