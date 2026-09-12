@@ -12,10 +12,11 @@
   enable = true;
 
   # Global ignore patterns (written to the XDG global excludes file).
-  # AI tools create native worktrees in their own dotdirs; never track them.
+  # `.worktrees/` holds every linked worktree, whichever tool created it;
+  # `.omo/` is per-session runtime state written by the omo agent.
   ignores = [
-    ".claude/worktrees/"
-    ".gemini/worktrees/"
+    ".worktrees/"
+    ".omo/"
   ];
 
   # GPG signing configuration
