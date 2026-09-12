@@ -104,9 +104,10 @@ let
       secret_response=$(printf 'X-Vault-Token: %s\n' "$bao_token" \
         | curl -fsS --max-time 10 -H @- "$bao_addr/v1/$openbao_path" 2>/dev/null) \
         || skip "OpenBao denied or failed to read \$openbao_path"
-      api_key=$(printf '%s' "$secret_response" | jq -er '.data.data.RAYCAST_ROUTER_API_KEY // empty' 2>/dev/null) \
-        || skip "OpenBao secret at \$openbao_path has no RAYCAST_ROUTER_API_KEY field"
-      [ -n "$api_key" ] || skip "RAYCAST_ROUTER_API_KEY field is empty"
+      key_field="${cfg.openbaoKeyField}"
+      api_key=$(printf '%s' "$secret_response" | jq -er --arg f "$key_field" '.data.data[$f] // empty' 2>/dev/null) \
+        || skip "OpenBao secret at \$openbao_path has no $key_field field"
+      [ -n "$api_key" ] || skip "$key_field field is empty"
 
       mkdir -p "$(dirname "$target")"
       existing_json='{"providers":[]}'
@@ -147,20 +148,35 @@ in
 
     openbaoKeyPath = lib.mkOption {
       type = lib.types.str;
-      example = "secret/data/ai/router-keys/raycast";
+      example = "secret/apps/raycast";
       description = ''
         OpenBao KV path holding this consumer's own LiteLLM virtual key,
-        under the field `RAYCAST_ROUTER_API_KEY` — published per-consumer by
-        the router's virtual-key rollout (Vikunja 3072). Read at
+        under the field named by `openbaoKeyField` — published per-consumer
+        by the router's virtual-key rollout (Vikunja 3072). Settled per the
+        apps-side grant PR and the router A4 PR as `secret/apps/raycast`
+        (same shape as the opencode/codex/cursor consumers). Read at
         `home-manager`/`darwin-rebuild` activation time using the same
         ambient AppRole secret-zero (`BAO_ADDR`, `AI_READONLY_ROLE_ID`,
         `AI_READONLY_SECRET_ID`) every other OpenBao-backed read in this
         ecosystem uses; the untrusted/interactive tier's read-only AppRole
         is the expected policy backing it. Required when enabled; there is
-        no default, since the real path is deployment-specific and a wrong
-        default would read the wrong consumer's key. When the credential
-        cannot be read, the activation script skips the merge and leaves
-        the existing file untouched rather than writing an empty key.
+        no default here (the real path is deployment-specific and belongs
+        in the private overlay) — a wrong default would read the wrong
+        consumer's key. When the credential cannot be read, the activation
+        script skips the merge and leaves the existing file untouched
+        rather than writing an empty key.
+      '';
+    };
+
+    openbaoKeyField = lib.mkOption {
+      type = lib.types.str;
+      default = "raycast_llm_router_key";
+      description = ''
+        Field name to read within the `openbaoKeyPath` secret. Defaults to
+        `raycast_llm_router_key`, the name settled by the apps-side grant PR
+        and the router A4 PR for this consumer — the other consumers on the
+        same rollout (opencode, codex, cursor) each get their own key under
+        `<name>_llm_router_key` at their own path.
       '';
     };
   };
