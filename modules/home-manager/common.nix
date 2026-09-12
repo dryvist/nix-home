@@ -169,6 +169,7 @@ in
     gh = {
       enable = true;
       package = pkgs.gh;
+      extensions = [ (pkgs.callPackage ../../packages/gh-stack.nix { }) ];
       settings = {
         git_protocol = "ssh";
         prompt = "enabled";

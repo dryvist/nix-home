@@ -148,6 +148,7 @@
           bws = pkgs.callPackage ./modules/common/packages/bws.nix { };
           git-flow-next = pkgs.callPackage ./modules/common/git-flow-next.nix { };
           grip = pkgs.python314.pkgs.callPackage ./packages/grip.nix { };
+          gh-stack = pkgs.callPackage ./packages/gh-stack.nix { };
         }
       );
 
