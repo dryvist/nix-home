@@ -208,10 +208,23 @@ hits_identifier() {
   return 1
 }
 
-# Tier 2 prescreen: cheap keyword pass. Only a hit here pays for the judge, so
-# the common clean path costs no model call at all.
-smells_narrative() {
-  grep -qiE '\b(outage|root cause|blast radius|postmortem|incident|regression|broke|broken|degraded|unavailable|failed over|credential|token scope|app install|approle|default password|rotate[d]? the)\b' <<<"$1"
+# Tier 2 prescreen: screens OUT, not in. A missed keyword must never let
+# narrative content bypass the judge, so the default is to consult it.
+# Only content matching this NARROW allowlist of recognizably-trivial shapes
+# skips the judge — everything else falls through to judge_verdict
+# unconditionally. This is deliberately conservative: a false trip to the
+# judge costs one local model call, a false skip costs a permanent public
+# disclosure, and those costs are not symmetric.
+#
+# The one shape allowed through: a single-line, Renovate/Dependabot-style
+# dependency bump ("bump X from A to B" / "chore(deps): bump X from A to B").
+# That is the bulk of ordinary publish-verb traffic and it has no room for
+# narrative, topology, or credential detail — anything else, including a
+# bump line with extra prose attached, falls through to the judge.
+allows_trivial_fastpath() {
+  local content="$1"
+  [ "$(grep -c . <<<"$content")" -le 1 ] || return 1
+  grep -qiE '^(chore(\(deps[a-zA-Z0-9_.-]*\))?: )?bumps? [][[:alnum:]/_.@-]+ from [[:alnum:]._+-]+ to [[:alnum:]._+-]+\.?$' <<<"$content"
 }
 
 # Local judge. On-machine only: its input IS the candidate disclosure, so a
@@ -260,7 +273,7 @@ if [ "${1:-}" = "--scan" ]; then
   repo_is_public "$SCAN_REPO" || exit 0
   hits_identifier "$SCAN_CONTENT" && die identifier "$SCAN_REPO" "git" \
     "Content matches a known internal identifier. There is no override for this tier."
-  if smells_narrative "$SCAN_CONTENT"; then
+  if ! allows_trivial_fastpath "$SCAN_CONTENT"; then
     set +e; judge_verdict "$SCAN_CONTENT"; rc=$?; set -e
     case "$rc" in
       0) : ;;
@@ -289,7 +302,7 @@ CONTENT="$(collect_content "$@")"
 hits_identifier "$CONTENT" && die identifier "$REPO" "$VERB" \
   "Content matches a known internal identifier (hostname, address, node, or domain). There is no override for this tier."
 
-if smells_narrative "$CONTENT"; then
+if ! allows_trivial_fastpath "$CONTENT"; then
   set +e; judge_verdict "$CONTENT"; rc=$?; set -e
   case "$rc" in
     0) : ;;
