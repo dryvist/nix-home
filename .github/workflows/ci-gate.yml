@@ -37,9 +37,8 @@ jobs:
       actions: write
     uses: dryvist/.github/.github/workflows/_ci-gate.yml@main
     with:
+      osv_scan: true
       nix_validate: true
-      markdown_lint: true
-      file_size: true
       dependency_review: false
       zizmor: false
       filters: |
