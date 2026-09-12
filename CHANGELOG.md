@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.45.3](https://github.com/dryvist/nix-home/compare/v1.45.2...v1.45.3) (2026-09-12)
+
+
+### Bug Fixes
+
+* **gh-guard:** judge disclosure independent of formatting, category naming ([89f319a](https://github.com/dryvist/nix-home/commit/89f319a4a544363cf83ea92b5091322e76c723ff))
+
 ## [1.45.2](https://github.com/dryvist/nix-home/compare/v1.45.1...v1.45.2) (2026-09-12)
 
 
