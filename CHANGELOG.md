@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.45.2](https://github.com/dryvist/nix-home/compare/v1.45.1...v1.45.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* **gh-guard:** judge on disclosure category, not vocabulary or format ([1ca8b8b](https://github.com/dryvist/nix-home/commit/1ca8b8b3351e8c33a0f0a1f7bcb5e45188a4c42f))
+
 ## [1.45.1](https://github.com/dryvist/nix-home/compare/v1.45.0...v1.45.1) (2026-09-12)
 
 
