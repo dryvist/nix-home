@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.46.0](https://github.com/dryvist/nix-home/compare/v1.45.3...v1.46.0) (2026-09-12)
+
+
+### Features
+
+* **gh:** provision gh-stack extension via programs.gh.extensions ([dd9c502](https://github.com/dryvist/nix-home/commit/dd9c50219bb2b559ef42731df2073189fb8d69c9))
+* **gh:** provision gh-stack extension via programs.gh.extensions ([8787b01](https://github.com/dryvist/nix-home/commit/8787b013ca3b0759fb56caf8b915996d7f5ed5a5))
+
 ## [1.45.3](https://github.com/dryvist/nix-home/compare/v1.45.2...v1.45.3) (2026-09-12)
 
 
