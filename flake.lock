@@ -60,6 +60,23 @@
         "type": "github"
       }
     },
+    "nix-ai": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789247691,
+        "narHash": "sha256-wqbOAZzAo/hBUoj6VWOwrODFLbcMLDw2H+IKTv70qO4=",
+        "owner": "dryvist",
+        "repo": "nix-ai",
+        "rev": "e5044b3d8138cd0ff94863655c21ce6082145002",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dryvist",
+        "repo": "nix-ai",
+        "rev": "e5044b3d8138cd0ff94863655c21ce6082145002",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1789009968,
@@ -112,6 +129,7 @@
       "inputs": {
         "home-manager": "home-manager",
         "homelab-contracts": "homelab-contracts",
+        "nix-ai": "nix-ai",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "orbstack-kubernetes": "orbstack-kubernetes"

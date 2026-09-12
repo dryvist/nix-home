@@ -37,6 +37,21 @@
       url = "github:dryvist/homelab-contracts";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Source-only, like orbstack-kubernetes above: this repo needs exactly one
+    # file (modules/litellm-local/aliases.nix, the committed router capability
+    # alias list) and nothing else nix-ai exports, so `flake = false` skips
+    # locking nix-ai's own transitive inputs (nix-claude-code, nix-codex,
+    # nix-agy, ...) into this repo's flake.lock.
+    #
+    # TEMPORARY PIN: dryvist/nix-ai#2151 (which adds this file and its
+    # lib.litellmAliases output) is not merged yet. Repoint this to nix-ai's
+    # default branch (or a tagged release) once it lands — a rev pin on an
+    # unmerged branch is not a reviewable long-term state.
+    nix-ai = {
+      url = "github:dryvist/nix-ai/e5044b3d8138cd0ff94863655c21ce6082145002";
+      flake = false;
+    };
   };
 
   outputs =
@@ -47,6 +62,7 @@
       home-manager,
       orbstack-kubernetes,
       homelab-contracts,
+      nix-ai,
       ...
     }:
     let
@@ -77,8 +93,15 @@
           ./modules/home-manager/darwin
           ./modules/home-manager/git/gpg-agent.nix
         ];
-        _module.args.orbstackKubernetesSrc = orbstack-kubernetes;
-        _module.args.homelabContracts = homelab-contracts;
+        _module.args = {
+          orbstackKubernetesSrc = orbstack-kubernetes;
+          homelabContracts = homelab-contracts;
+          # The one committed router capability alias list nix-ai owns
+          # (modules/litellm-local/aliases.nix) — see the `nix-ai` input
+          # comment above for why this is a direct file import rather than a
+          # full flake dependency.
+          litellmAliases = import "${nix-ai}/modules/litellm-local/aliases.nix";
+        };
       };
 
       # Python packages overlay
