@@ -44,12 +44,10 @@
     # locking nix-ai's own transitive inputs (nix-claude-code, nix-codex,
     # nix-agy, ...) into this repo's flake.lock.
     #
-    # TEMPORARY PIN: dryvist/nix-ai#2151 (which adds this file and its
-    # lib.litellmAliases output) is not merged yet. Repoint this to nix-ai's
-    # default branch (or a tagged release) once it lands — a rev pin on an
-    # unmerged branch is not a reviewable long-term state.
+    # Pinned to the commit that merged dryvist/nix-ai#2151 (which adds this
+    # file and its lib.litellmAliases output) into nix-ai's default branch.
     nix-ai = {
-      url = "github:dryvist/nix-ai/e5044b3d8138cd0ff94863655c21ce6082145002";
+      url = "github:dryvist/nix-ai/d61512914d0a206f41a238d0769e4680677c5f15";
       flake = false;
     };
   };
