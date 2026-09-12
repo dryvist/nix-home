@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.45.0](https://github.com/dryvist/nix-home/compare/v1.44.0...v1.45.0) (2026-09-12)
+
+
+### Features
+
+* **git:** ignore .worktrees/ and .omo/ globally ([6ab3bc0](https://github.com/dryvist/nix-home/commit/6ab3bc0122fb6e8dfd9fa4cda95093f7f0d96e26))
+* **git:** ignore .worktrees/ and .omo/ globally ([acc0345](https://github.com/dryvist/nix-home/commit/acc0345ab95cb78bf1f45a0c9fcb8ba21576c0d6))
+
 ## [1.44.0](https://github.com/dryvist/nix-home/compare/v1.43.1...v1.44.0) (2026-09-01)
 
 
