@@ -12,11 +12,16 @@
   enable = true;
 
   # Global ignore patterns (written to the XDG global excludes file).
-  # `.worktrees/` holds every linked worktree, whichever tool created it;
-  # `.omo/` is per-session runtime state written by the omo agent.
+  # `.worktrees/` is where a linked worktree belongs. The per-tool paths below
+  # are written by tools that hardcode their own location and offer no setting
+  # to move it. `.omo/` is per-session runtime state from the omo agent.
   ignores = [
     ".worktrees/"
     ".omo/"
+    ".claude/worktrees/"
+    ".claude-wt/"
+    ".gemini/worktrees/"
+    ".gemini/antigravity-cli/worktrees/"
   ];
 
   # GPG signing configuration
