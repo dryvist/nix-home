@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.45.1](https://github.com/dryvist/nix-home/compare/v1.45.0...v1.45.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **gh-guard:** fail closed when the review prescreen has no match ([0f09bf9](https://github.com/dryvist/nix-home/commit/0f09bf975d1ede8c06366fd340b5384c3b82353c))
+
 ## [1.45.0](https://github.com/dryvist/nix-home/compare/v1.44.0...v1.45.0) (2026-09-12)
 
 
