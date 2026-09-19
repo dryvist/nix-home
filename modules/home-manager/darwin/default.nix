@@ -12,6 +12,7 @@
   imports = [
     ./claude-usage-collector.nix
     ./nix-activation-recovery.nix
+    ./raycast-ai-providers.nix
     ./tmux-session-autostart.nix
   ];
 }

@@ -18,11 +18,17 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import socket
 import sys
 import urllib.request
 
 PROJECTS = pathlib.Path.home() / ".claude" / "projects"
 STATE = pathlib.Path.home() / ".cache" / "claude-jsonl-etl" / "state.json"
+
+# Short hostname, resolved once. Short rather than the FQDN so the value
+# matches the `host_name` the OTEL exporter already sets, letting a panel join
+# the two sources on one label instead of normalising at query time.
+HOST = socket.gethostname().split(".")[0]
 
 # metric -> help text. Monotonic counters, plus the one gauge named below.
 METRICS = {
@@ -217,7 +223,22 @@ def render(totals: dict, gauges: dict | None = None) -> str:
                 names = ["repo", "kind"]
             else:
                 names = ["model", "repo", "agent", "ttl"][: len(labels)]
-            rendered = ",".join(f'{n}="{escape(v)}"' for n, v in zip(names, labels))
+            pairs = list(zip(names, labels))
+            # `host` on EVERY series, and it is load-bearing rather than
+            # decorative. Each machine runs its own collector with its own
+            # watermark and emits its own cumulative totals. Without a label
+            # that differs between them, two machines produce the SAME series
+            # identity, so each push overwrites the other's value instead of
+            # adding to it -- the stored number becomes whichever machine
+            # wrote last, and a query summing it oscillates between their two
+            # totals rather than climbing. Measured over three hours before
+            # this label existed: ~316.4B, 359.2B, 316.6B, 359.6B, 316.7B.
+            #
+            # That also makes `increase()` meaningless over the merged series,
+            # so every panel built on this data was wrong in a way no panel
+            # could reveal.
+            pairs.append(("host", HOST))
+            rendered = ",".join(f'{n}="{escape(v)}"' for n, v in pairs)
             out.append(f"{metric}{{{rendered}}} {value}")
     return "\n".join(out) + "\n"
 
@@ -330,9 +351,21 @@ def selfcheck() -> None:
         assert st5["gauges"][gk][0] > 10 and st5["gauges"][gk][1] == ""
         body = render(st3["totals"], st5["gauges"])
         assert "# TYPE claude_jsonl_baseline_injection_bytes gauge" in body
-        assert 'claude_jsonl_baseline_injection_bytes{repo="tofu-proxmox",agent="main",kind="skill_listing"}' in body
+        assert (
+            'claude_jsonl_baseline_injection_bytes{repo="tofu-proxmox",agent="main",'
+            f'kind="skill_listing",host="{HOST}"'
+        ) in body
         assert 'ttl="1h"' in body and 'agent="subagent"' in body
         assert "# TYPE claude_jsonl_cache_creation_tokens_total counter" in body
+        # EVERY series carries host, not just the ones spelled out above. Two
+        # machines emitting the same label set share one series identity and
+        # overwrite each other's cumulative value, so a missing host label here
+        # silently corrupts every number downstream while every component
+        # reports healthy. Assert it on all of them, counters and gauge alike.
+        series = [ln for ln in body.splitlines() if ln and not ln.startswith("#")]
+        assert series, "render produced no series to check"
+        missing = [ln for ln in series if f'host="{HOST}"' not in ln]
+        assert not missing, f"series without a host label: {missing[:3]}"
     print("selfcheck OK")
 
 
