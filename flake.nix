@@ -99,6 +99,17 @@
           # comment above for why this is a direct file import rather than a
           # full flake dependency.
           litellmAliases = import "${nix-ai}/modules/litellm-local/aliases.nix";
+          # options.nix declares its options in isolation ({ config, lib, ... },
+          # no other imports), so evalModules on that one file resolves its own
+          # option defaults (loopback base URL, placeholder client token)
+          # without pulling in the rest of nix-ai's home-manager module (which
+          # `flake = false` above exists to avoid). Raycast's provider file
+          # reads these instead of a hand-typed literal, so a port change in
+          # nix-ai's module stays a single edit.
+          litellmLocalDefaults =
+            (nixpkgs.lib.evalModules {
+              modules = [ "${nix-ai}/modules/litellm-local/options.nix" ];
+            }).config.programs.litellmLocal;
         };
       };
 
