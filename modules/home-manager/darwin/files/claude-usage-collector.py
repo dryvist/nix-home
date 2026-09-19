@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Emit Prometheus exposition text for what the Claude Code OTEL exporter does not.
 
-Native OTEL gives cost, tokens by coarse type, sessions, tool decisions. It does
-NOT give: the 5m vs 1h ephemeral cache split, thinking tokens, per-repo
-attribution, or subagent cost. This reads the session transcripts for those.
+Native OTEL gives cost, tokens by coarse type, sessions, tool decisions -- but
+none of it split by repo or by main-vs-subagent. It also does NOT give the 5m
+vs 1h ephemeral cache split or thinking tokens. This reads the session
+transcripts for those, and separately models per-message cost (tokens x
+LiteLLM's public price table) so that cost, unlike the native metric, can
+carry the same repo/agent attribution.
 
 Incremental by (path -> byte offset) watermark; counters are cumulative so the
 output matches the cumulative temporality VictoriaMetrics needs.
@@ -20,10 +23,18 @@ import json
 import pathlib
 import socket
 import sys
+import time
 import urllib.request
 
 PROJECTS = pathlib.Path.home() / ".claude" / "projects"
 STATE = pathlib.Path.home() / ".cache" / "claude-jsonl-etl" / "state.json"
+
+# LiteLLM's public price table -- the same source ccusage uses -- rather than
+# a hand-maintained model->$/token map that would silently drift every time a
+# provider changes pricing.
+PRICE_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+PRICE_CACHE = STATE.parent / "prices.json"
+PRICE_MAX_AGE_SECONDS = 86400  # refetch at most daily; the cache covers everything between
 
 # Short hostname, resolved once. Short rather than the FQDN so the value
 # matches the `host_name` the OTEL exporter already sets, letting a panel join
@@ -46,8 +57,57 @@ METRICS = {
     # session but nothing itemizes it; this is the itemization. Latest
     # session per label set.
     "claude_jsonl_baseline_injection_bytes": "Injected-context bytes before the first request, by kind; newest session per label set",
+    "claude_jsonl_cost_usd_total": "Modeled USD cost per message (tokens x LiteLLM's public price table); absent entirely when no price table is available",
+    "claude_jsonl_cost_unpriced_messages_total": "Messages whose model was missing from the price table (counted as $0 cost, never silently dropped)",
 }
 BASELINE_METRIC = "claude_jsonl_baseline_injection_bytes"
+COST_METRIC = "claude_jsonl_cost_usd_total"
+UNPRICED_METRIC = "claude_jsonl_cost_unpriced_messages_total"
+
+
+def load_prices() -> tuple[dict | None, str | None]:
+    """Return (price table, warning). Table is None only when neither a fresh
+    fetch nor a cached copy is available -- callers must then emit NO cost
+    series at all, never a fabricated zero.
+    """
+    cached = None
+    fresh = False
+    try:
+        stat = PRICE_CACHE.stat()
+        cached = json.loads(PRICE_CACHE.read_text())
+        fresh = (time.time() - stat.st_mtime) < PRICE_MAX_AGE_SECONDS
+    except (OSError, ValueError):
+        pass
+    if fresh:
+        return cached, None
+    try:
+        with urllib.request.urlopen(PRICE_URL, timeout=10) as resp:
+            data = json.loads(resp.read())
+        PRICE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = PRICE_CACHE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data))
+        tmp.replace(PRICE_CACHE)
+        return data, None
+    except (OSError, ValueError) as exc:
+        if cached is not None:
+            return cached, f"price fetch failed ({exc}); using cached table"
+        return None, f"price fetch failed ({exc}); no cached table, no price table"
+
+
+def message_cost(price: dict, input_tok: int, output_tok: int, cache_read: int,
+                  cache_5m: int, cache_1h: int) -> float:
+    rate_1h = price.get("cache_creation_input_token_cost_above_1hr")
+    if rate_1h is None:
+        # Not every model lists a 1h rate; Anthropic's published pricing sets
+        # it at 2x the 5m ephemeral-cache rate.
+        rate_1h = 2 * price.get("cache_creation_input_token_cost", 0)
+    return (
+        input_tok * price.get("input_cost_per_token", 0)
+        + output_tok * price.get("output_cost_per_token", 0)
+        + cache_read * price.get("cache_read_input_token_cost", 0)
+        + cache_5m * price.get("cache_creation_input_token_cost", 0)
+        + cache_1h * rate_1h
+    )
 
 
 def load_state() -> dict:
@@ -103,7 +163,8 @@ def repo_of(rec: dict) -> str:
     return rest[0] if rest else "other"
 
 
-def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None) -> int:
+def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
+              prices: dict | None = None) -> int:
     """Fold new records from `path` into `bump`. Returns the new offset.
 
     `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
@@ -156,23 +217,34 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None) 
                     set_gauge((repo_of(rec), kind, att_kind), nbytes, ts)
                 pre = None
             cc = usage.get("cache_creation") or {}
-            bump("claude_jsonl_cache_creation_tokens_total", labels + ("5m",),
-                 cc.get("ephemeral_5m_input_tokens", 0))
-            bump("claude_jsonl_cache_creation_tokens_total", labels + ("1h",),
-                 cc.get("ephemeral_1h_input_tokens", 0))
-            bump("claude_jsonl_cache_read_tokens_total", labels,
-                 usage.get("cache_read_input_tokens", 0))
-            bump("claude_jsonl_input_tokens_total", labels,
-                 usage.get("input_tokens", 0))
-            bump("claude_jsonl_output_tokens_total", labels,
-                 usage.get("output_tokens", 0))
+            cache_5m = cc.get("ephemeral_5m_input_tokens", 0)
+            cache_1h = cc.get("ephemeral_1h_input_tokens", 0)
+            cache_read = usage.get("cache_read_input_tokens", 0)
+            input_tok = usage.get("input_tokens", 0)
+            output_tok = usage.get("output_tokens", 0)
+            bump("claude_jsonl_cache_creation_tokens_total", labels + ("5m",), cache_5m)
+            bump("claude_jsonl_cache_creation_tokens_total", labels + ("1h",), cache_1h)
+            bump("claude_jsonl_cache_read_tokens_total", labels, cache_read)
+            bump("claude_jsonl_input_tokens_total", labels, input_tok)
+            bump("claude_jsonl_output_tokens_total", labels, output_tok)
             bump("claude_jsonl_thinking_tokens_total", labels,
                  (usage.get("output_tokens_details") or {}).get("thinking_tokens", 0))
             bump("claude_jsonl_messages_total", labels, 1)
+            # Cost only when a price table is available at all -- with none,
+            # emit nothing rather than a wall of "unpriced" noise (see
+            # load_prices). With a table, a model missing from it is counted
+            # as $0 cost but the gap stays visible via the unpriced counter.
+            if prices:
+                price = prices.get(labels[0])
+                if price:
+                    bump(COST_METRIC, labels, message_cost(
+                        price, input_tok, output_tok, cache_read, cache_5m, cache_1h))
+                else:
+                    bump(UNPRICED_METRIC, (labels[0],), 1)
     return offset
 
 
-def collect(projects: pathlib.Path, state: dict) -> dict:
+def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
     totals: dict[str, int] = dict(state.get("totals", {}))
     gauges: dict[str, list] = dict(state.get("gauges", {}))  # key -> [value, timestamp]
 
@@ -180,7 +252,10 @@ def collect(projects: pathlib.Path, state: dict) -> dict:
         if not value:
             return
         key = metric + "\x00" + "\x00".join(labels)
-        totals[key] = totals.get(key, 0) + int(value)
+        if metric == COST_METRIC:
+            totals[key] = totals.get(key, 0.0) + float(value)  # USD needs float precision
+        else:
+            totals[key] = totals.get(key, 0) + int(value)
 
     def set_gauge(labels: tuple, value, ts: str) -> None:
         key = BASELINE_METRIC + "\x00" + "\x00".join(labels)
@@ -193,7 +268,7 @@ def collect(projects: pathlib.Path, state: dict) -> dict:
     for path in projects.rglob("*.jsonl"):
         sp = str(path)
         try:
-            offsets[sp] = scan_file(path, offsets.get(sp, 0), bump, set_gauge)
+            offsets[sp] = scan_file(path, offsets.get(sp, 0), bump, set_gauge, prices)
         except OSError:
             continue
     return {"offsets": offsets, "totals": totals, "gauges": gauges}
@@ -239,7 +314,11 @@ def render(totals: dict, gauges: dict | None = None) -> str:
             # could reveal.
             pairs.append(("host", HOST))
             rendered = ",".join(f'{n}="{escape(v)}"' for n, v in pairs)
-            out.append(f"{metric}{{{rendered}}} {value}")
+            # Cost is a float (USD); %.10g avoids float-sum repr artifacts
+            # like 0.0002499999999999999 while staying within Prometheus's
+            # accepted number syntax. Everything else stays a plain int.
+            value_str = f"{value:.10g}" if isinstance(value, float) else str(value)
+            out.append(f"{metric}{{{rendered}}} {value_str}")
     return "\n".join(out) + "\n"
 
 
@@ -271,8 +350,34 @@ def selfcheck() -> None:
         main.write_text(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 655, 10, 3) + "\n")
         sub = root / "repo-a" / "subagents" / "agent-1.jsonl"
         sub.write_text(rec("fable", str(GIT_HOME / "public/homelab/tofu-proxmox/.worktrees/deploy"), 20, 0, 5, 0) + "\n")
+        unpriced = root / "repo-a" / "s0.jsonl"
+        unpriced.write_text(rec("atlas", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 0, 2, 0) + "\n")
 
-        st = collect(root, {"offsets": {}, "totals": {}})
+        # "opus" is priced with an explicit 1h rate; "fable" is priced but with
+        # NO 1h rate listed, so it must fall back to 2x the 5m rate; "atlas"
+        # never appears in the table at all.
+        prices = {
+            "opus": {
+                "input_cost_per_token": 5e-06, "output_cost_per_token": 2.5e-05,
+                "cache_read_input_token_cost": 5e-07,
+                "cache_creation_input_token_cost": 6.25e-06,
+                "cache_creation_input_token_cost_above_1hr": 1e-05,
+            },
+            "fable": {
+                "input_cost_per_token": 1e-06, "output_cost_per_token": 5e-06,
+                "cache_read_input_token_cost": 1e-07,
+                "cache_creation_input_token_cost": 1.25e-06,
+                # no *_above_1hr key
+            },
+        }
+
+        # no price table at all -> no cost series, ever (never fabricate a $0)
+        st_nop = collect(root, {"offsets": {}, "totals": {}}, prices=None)
+        assert not any(k.startswith(COST_METRIC) or k.startswith(UNPRICED_METRIC)
+                       for k in st_nop["totals"])
+        print("selfcheck: no price table -> cost series skipped (as expected)")
+
+        st = collect(root, {"offsets": {}, "totals": {}}, prices=prices)
         t = st["totals"]
 
         def get(metric, *labels):
@@ -285,14 +390,26 @@ def selfcheck() -> None:
         assert get("claude_jsonl_cache_creation_tokens_total", "fable", "tofu-proxmox", "subagent", "5m") == 20
         assert get("claude_jsonl_thinking_tokens_total", "opus", "tofu-proxmox", "main") == 3
 
+        # cost is modeled from the price table, per (model, repo, agent) --
+        # a priced model with an explicit 1h rate...
+        opus_cost = get(COST_METRIC, "opus", "tofu-proxmox", "main")
+        assert abs(opus_cost - 0.006855) < 1e-9, opus_cost
+        # ...a priced model with NO 1h rate listed, falling back to 2x the 5m rate...
+        fable_cost = get(COST_METRIC, "fable", "tofu-proxmox", "subagent")
+        assert abs(fable_cost - 0.000061) < 1e-9, fable_cost
+        # ...and a model absent from the table entirely: no cost series, but
+        # the gap is visible via the unpriced counter, never silent.
+        assert get(COST_METRIC, "atlas", "tofu-proxmox", "main") == 0
+        assert get(UNPRICED_METRIC, "atlas") == 1
+
         # incremental: re-running over unchanged files must NOT double-count
-        st2 = collect(root, st)
+        st2 = collect(root, st, prices=prices)
         assert st2["totals"] == t, "re-scan double-counted"
 
         # appending only adds the new record
         with main.open("a") as fh:
             fh.write(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 7, 0, 1, 0) + "\n")
-        st3 = collect(root, st2)
+        st3 = collect(root, st2, prices=prices)
         assert st3["totals"][
             "claude_jsonl_cache_creation_tokens_total\x00opus\x00tofu-proxmox\x00main\x005m"] == 7
 
@@ -310,7 +427,7 @@ def selfcheck() -> None:
             "type": "attachment", "cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
             "attachment": {"type": "skill_listing", "body": "x" * 500},
         }) + "\n")
-        st4 = collect(root, st3)
+        st4 = collect(root, st3, prices=prices)
         k = "claude_jsonl_context_injection_bytes_total\x00tofu-proxmox\x00skill_listing"
         assert st4["totals"][k] > 500, st4["totals"].get(k)
         assert st4["totals"]["claude_jsonl_context_injections_total\x00tofu-proxmox\x00skill_listing"] == 1
@@ -322,7 +439,7 @@ def selfcheck() -> None:
                         "cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
                         "attachment": {"type": "skill_listing", "body": "y" * 10}}) + "\n"
             + rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 42, 1, 0) + "\n")
-        st5 = collect(root, st4)
+        st5 = collect(root, st4, prices=prices)
         assert st5["totals"].get(
             "claude_jsonl_cache_creation_tokens_total\x00opus\x00tofu-proxmox\x00main\x001h") == 655 + 42, \
             "attachment clobbered the agent label of a later message"
@@ -357,6 +474,8 @@ def selfcheck() -> None:
         ) in body
         assert 'ttl="1h"' in body and 'agent="subagent"' in body
         assert "# TYPE claude_jsonl_cache_creation_tokens_total counter" in body
+        assert f'{COST_METRIC}{{model="opus",repo="tofu-proxmox",agent="main",host="{HOST}"}}' in body
+        assert f'{COST_METRIC}{{model="fable",repo="tofu-proxmox",agent="subagent",host="{HOST}"}}' in body
         # EVERY series carries host, not just the ones spelled out above. Two
         # machines emitting the same label set share one series identity and
         # overwrite each other's cumulative value, so a missing host label here
@@ -380,7 +499,10 @@ def main() -> int:
         selfcheck()
         return 0
 
-    state = collect(PROJECTS, load_state())
+    prices, price_warning = load_prices()
+    if price_warning:
+        print(price_warning, file=sys.stderr)
+    state = collect(PROJECTS, load_state(), prices)
     body = render(state["totals"], state["gauges"])
     if args.push:
         req = urllib.request.Request(args.push, data=body.encode(), method="POST")
