@@ -24,10 +24,13 @@
   pkgs,
   config,
   litellmAliases ? [ ],
-  litellmLocalDefaults ? {
-    baseUrl = "http://127.0.0.1:4100/v1";
-    clientToken = "local";
-  },
+  # No `?` default: this module exists so the loopback URL and placeholder
+  # token are declared exactly once, in nix-ai's options.nix. A fallback
+  # here would be a second, driftable copy of both — flake.nix always
+  # supplies this via `_module.args`; a caller with no flake evaluates
+  # `${nix-ai}/modules/litellm-local/options.nix` the same way flake.nix
+  # does rather than hand-typing a stand-in.
+  litellmLocalDefaults,
   ...
 }:
 
