@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.47.0](https://github.com/dryvist/nix-home/compare/v1.46.0...v1.47.0) (2026-09-19)
+
+
+### Features
+
+* **jsonl-etl:** emit per-message cost with agent/repo labels ([bbe5a66](https://github.com/dryvist/nix-home/commit/bbe5a661a51e3ceff5eb4d3fcd4f8ddcd3b4cf9f))
+* **jsonl-etl:** emit per-message cost with agent/repo labels ([8b978fd](https://github.com/dryvist/nix-home/commit/8b978fda7981acd5f999b164784bec6053012cab))
+* **raycast:** make the OpenBao key field name a configurable option ([#494](https://github.com/dryvist/nix-home/issues/494)) ([8a6e5e6](https://github.com/dryvist/nix-home/commit/8a6e5e6120664bfac5e70d8004a008455f4eef3d))
+* **raycast:** render the shared router as a Raycast AI custom provider ([#493](https://github.com/dryvist/nix-home/issues/493)) ([0545d38](https://github.com/dryvist/nix-home/commit/0545d388ab65860990988377741702073c8d847f))
+
+
+### Bug Fixes
+
+* **ci:** forward the router secrets to ai-pr-care with secrets: inherit ([65fb661](https://github.com/dryvist/nix-home/commit/65fb66186163bf32abb7ec4ece8def7f0d29db94))
+* **ci:** forward the router secrets to ai-pr-care with secrets: inherit ([d75fea4](https://github.com/dryvist/nix-home/commit/d75fea4267a2cae7f2460bebf72b576f5ff4ac03))
+* **raycast:** stop re-typing the loopback default as a module fallback ([d2b8846](https://github.com/dryvist/nix-home/commit/d2b88469453b99d39cdb5b0548e13b72c25338c0))
+* **usage-collector:** label every series with its host ([61dcf23](https://github.com/dryvist/nix-home/commit/61dcf233cc05fb4b5950bdc700cb9d07eb39ce83))
+
 ## [1.46.0](https://github.com/dryvist/nix-home/compare/v1.45.3...v1.46.0) (2026-09-12)
 
 
