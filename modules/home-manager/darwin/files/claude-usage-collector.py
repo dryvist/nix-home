@@ -59,10 +59,39 @@ METRICS = {
     "claude_jsonl_baseline_injection_bytes": "Injected-context bytes before the first request, by kind; newest session per label set",
     "claude_jsonl_cost_usd_total": "Modeled USD cost per message (tokens x LiteLLM's public price table); absent entirely when no price table is available",
     "claude_jsonl_cost_unpriced_messages_total": "Messages whose model was missing from the price table (counted as $0 cost, never silently dropped)",
+    # Approximate: transcripts carry the tool result's bytes, never a token
+    # count for it, so this is bytes/4 rather than an exact count -- good
+    # enough to rank which tools flood the context, not to bill against.
+    "claude_jsonl_tool_result_tokens_total": "Tool-result size fed back into context, approximated as bytes/4, by tool name",
+    "claude_jsonl_turn_pause_total": "Turns whose gap since the same transcript's prior turn falls in this bucket (5m-60m or over 1h; TTL-relevant pauses only)",
+    "claude_jsonl_subagents_total": "Subagent transcripts started (one per subagent file, counted the first time it is scanned)",
 }
 BASELINE_METRIC = "claude_jsonl_baseline_injection_bytes"
 COST_METRIC = "claude_jsonl_cost_usd_total"
 UNPRICED_METRIC = "claude_jsonl_cost_unpriced_messages_total"
+TOOL_RESULT_METRIC = "claude_jsonl_tool_result_tokens_total"
+PAUSE_METRIC = "claude_jsonl_turn_pause_total"
+SUBAGENT_METRIC = "claude_jsonl_subagents_total"
+
+_TIME_FMT = "%Y-%m-%dT%H:%M:%S"
+
+
+def _parse_ts(ts: str) -> float | None:
+    """Epoch seconds from an ISO8601 `Z` timestamp, or None if unparseable."""
+    if not ts:
+        return None
+    try:
+        return time.mktime(time.strptime(ts[:19], _TIME_FMT)) - time.timezone
+    except ValueError:
+        return None
+
+
+def pause_bucket(gap_seconds: float) -> str | None:
+    """Bucket a gap since the transcript's prior turn. None = not TTL-relevant
+    (under 5 minutes: still inside the 5m cache window, nothing to explain)."""
+    if gap_seconds < 300:
+        return None
+    return "over_1h" if gap_seconds > 3600 else "5m_60m"
 
 
 def load_prices() -> tuple[dict | None, str | None]:
@@ -164,8 +193,8 @@ def repo_of(rec: dict) -> str:
 
 
 def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
-              prices: dict | None = None) -> int:
-    """Fold new records from `path` into `bump`. Returns the new offset.
+              prices: dict | None = None, last_ts: float | None = None) -> tuple[int, float | None]:
+    """Fold new records from `path` into `bump`. Returns (new offset, new last_ts).
 
     `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
     once the first request of a file is seen; a file scanned from its start is
@@ -174,12 +203,22 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
     Subagent transcripts live in a `subagents/` subdirectory and are the ONLY
     place their usage is recorded — the parent transcript's `isSidechain` is
     false for every record, so it cannot be used for this.
+
+    `last_ts` is this transcript's previous turn timestamp (persisted across
+    runs, per path) so a pause spanning two ETL runs is still bucketed.
     """
     kind = "subagent" if path.parent.name == "subagents" else "main"
     size = path.stat().st_size
     if offset > size:  # truncated or rotated; start over
         offset = 0
+        last_ts = None
     pre: dict[str, int] | None = {} if offset == 0 else None
+    subagent_uncounted = offset == 0 and kind == "subagent"
+    # tool_use_id -> tool name, so a later tool_result can be attributed. Reset
+    # per file: a result never spans two transcripts, and this dict never
+    # needs to survive a run since a partial trailing tool_use with no result
+    # yet is simply dropped, not miscounted.
+    tool_names: dict[str, str] = {}
     with path.open("r", errors="replace") as fh:
         fh.seek(offset)
         for line in fh:
@@ -190,6 +229,20 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
                 rec = json.loads(line)
             except ValueError:
                 continue
+            msg_content = (rec.get("message") or {}).get("content")
+            if isinstance(msg_content, list):
+                for c in msg_content:
+                    if not isinstance(c, dict):
+                        continue
+                    if c.get("type") == "tool_use":
+                        tool_names[c.get("id")] = c.get("name") or "unknown"
+                    elif c.get("type") == "tool_result":
+                        tool_name = tool_names.get(c.get("tool_use_id"), "unknown")
+                        result_content = c.get("content")
+                        if result_content is not None:
+                            nbytes = len(json.dumps(
+                                result_content, separators=(",", ":")).encode("utf-8"))
+                            bump(TOOL_RESULT_METRIC, (tool_name, repo_of(rec), kind), nbytes // 4)
             if rec.get("type") == "attachment":
                 # Injected context: skill listings, MCP instructions, hook output.
                 # This is the only record of what is consuming the window before
@@ -216,6 +269,16 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
                 for att_kind, nbytes in pre.items():
                     set_gauge((repo_of(rec), kind, att_kind), nbytes, ts)
                 pre = None
+            if subagent_uncounted:
+                bump(SUBAGENT_METRIC, (repo_of(rec),), 1)
+                subagent_uncounted = False
+            now = _parse_ts(rec.get("timestamp") or "")
+            if now is not None:
+                if last_ts is not None:
+                    bucket = pause_bucket(now - last_ts)
+                    if bucket:
+                        bump(PAUSE_METRIC, (kind, bucket), 1)
+                last_ts = now
             cc = usage.get("cache_creation") or {}
             cache_5m = cc.get("ephemeral_5m_input_tokens", 0)
             cache_1h = cc.get("ephemeral_1h_input_tokens", 0)
@@ -241,7 +304,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
                         price, input_tok, output_tok, cache_read, cache_5m, cache_1h))
                 else:
                     bump(UNPRICED_METRIC, (labels[0],), 1)
-    return offset
+    return offset, last_ts
 
 
 def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
@@ -265,13 +328,18 @@ def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> 
             gauges[key] = [int(value), ts]
 
     offsets = dict(state.get("offsets", {}))
+    last_ts_by_path = dict(state.get("last_ts", {}))
     for path in projects.rglob("*.jsonl"):
         sp = str(path)
         try:
-            offsets[sp] = scan_file(path, offsets.get(sp, 0), bump, set_gauge, prices)
+            new_offset, new_last_ts = scan_file(
+                path, offsets.get(sp, 0), bump, set_gauge, prices, last_ts_by_path.get(sp))
         except OSError:
             continue
-    return {"offsets": offsets, "totals": totals, "gauges": gauges}
+        offsets[sp] = new_offset
+        if new_last_ts is not None:
+            last_ts_by_path[sp] = new_last_ts
+    return {"offsets": offsets, "totals": totals, "gauges": gauges, "last_ts": last_ts_by_path}
 
 
 def escape(v: str) -> str:
@@ -296,6 +364,12 @@ def render(totals: dict, gauges: dict | None = None) -> str:
                 names = ["repo", "agent", "kind"]
             elif metric.startswith("claude_jsonl_context_"):
                 names = ["repo", "kind"]
+            elif metric == TOOL_RESULT_METRIC:
+                names = ["tool", "repo", "agent"]
+            elif metric == PAUSE_METRIC:
+                names = ["agent", "bucket"]
+            elif metric == SUBAGENT_METRIC:
+                names = ["repo"]
             else:
                 names = ["model", "repo", "agent", "ttl"][: len(labels)]
             pairs = list(zip(names, labels))
@@ -446,6 +520,74 @@ def selfcheck() -> None:
         assert not any("skill_listing" in k for k in st5["totals"]
                        if k.startswith("claude_jsonl_cache_")), "agent label polluted"
         st3 = st5
+
+        # subagent count: the one subagent file written above (agent-1.jsonl)
+        # must be counted exactly once, keyed by ITS OWN repo (the worktree,
+        # not the parent transcript's)
+        assert st3["totals"].get(SUBAGENT_METRIC + "\x00tofu-proxmox") == 1
+        # re-scanning must not double-count it
+        st3b = collect(root, st3, prices=prices)
+        assert st3b["totals"].get(SUBAGENT_METRIC + "\x00tofu-proxmox") == 1
+        st3 = st3b
+
+        # tool_result bytes: a tool_use establishes the name, the matching
+        # tool_result is attributed to it; an unmatched tool_use_id falls
+        # back to "unknown" rather than being dropped
+        tool = root / "repo-a" / "s4.jsonl"
+        tool.write_text("\n".join([
+            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+                        "type": "assistant",
+                        "message": {"content": [
+                            {"type": "tool_use", "id": "t1", "name": "Bash"}]}}),
+            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+                        "type": "user",
+                        "message": {"content": [
+                            {"type": "tool_result", "tool_use_id": "t1",
+                             "content": "x" * 400}]}}),
+            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+                        "type": "user",
+                        "message": {"content": [
+                            {"type": "tool_result", "tool_use_id": "unmatched",
+                             "content": "y" * 40}]}}),
+        ]) + "\n")
+        st6 = collect(root, st3, prices=prices)
+        assert st6["totals"].get(
+            TOOL_RESULT_METRIC + "\x00Bash\x00tofu-proxmox\x00main") == 100  # 400 bytes / 4
+        assert st6["totals"].get(
+            TOOL_RESULT_METRIC + "\x00unknown\x00tofu-proxmox\x00main") == 10
+        body6 = render(st6["totals"])
+        assert 'claude_jsonl_tool_result_tokens_total{tool="Bash",repo="tofu-proxmox",agent="main"' in body6
+        st3 = st6
+
+        # pause bucket: a gap under 5m is silent, 5m-60m and over 1h each bump
+        # their own bucket, keyed by nothing but the transcript's own prior turn
+        assert pause_bucket(60) is None
+        assert pause_bucket(299) is None
+        assert pause_bucket(300) == "5m_60m"
+        assert pause_bucket(3600) == "5m_60m"
+        assert pause_bucket(3601) == "over_1h"
+        pause = root / "repo-a" / "s5.jsonl"
+
+        def timed_rec(ts, out_tok=1):
+            d = json.loads(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 0, out_tok, 0))
+            d["timestamp"] = ts
+            return json.dumps(d)
+
+        pause.write_text("\n".join([
+            timed_rec("2026-01-01T00:00:00Z"),
+            timed_rec("2026-01-01T00:10:00Z"),  # +10m -> 5m_60m
+            timed_rec("2026-01-01T02:10:00Z"),  # +2h  -> over_1h
+        ]) + "\n")
+        st7 = collect(root, st3, prices=prices)
+        assert st7["totals"].get(PAUSE_METRIC + "\x00main\x005m_60m") == 1
+        assert st7["totals"].get(PAUSE_METRIC + "\x00main\x00over_1h") == 1
+        # a pause spanning two separate ETL runs is still caught, via last_ts
+        # persisted in state rather than only in-memory during one scan_file call
+        with pause.open("a") as fh:
+            fh.write(timed_rec("2026-01-01T04:10:00Z") + "\n")  # +2h from prior run
+        st8 = collect(root, st7, prices=prices)
+        assert st8["totals"].get(PAUSE_METRIC + "\x00main\x00over_1h") == 2
+        st3 = st8
 
         # gauge ordering: an undated record never overwrites a dated one, a
         # dated one overwrites an undated one, and a newer date wins
