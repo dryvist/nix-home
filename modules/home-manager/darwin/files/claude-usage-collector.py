@@ -192,7 +192,7 @@ def repo_of(rec: dict) -> str:
     return rest[0] if rest else "other"
 
 
-def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
+def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: None,
               prices: dict | None = None, last_ts: float | None = None) -> tuple[int, float | None]:
     """Fold new records from `path` into `bump`. Returns (new offset, new last_ts).
 
@@ -235,9 +235,15 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
                     if not isinstance(c, dict):
                         continue
                     if c.get("type") == "tool_use":
-                        tool_names[c.get("id")] = c.get("name") or "unknown"
+                        tool_id = c.get("id")
+                        if isinstance(tool_id, str):
+                            tool_names[tool_id] = c.get("name") or "unknown"
                     elif c.get("type") == "tool_result":
-                        tool_name = tool_names.get(c.get("tool_use_id"), "unknown")
+                        result_id = c.get("tool_use_id")
+                        tool_name = (
+                            tool_names.get(result_id, "unknown")
+                            if isinstance(result_id, str) else "unknown"
+                        )
                         result_content = c.get("content")
                         if result_content is not None:
                             nbytes = len(json.dumps(
@@ -308,7 +314,8 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *a: None,
 
 
 def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
-    totals: dict[str, int] = dict(state.get("totals", {}))
+    # int for every counter except COST_METRIC, which needs float precision (USD)
+    totals: dict[str, int | float] = dict(state.get("totals", {}))
     gauges: dict[str, list] = dict(state.get("gauges", {}))  # key -> [value, timestamp]
 
     def bump(metric: str, labels: tuple, value) -> None:
@@ -351,7 +358,8 @@ def render(totals: dict, gauges: dict | None = None) -> str:
     for key, value in totals.items():
         parts = key.split("\x00")
         by_metric.setdefault(parts[0], []).append((parts[1:], value))
-    for key, (value, _ts) in (gauges or {}).items():
+    for key, gauge_entry in (gauges or {}).items():
+        value = gauge_entry[0]  # [value, timestamp]; timestamp unused here
         parts = key.split("\x00")
         by_metric.setdefault(parts[0], []).append((parts[1:], value))
     out = []
