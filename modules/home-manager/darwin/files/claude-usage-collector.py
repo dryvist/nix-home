@@ -27,13 +27,31 @@ import time
 import urllib.request
 
 PROJECTS = pathlib.Path.home() / ".claude" / "projects"
-STATE = pathlib.Path.home() / ".cache" / "claude-jsonl-etl" / "state.json"
 
+# Cumulative counter state lives under XDG_STATE_HOME (~/.local/state), NOT
+# XDG_CACHE_HOME (~/.cache) -- a `.cache` directory is fair game for
+# disk-cleanup tooling to delete on a whim, and this file IS the cumulative
+# counter, not a memo of one. Losing it resets every counter to 0 while the
+# already-reported total is still sitting in VictoriaMetrics as the prior
+# sample; Prometheus's `increase()` treats that drop as a counter reset and
+# ADDS the pre-reset value back into the range sum, so a single silent wipe
+# inflates a query by the entire historical total, and repeated wipes
+# compound. Found live: a 7-day `increase()` over 1h cache writes for `main`
+# returned ~609B tokens against a real weekly total near 110M -- ~5000x,
+# consistent with exactly this failure mode recurring across a series of
+# `.cache` wipes. `LEGACY_STATE` is read once, as a one-time migration, so
+# shipping this fix does not itself trigger the same reset it fixes.
+STATE = pathlib.Path.home() / ".local" / "state" / "claude-jsonl-etl" / "state.json"
+LEGACY_STATE = pathlib.Path.home() / ".cache" / "claude-jsonl-etl" / "state.json"
+
+# The price table, unlike the counter state, is genuinely disposable: a miss
+# just means one re-fetch, so it stays under .cache on purpose.
+CACHE_DIR = pathlib.Path.home() / ".cache" / "claude-jsonl-etl"
 # LiteLLM's public price table -- the same source ccusage uses -- rather than
 # a hand-maintained model->$/token map that would silently drift every time a
 # provider changes pricing.
 PRICE_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
-PRICE_CACHE = STATE.parent / "prices.json"
+PRICE_CACHE = CACHE_DIR / "prices.json"
 PRICE_MAX_AGE_SECONDS = 86400  # refetch at most daily; the cache covers everything between
 
 # Short hostname, resolved once. Short rather than the FQDN so the value
@@ -139,11 +157,19 @@ def message_cost(price: dict, input_tok: int, output_tok: int, cache_read: int,
     )
 
 
-def load_state() -> dict:
-    try:
-        return json.loads(STATE.read_text())
-    except (OSError, ValueError):
-        return {"offsets": {}, "totals": {}}
+def load_state(primary: pathlib.Path = STATE, legacy: pathlib.Path = LEGACY_STATE) -> dict:
+    # Prefer the current (XDG_STATE_HOME) path; fall back to the legacy
+    # .cache path exactly once, so the watermark and totals this fix inherits
+    # are not themselves lost by moving where they live. Once save_state runs
+    # the state is written back to `primary`, and this fallback stops
+    # mattering. (`primary`/`legacy` are parameters, not bare globals, only so
+    # selfcheck can exercise the migration without touching the real paths.)
+    for path in (primary, legacy):
+        try:
+            return json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+    return {"offsets": {}, "totals": {}}
 
 
 def save_state(state: dict) -> None:
@@ -635,6 +661,42 @@ def selfcheck() -> None:
         assert series, "render produced no series to check"
         missing = [ln for ln in series if f'host="{HOST}"' not in ln]
         assert not missing, f"series without a host label: {missing[:3]}"
+
+        # end-to-end: the ETL's rendered totals must match a hand-computed sum
+        # over the SAME known transcripts, independent of the ETL's own
+        # bump()/render() machinery -- catches exactly the "totals don't match
+        # what's on disk" failure mode a live 5000x inflation would trip.
+        expected_1h = 655 + 42  # main's two 1h writes: s1.jsonl (655) + mixed s3.jsonl (42)
+        expected_5m = 20 + 7    # subagent's 5m write (20) + main's appended 5m write (7)
+        got_1h = sum(v for k, v in st3["totals"].items()
+                     if k.startswith("claude_jsonl_cache_creation_tokens_total") and k.endswith("\x001h"))
+        got_5m = sum(v for k, v in st3["totals"].items()
+                     if k.startswith("claude_jsonl_cache_creation_tokens_total") and k.endswith("\x005m"))
+        assert got_1h == expected_1h, f"1h total {got_1h} != known transcript sum {expected_1h}"
+        assert got_5m == expected_5m, f"5m total {got_5m} != known transcript sum {expected_5m}"
+
+        # state lives under XDG_STATE_HOME, not XDG_CACHE_HOME -- a wipeable
+        # cache dir losing this file is the live 5000x-inflation bug (see the
+        # STATE/LEGACY_STATE comment): each wipe resets every counter to 0
+        # while VictoriaMetrics still holds the pre-wipe value, and
+        # Prometheus's increase() adds that whole pre-wipe value back in as a
+        # counter-reset compensation.
+        assert ".cache" not in STATE.parts, f"counter state must not live under .cache: {STATE}"
+        assert ".local" in STATE.parts and "state" in STATE.parts
+
+        # migration: a legacy .cache-path state file is read exactly once
+        # when no file exists yet at the new path, so shipping this fix does
+        # not itself trigger the reset it exists to prevent.
+        mig_new = root / "migrated" / "state.json"
+        mig_legacy = root / "legacy" / "state.json"
+        mig_legacy.parent.mkdir()
+        mig_legacy.write_text(json.dumps({"offsets": {"x": 5}, "totals": {"k": 9}}))
+        loaded = load_state(primary=mig_new, legacy=mig_legacy)
+        assert loaded == {"offsets": {"x": 5}, "totals": {"k": 9}}, "legacy state not migrated"
+        # once the new path exists, it wins over the legacy one
+        mig_new.parent.mkdir()
+        mig_new.write_text(json.dumps({"offsets": {}, "totals": {"k": 1}}))
+        assert load_state(primary=mig_new, legacy=mig_legacy) == {"offsets": {}, "totals": {"k": 1}}
     print("selfcheck OK")
 
 
