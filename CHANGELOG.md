@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.48.0](https://github.com/dryvist/nix-home/compare/v1.47.0...v1.48.0) (2026-09-23)
+
+
+### Features
+
+* **jsonl-etl:** emit tool-result size, turn-pause and subagent-count metrics ([#510](https://github.com/dryvist/nix-home/issues/510)) ([e6aa85c](https://github.com/dryvist/nix-home/commit/e6aa85cf9cf44698634a221173d4b719748afe9b))
+
 ## [1.47.0](https://github.com/dryvist/nix-home/compare/v1.46.0...v1.47.0) (2026-09-19)
 
 
