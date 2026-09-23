@@ -108,4 +108,11 @@
   # module remains usable without nix-ai installed.
   mlx-coder = "command -v mlx-switch >/dev/null && mlx-switch coding || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
   mlx-rag = "command -v mlx-switch >/dev/null && mlx-switch large-context || echo 'mlx-switch missing; enable JacobPEvans/nix-ai MLX module' >&2";
+
+  # ===========================================================================
+  # Secret-zero wrapper
+  # ===========================================================================
+  # Outer run injects this identity's secret-zero from the token scoped to
+  # ~/.config/secret-zero; the inner run then uses the directory's own config.
+  dsz = "doppler run --scope ~/.config/secret-zero -- env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run --";
 }
