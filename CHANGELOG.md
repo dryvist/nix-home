@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.0](https://github.com/dryvist/nix-home/compare/v1.48.0...v1.49.0) (2026-09-26)
+
+
+### Features
+
+* **home:** workspace.gitHome option derives GIT_HOME and its roots ([#516](https://github.com/dryvist/nix-home/issues/516)) ([513691d](https://github.com/dryvist/nix-home/commit/513691d6503c5202b90524b5c54ab7b82c95ab2e))
+
 ## [1.48.0](https://github.com/dryvist/nix-home/compare/v1.47.0...v1.48.0) (2026-09-23)
 
 
