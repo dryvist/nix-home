@@ -84,11 +84,7 @@ in
     sessionVariables = {
       EDITOR = "vim";
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
-      # Workspace roots. Reference these in docs, scripts, and commands
-      # instead of hard-coding /Users/<you>/git/...
-      GIT_HOME = "${config.home.homeDirectory}/git";
-      GIT_HOME_PUBLIC = "${config.home.homeDirectory}/git/public";
-      GIT_HOME_PRIVATE = "${config.home.homeDirectory}/git/private";
+      # Workspace roots (GIT_HOME*) come from ./workspace.nix.
     }
     // lib.optionalAttrs pkgs.stdenv.isDarwin {
       # Every Mac keeps its HuggingFace cache on a dedicated APFS volume (created
