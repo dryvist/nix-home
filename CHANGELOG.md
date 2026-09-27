@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.1](https://github.com/dryvist/nix-home/compare/v1.49.0...v1.49.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **vscode:** drop duplicated chat setting, open to an empty window ([#520](https://github.com/dryvist/nix-home/issues/520)) ([2edafc0](https://github.com/dryvist/nix-home/commit/2edafc0c92b70749ce2fffeacf48bcdf33f9ba2a))
+
 ## [1.49.0](https://github.com/dryvist/nix-home/compare/v1.48.0...v1.49.0) (2026-09-26)
 
 
