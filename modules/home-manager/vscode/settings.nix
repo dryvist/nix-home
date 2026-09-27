@@ -104,8 +104,6 @@ in
     "${homeDir}/.aitk/instructions/" = true;
   };
 
-  # Enable nested agent MD files
-  "chat.useNestedAgentsMdFiles" = true;
   "chat.agentSessionsViewLocation" = "view";
 
   # NOTE: Copilot-specific settings (github.copilot.*) are in vscode-copilot-settings.nix
@@ -126,4 +124,6 @@ in
   # === UI/THEME ===
 
   "workbench.colorTheme" = "GitHub Dark Default";
+  # Open to an empty window: no Welcome page or restored editor on launch.
+  "workbench.startupEditor" = "none";
 }

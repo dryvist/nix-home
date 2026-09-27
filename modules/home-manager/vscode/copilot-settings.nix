@@ -103,8 +103,6 @@ _:
   "chat.sendElementsToChat.enabled" = false;
 
   # Use AGENTS.md files in subfolders (experimental)
-  # NOTE: Also set in vscode-settings.nix (true). This value (false) takes
-  # precedence due to merge order in home.nix ("copilot wins on conflict").
   "chat.useNestedAgentsMdFiles" = false;
 
   # Configure custom OpenAI-compatible models (experimental)
