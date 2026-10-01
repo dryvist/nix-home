@@ -6,8 +6,8 @@
 # Loads every immediate child directory's .envrc into the parent, so a shell
 # or agent session started in the parent gets each child's dev shell.
 #
-# - Dot-directories and children whose .envrc calls source_up (it would load
-#   the parent again) are skipped.
+# - Dot-directories are skipped. A child that calls source_up re-enters the
+#   parent, where the guard below makes `use children` a no-op.
 # - PATH from each nix-direnv shell stacks. Any other variable that two
 #   children both export takes the value from the alphabetically last child.
 # - Generates the parent's .mcp.json (children's mcpServers merged) and
@@ -26,10 +26,6 @@ use_children() {
     [[ -f $_uc_dir/.mcp.json ]] && _uc_mcp+=("$_uc_dir/.mcp.json")
     [[ -f $_uc_dir/.claude/settings.json ]] && _uc_settings+=("$_uc_dir/.claude/settings.json")
     [[ -f $_uc_dir/.envrc ]] || continue
-    if grep -q 'source_up' "$_uc_dir/.envrc"; then
-      log_status "use_children: skipping $_uc_name (its .envrc calls source_up)"
-      continue
-    fi
     if source_env "$_uc_dir/.envrc"; then
       _uc_loaded+=("$_uc_name")
     else
