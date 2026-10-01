@@ -53,7 +53,7 @@ in
 
     # Symlink it into every grouping directory of the workspace.
     home.activation.workspaceEnvrc = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-      $DRY_RUN_CMD ${lib.getExe linkWorkspaceEnvrc} \
+      run ${lib.getExe linkWorkspaceEnvrc} \
         ${lib.escapeShellArgs [
           "${config.xdg.configHome}/direnv/workspace.envrc"
           cfg.gitHome
