@@ -43,11 +43,8 @@
     # alias list) and nothing else nix-ai exports, so `flake = false` skips
     # locking nix-ai's own transitive inputs (nix-claude-code, nix-codex,
     # nix-agy, ...) into this repo's flake.lock.
-    #
-    # Pinned to the commit that merged dryvist/nix-ai#2151 (which adds this
-    # file and its lib.litellmAliases output) into nix-ai's default branch.
     nix-ai = {
-      url = "github:dryvist/nix-ai/d61512914d0a206f41a238d0769e4680677c5f15";
+      url = "github:dryvist/nix-ai";
       flake = false;
     };
   };
