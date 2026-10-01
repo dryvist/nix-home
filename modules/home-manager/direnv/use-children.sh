@@ -4,35 +4,57 @@
 #   use children
 #
 # Loads every immediate child directory's .envrc into the parent, so a shell
-# or agent session started in the parent gets each child's dev shell.
+# or agent session started in the parent gets each child's dev shell. A child
+# that also says `use children` loads its own children, so every level below
+# the starting directory is reached.
 #
-# - Dot-directories are skipped. A child that calls source_up re-enters the
-#   parent, where the guard below makes `use children` a no-op.
+# - Dot-directories are skipped.
+# - Only the directory direnv is loading, and directories beneath it, gather
+#   children. A repository whose .envrc calls source_up re-enters its parent;
+#   there `use children` is a no-op, so entering one repository never loads
+#   its siblings.
+# - Each child's watched files are checked in isolation, so a change in one
+#   repository does not invalidate every other repository's nix-direnv cache.
 # - PATH from each nix-direnv shell stacks. Any other variable that two
 #   children both export takes the value from the alphabetically last child.
 # - Generates the parent's .mcp.json (children's mcpServers merged) and
 #   .claude/settings.json (children's enabledPlugins merged). Both are
 #   overwritten on change; put hand edits in .claude/settings.local.json.
+
+# direnv sources this library from the directory it is loading.
+_use_children_root=$PWD
+
 use_children() {
-  [[ -n ${_USE_CHILDREN_ACTIVE:-} ]] && return 0
-  local _USE_CHILDREN_ACTIVE=1
-  local _uc_dir _uc_name
-  local -a _uc_loaded=() _uc_mcp=() _uc_settings=()
+  [[ $PWD == "$_use_children_root" || $PWD == "$_use_children_root"/* ]] || return 0
+  [[ :${_USE_CHILDREN_ACTIVE:-}: == *:"$PWD":* ]] && return 0
+  local _USE_CHILDREN_ACTIVE=${_USE_CHILDREN_ACTIVE:-}:$PWD
+  local _uc_dir _uc_name _uc_watches _uc_line
+  local -a _uc_loaded=() _uc_mcp=() _uc_settings=() _uc_paths
 
   for _uc_dir in "$PWD"/*/; do
     _uc_dir=${_uc_dir%/}
     _uc_name=${_uc_dir##*/}
-    watch_file "$_uc_dir/.envrc" "$_uc_dir/.mcp.json" "$_uc_dir/.claude/settings.json"
+    _uc_paths=("$_uc_dir/.envrc" "$_uc_dir/.mcp.json" "$_uc_dir/.claude/settings.json")
+    if [[ -f $_uc_dir/.envrc ]]; then
+      _uc_watches=${DIRENV_WATCHES:-}
+      unset DIRENV_WATCHES
+      if source_env "$_uc_dir/.envrc"; then
+        _uc_loaded+=("$_uc_name")
+      else
+        log_error "use_children: $_uc_name failed to load"
+      fi
+      if [[ -n ${DIRENV_WATCHES:-} ]]; then
+        while IFS= read -r _uc_line; do
+          [[ $_uc_line =~ \"[Pp]ath\":\ \"(.+)\"$ ]] && _uc_paths+=("${BASH_REMATCH[1]}")
+        done < <("$direnv" show_dump "$DIRENV_WATCHES")
+      fi
+      export DIRENV_WATCHES=$_uc_watches
+    fi
+    watch_file "${_uc_paths[@]}"
     [[ -f $_uc_dir/.mcp.json ]] && _uc_mcp+=("$_uc_dir/.mcp.json")
     [[ -f $_uc_dir/.claude/settings.json ]] && _uc_settings+=("$_uc_dir/.claude/settings.json")
-    [[ -f $_uc_dir/.envrc ]] || continue
-    if source_env "$_uc_dir/.envrc"; then
-      _uc_loaded+=("$_uc_name")
-    else
-      log_error "use_children: $_uc_name failed to load"
-    fi
   done
-  log_status "use_children: loaded ${#_uc_loaded[@]}: ${_uc_loaded[*]}"
+  log_status "use_children: $(user_rel_path "$PWD") loaded ${#_uc_loaded[@]}: ${_uc_loaded[*]}"
 
   if ((${#_uc_mcp[@]})); then
     local dupes
