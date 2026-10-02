@@ -17,6 +17,9 @@ with tempfile.TemporaryDirectory() as directory:
     commands = {
         "openbao-run": """#!/usr/bin/env bash
 set -eu
+[ "$PROXMAN_VAULT_ROLE_ID" = test-role ]
+[ "$PROXMAN_VAULT_SECRET_ID" = test-bootstrap ]
+[ -z "${OPENBAO_APPROLE_PROXMAN_ROLE_ID:-}${OPENBAO_APPROLE_PROXMAN_SECRET_ID:-}" ]
 if [ "$3" = --secrets ]; then
   for name in url type auth_method credential_mount credential_path; do
     value=$(printf '%s' "$PROFILE" | jq -r --arg name "$name" '.[$name] // empty')
@@ -41,6 +44,8 @@ exec "$@"
         target.write_text(text)
         target.chmod(0o700)
     environment = dict(os.environ, PATH=f"{root}:{os.environ['PATH']}",
+                       OPENBAO_APPROLE_PROXMAN_ROLE_ID="test-role",
+                       OPENBAO_APPROLE_PROXMAN_SECRET_ID="test-bootstrap",
                        CALLS=str(root / "calls"), CLIPBOARD=str(root / "clipboard"))
     profile = dict(url="https://cluster.example.test", type="pve", auth_method="traditional",
                    credential_mount="secret", credential_path="proxmox/main/proxman")

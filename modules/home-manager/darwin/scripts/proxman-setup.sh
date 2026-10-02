@@ -9,12 +9,16 @@ case "${1:-}" in
   "") ;;
   --copy-password) copy_password=true; shift ;;
   --help)
-    printf 'Usage: proxman-setup [--copy-password]\nRequires openbao-run and runtime PROXMAN_VAULT_ROLE_ID/PROXMAN_VAULT_SECRET_ID.\n'
+    printf 'Usage: proxman-setup [--copy-password]\nRequires openbao-run and runtime OPENBAO_APPROLE_PROXMAN_ROLE_ID/OPENBAO_APPROLE_PROXMAN_SECRET_ID.\n'
     exit 0 ;;
   *) die 'Expected --copy-password or --help.' ;;
 esac
 [ "$#" -eq 0 ] || die 'Unexpected argument.'
 command -v openbao-run >/dev/null || die 'Install the existing openbao-run helper first.'
+export PROXMAN_VAULT_ROLE_ID="${PROXMAN_VAULT_ROLE_ID:-${OPENBAO_APPROLE_PROXMAN_ROLE_ID:-}}"
+export PROXMAN_VAULT_SECRET_ID="${PROXMAN_VAULT_SECRET_ID:-${OPENBAO_APPROLE_PROXMAN_SECRET_ID:-}}"
+unset OPENBAO_APPROLE_PROXMAN_ROLE_ID OPENBAO_APPROLE_PROXMAN_SECRET_ID
+[ -n "$PROXMAN_VAULT_ROLE_ID" ] && [ -n "$PROXMAN_VAULT_SECRET_ID" ] || die 'Missing ProxMan runtime bootstrap credentials.'
 
 profile=$(openbao-run --domain proxman --secrets "${PROXMAN_PROFILE_SPEC:-config:proxman/main}" -- \
   jq -n 'env | {url, type, auth_method, credential_mount, credential_path}')
