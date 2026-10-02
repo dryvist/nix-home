@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.51.0](https://github.com/dryvist/nix-home/compare/v1.50.0...v1.51.0) (2026-10-02)
+
+
+### Features
+
+* **security:** add yubikey-manager and age-plugin-yubikey ([c02abfb](https://github.com/dryvist/nix-home/commit/c02abfb69225a4b73be8951316b79f4dd13ace62))
+* **security:** add yubikey-manager and age-plugin-yubikey ([36ca18c](https://github.com/dryvist/nix-home/commit/36ca18c5a75aa6455138f56f44592f379f19730a))
+
 ## [1.50.0](https://github.com/dryvist/nix-home/compare/v1.49.1...v1.50.0) (2026-10-02)
 
 
