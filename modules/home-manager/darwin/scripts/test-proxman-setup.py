@@ -3,10 +3,15 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 
+# The CI sandbox that runs this check has neither /usr/bin/env nor /bin/bash
+# (only the bash already on PATH), so stub shebangs must name that bash
+# explicitly instead of relying on env-bash resolution.
+bash = shutil.which("bash")
 
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
@@ -15,8 +20,8 @@ with tempfile.TemporaryDirectory() as directory:
         script = script.replace(f"/usr/bin/{command}", str(root / command))
     (root / "setup").write_text(script)
     commands = {
-        "openbao-run": """#!/usr/bin/env bash
-set -eu
+        "openbao-run": f"#!{bash}\n"
+        + """set -eu
 [ "$PROXMAN_VAULT_ROLE_ID" = test-role ]
 [ "$PROXMAN_VAULT_SECRET_ID" = test-bootstrap ]
 [ -z "${OPENBAO_APPROLE_PROXMAN_ROLE_ID:-}${OPENBAO_APPROLE_PROXMAN_SECRET_ID:-}" ]
@@ -35,9 +40,9 @@ shift 4
 [ "$1" = -- ]; shift
 exec "$@"
 """,
-        "curl": "#!/usr/bin/env bash\nprintf '%s' \"${STATUS:-200}\"\n",
-        "open": "#!/usr/bin/env bash\nprintf open >> \"$CALLS\"\n",
-        "pbcopy": "#!/usr/bin/env bash\ncat > \"$CLIPBOARD\"\n",
+        "curl": f"#!{bash}\nprintf '%s' \"${{STATUS:-200}}\"\n",
+        "open": f"#!{bash}\nprintf open >> \"$CALLS\"\n",
+        "pbcopy": f"#!{bash}\ncat > \"$CLIPBOARD\"\n",
     }
     for name, text in commands.items():
         target = root / name
@@ -55,18 +60,25 @@ exec "$@"
         result = subprocess.run(["bash", str(root / "setup"), *arguments],
                                 env=dict(environment, PROFILE=json.dumps(value), STATUS=status),
                                 capture_output=True, text=True, check=False)
-        assert "test-password-never-print" not in result.stdout + result.stderr
-        return result, (root / "calls").read_text()
+        diagnostics = (result.returncode, result.stdout, result.stderr,
+                       (root / "calls").read_text())
+        assert "test-password-never-print" not in result.stdout + result.stderr, diagnostics
+        return result, diagnostics[3]
 
     for invalid in ({}, dict(profile, url="http://cluster.example.test"),
                     dict(profile, auth_method="token"), dict(profile, credential_path="../secret")):
         result, calls = run(invalid)
-        assert result.returncode != 0 and not calls
+        # "proxman-setup:" (the die() prefix) rules out a broken test harness
+        # (e.g. a stub that can't exec at all) masquerading as this rejection.
+        assert (result.returncode != 0 and not calls
+                and "proxman-setup:" in result.stderr), (result.returncode, result.stdout, result.stderr, calls)
     result, calls = run(profile)
-    assert result.returncode == 0 and calls == "open" and "operator@test" in result.stdout
+    assert (result.returncode == 0 and calls == "open"
+            and "operator@test" in result.stdout), (result.returncode, result.stdout, result.stderr, calls)
     result, calls = run(profile, "--copy-password", status="401")
-    assert result.returncode == 0 and calls == "passwordopen"
+    assert result.returncode == 0 and calls == "passwordopen", (result.returncode, result.stdout, result.stderr, calls)
     assert (root / "clipboard").read_text() == "test-password-never-print"
     result, calls = run(profile, status="503")
-    assert result.returncode != 0 and not calls
+    assert (result.returncode != 0 and not calls
+            and "proxman-setup:" in result.stderr), (result.returncode, result.stdout, result.stderr, calls)
     print("ProxMan setup: 7 scenarios passed; password only reached clipboard on explicit request")

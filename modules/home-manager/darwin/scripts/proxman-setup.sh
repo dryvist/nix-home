@@ -40,9 +40,11 @@ username=$(openbao-run --domain proxman --secret "$mount:PROXMAN_USERNAME=$path#
 printf 'Configure one cluster connection in ProxMan:\nURL: %s\nServer type: pve\nAuthentication: traditional (username/password)\nUsername: %s\n' "$url" "$username"
 if "$copy_password"; then
   # The child expands the injected password, keeping it out of argv.
+  # $BASH (not /bin/bash or an env-bash shebang): the sandbox this runs in
+  # during CI has neither path, only the interpreter already running us.
   # shellcheck disable=SC2016
   openbao-run --domain proxman --secret "$mount:PROXMAN_PASSWORD=$path#password" -- \
-    /bin/bash -c 'set +x; [ -n "$PROXMAN_PASSWORD" ] || exit 1; printf "%s" "$PROXMAN_PASSWORD" | /usr/bin/pbcopy'
+    "$BASH" -c 'set +x; [ -n "$PROXMAN_PASSWORD" ] || exit 1; printf "%s" "$PROXMAN_PASSWORD" | /usr/bin/pbcopy'
   printf 'Password copied to the clipboard. Paste it into ProxMan, then clear the clipboard.\n'
 else
   printf 'Run with --copy-password to copy the password for entry.\n'
