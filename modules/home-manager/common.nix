@@ -160,6 +160,8 @@ in
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      # `use children` in a parent directory's .envrc loads every child repo's env.
+      stdlib = "source ${pkgs.replaceVars ./direnv/use-children.sh { jq = lib.getExe pkgs.jq; }}";
     };
 
     gh = {
