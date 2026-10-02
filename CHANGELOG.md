@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.50.0](https://github.com/dryvist/nix-home/compare/v1.49.1...v1.50.0) (2026-10-02)
+
+
+### Features
+
+* **direnv:** add use_children stdlib function ([b1d5e81](https://github.com/dryvist/nix-home/commit/b1d5e81ceb3423bfa1a7c7b297c80a56ec3b56b9))
+* **direnv:** add use_children stdlib function ([9c778da](https://github.com/dryvist/nix-home/commit/9c778da82a87cb36cfc8543eccf615fc715b6136))
+* **direnv:** workspace .envrc template and recursive use_children ([d7acca0](https://github.com/dryvist/nix-home/commit/d7acca0f680588cf79b0892c0220e1f5b692e713))
+* **direnv:** workspace .envrc template and recursive use_children ([0f33de6](https://github.com/dryvist/nix-home/commit/0f33de6047295011fdbc94c778998303e88eadef))
+
+
+### Bug Fixes
+
+* **direnv:** load use_children children that call source_up ([a3b15d3](https://github.com/dryvist/nix-home/commit/a3b15d37dc9393196b744b35e6f5d09154005e27))
+
 ## [1.49.1](https://github.com/dryvist/nix-home/compare/v1.49.0...v1.49.1) (2026-09-27)
 
 
