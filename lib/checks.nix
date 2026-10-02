@@ -10,6 +10,20 @@
   lib ? pkgs.lib,
 }:
 {
+  proxman-setup =
+    pkgs.runCommand "check-proxman-setup"
+      {
+        nativeBuildInputs = [
+          pkgs.bash
+          pkgs.jq
+          pkgs.python3
+        ];
+      }
+      ''
+        python ${../modules/home-manager/darwin/scripts/test-proxman-setup.py} ${../modules/home-manager/darwin/scripts/proxman-setup.sh}
+        touch $out
+      '';
+
   # Check Nix formatting with nixfmt
   # Uses treefmt configured with nixfmt formatter
   # Copy source to writable $TMPDIR since treefmt needs to write temp files
