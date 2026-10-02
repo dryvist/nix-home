@@ -47,11 +47,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790408539,
-        "narHash": "sha256-DfVIN8SX+M43HFMxUugX/8Ns1FCV9i7njQYoY7B0UjU=",
+        "lastModified": 1790899691,
+        "narHash": "sha256-biQ4sehHKinY1+vUtpkS6V62X+CsGuyMlsAd4fXqg2k=",
         "owner": "dryvist",
         "repo": "homelab-contracts",
-        "rev": "767b8ff7c77ab188ca5dbb92289683b902c39bec",
+        "rev": "285806fde35ea1a845da5414d42690963bc48db9",
         "type": "github"
       },
       "original": {
