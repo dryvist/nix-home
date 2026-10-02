@@ -11,6 +11,7 @@
   # own userConfig; this default lives in one place (see lib/user-defaults.nix).
   userConfig ? import ../../lib/user-defaults.nix,
   homelabContracts,
+  litellmLocalDefaults,
   ...
 }:
 
@@ -47,7 +48,7 @@ let
   };
 
   # gh-guard: publish-boundary gate, shadows the real gh on PATH
-  ghGuardFiles = import ./gh { inherit pkgs; };
+  ghGuardFiles = import ./gh { inherit pkgs litellmLocalDefaults; };
 
   # Shell aliases
   shellAliases = import ./zsh/aliases.nix;
