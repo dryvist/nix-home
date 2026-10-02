@@ -72,6 +72,27 @@
     touch $out
   '';
 
+  # `use children` loads each directory once and skips non-default worktrees.
+  direnv-use-children =
+    pkgs.runCommand "check-direnv-use-children"
+      {
+        nativeBuildInputs = [
+          pkgs.direnv
+          pkgs.git
+        ];
+      }
+      ''
+        bash ${../modules/home-manager/direnv/tests/run-use-children-tests.sh} \
+          ${
+            pkgs.replaceVars ../modules/home-manager/direnv/use-children.sh {
+              jq = lib.getExe pkgs.jq;
+              git = lib.getExe pkgs.git;
+            }
+          } \
+          ${pkgs.nix-direnv}/share/nix-direnv/direnvrc
+        touch $out
+      '';
+
   # Telemetry wiring regression.
   #
   # `monitoring.otel` exports OTEL_* through home.sessionVariables, i.e. into
