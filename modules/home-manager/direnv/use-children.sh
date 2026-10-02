@@ -3,9 +3,11 @@
 # merge the children's .mcp.json and .claude/settings.json into ours.
 #
 # - Recursive: a child that also says `use children` loads its own children.
-# - Runs only in the directory direnv is loading or below it, so a child's
-#   source_up back into an ancestor is a no-op (entering one repository never
-#   loads its siblings).
+# - Runs only in the directory direnv is loading or below it (entering one
+#   repository never loads its siblings).
+# - Each repository loads once: a linked worktree loads only when it is on the
+#   repository's default branch, and a child's source_up is skipped because
+#   the directories it would reach are the ones already loading it.
 # - Each child is sourced with an empty DIRENV_WATCHES, because nix-direnv
 #   rebuilds a dev shell when any watched file is newer than its cache. The
 #   child's watched files are then watched here too.
@@ -40,16 +42,31 @@ use_children() {
 _use_children_load() {
   _use_children_watched+=("$1/.envrc" "$1/.mcp.json" "$1/.claude/settings.json")
   [[ -f $1/.envrc ]] || return 0
+  _use_children_default_worktree "$1" || return 0
 
-  local _use_children_saved=${DIRENV_WATCHES:-}
+  local _use_children_saved=${DIRENV_WATCHES:-} _use_children_source_up
+  _use_children_source_up=$(declare -f source_up source_up_if_exists)
+  source_up() { :; }
+  source_up_if_exists() { :; }
   unset DIRENV_WATCHES
   if source_env "$1/.envrc"; then
     _use_children_loaded+=("${1##*/}")
   else
     log_error "use_children: ${1##*/} failed to load"
   fi
+  eval "$_use_children_source_up"
   _nix_direnv_watches _use_children_watched # nix-direnv's own DIRENV_WATCHES reader
   export DIRENV_WATCHES=$_use_children_saved
+}
+
+# True unless $1 is a linked worktree on a branch other than its repository's
+# default (origin/HEAD, else main).
+_use_children_default_worktree() {
+  [[ -f $1/.git ]] || return 0
+  local branch default
+  branch=$(@git@ -C "$1" symbolic-ref -q --short HEAD) || return 1
+  default=$(@git@ -C "$1" rev-parse -q --abbrev-ref origin/HEAD 2>/dev/null) || default=origin/main
+  [[ $branch == "${default#origin/}" ]]
 }
 
 # Merge key $2 from every child's file $1 into our own $1.
