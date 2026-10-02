@@ -16,4 +16,6 @@ with pkgs;
   bitwarden-cli # CLI for Bitwarden password manager (bw command)
   bws # Official Bitwarden release; never `pkgs.bws` (see ./bws.nix).
   doppler # Doppler secrets manager CLI (for CI/CD and team secrets)
+  yubikey-manager # ykman: YubiKey OATH/PIV/FIDO management
+  age-plugin-yubikey # age identities held on a YubiKey (touch to decrypt)
 ]
