@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.51.1](https://github.com/dryvist/nix-home/compare/v1.51.0...v1.51.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **direnv:** use_children loads each directory once ([#541](https://github.com/dryvist/nix-home/issues/541)) ([56ca387](https://github.com/dryvist/nix-home/commit/56ca387992c888c357fd73208d152a8cd062366f))
+
 ## [1.51.0](https://github.com/dryvist/nix-home/compare/v1.50.0...v1.51.0) (2026-10-02)
 
 
