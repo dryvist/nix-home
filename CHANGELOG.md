@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.52.0](https://github.com/dryvist/nix-home/compare/v1.51.1...v1.52.0) (2026-10-03)
+
+
+### Features
+
+* **gh:** route gh-guard judge through litellm-local judge role ([#547](https://github.com/dryvist/nix-home/issues/547)) ([ecdf28f](https://github.com/dryvist/nix-home/commit/ecdf28f9a13a9c3012050d080fbf0147dc11ad91))
+
 ## [1.51.1](https://github.com/dryvist/nix-home/compare/v1.51.0...v1.51.1) (2026-10-02)
 
 
