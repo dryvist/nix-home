@@ -24,11 +24,9 @@ if [ -n "${GH_GUARD_ACTIVE:-}" ]; then exec "$GH_REAL" "$@"; fi
 export GH_GUARD_ACTIVE=1
 DENYLIST="${GH_GUARD_DENYLIST:-$HOME/.config/gh-guard/identifiers.txt}"
 ALLOWLIST="${GH_GUARD_ALLOWLIST:-$HOME/.config/gh-guard/allowed.txt}"
-JUDGE_URL="${GH_GUARD_JUDGE_URL:-http://127.0.0.1:11434/v1/chat/completions}"
-# Must name a RESIDENT (ttl=0, non-swappable) model. A swap-class model is
-# evicted or TTL-expired mid-scan, and llama-swap answers 429 for the whole
-# cold load, which outlasts the retry budget below and fails the gate closed.
-# Every host carries the "judge" alias on its own resident model.
+JUDGE_URL="${GH_GUARD_JUDGE_URL:-@LITELLM_LOCAL_BASE_URL@/chat/completions}"
+# The `judge` role served by the local LiteLLM proxy: a busy or gated local
+# backend answers 429/503 at once and the proxy falls through to its next rung.
 JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-judge}"
 LOG="${GH_GUARD_LOG:-$HOME/.local/state/gh-guard/decisions.log}"
 
@@ -244,9 +242,13 @@ judge_verdict() {
   for attempt in 1 2 3 4 5; do
     result="$(curl -sS --max-time 60 -H 'content-type: application/json' \
               -d "$payload" "$JUDGE_URL" 2>/dev/null)" || { sleep 2; continue; }
+    # An error body (429/503 from the proxy, or the local server) is transient.
     case "$result" in
       *'Too many requests'*|'') sleep $((attempt * 2)); continue ;;
     esac
+    if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
+      sleep $((attempt * 2)); continue
+    fi
     verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
     verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:]')"
     case "$verdict" in
