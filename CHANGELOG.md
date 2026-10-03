@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.53.0](https://github.com/dryvist/nix-home/compare/v1.52.0...v1.53.0) (2026-10-03)
+
+
+### Features
+
+* **packages:** install terminal-notifier where available ([d1c5482](https://github.com/dryvist/nix-home/commit/d1c54829b62b13eca36a8ce48fad6138fd92349e))
+* **packages:** install terminal-notifier where available ([d868426](https://github.com/dryvist/nix-home/commit/d8684265ab5fb099b68b1cef06426ba76ac5d3ee))
+
 ## [1.52.0](https://github.com/dryvist/nix-home/compare/v1.51.1...v1.52.0) (2026-10-03)
 
 
