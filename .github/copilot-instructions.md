@@ -15,6 +15,5 @@ tools. Keep modules flakes-only and compatible with Darwin and Linux.
 Run `nix flake check` for every change and use `nix fmt` for Nix formatting.
 Never use `nix-env` or commit directly to a default branch.
 
-Infrastructure plans and applies run in remote workspaces that receive
-short-lived credentials at run time; local home-manager configuration must not
-embed workspace secrets.
+Infrastructure plans and applies run in remote workspaces; local home-manager
+configuration must not embed workspace secrets.
