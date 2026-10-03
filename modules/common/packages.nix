@@ -35,3 +35,5 @@ core
 ++ lib.optionals features.documentSkills.enable documentProcessing
 ++ lib.optionals features.heavyPython.enable pythonEnv
 ++ lib.optionals features.googleWorkspace.enable googleWorkspace
+# Click-to-focus macOS banners for Claude Code's attention-notify hook.
+++ lib.optional (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.terminal-notifier) pkgs.terminal-notifier
