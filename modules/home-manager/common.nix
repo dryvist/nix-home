@@ -68,6 +68,7 @@ let
       pkgs
       userConfig
       ;
+    inherit (config.programs.awsProfiles) credentialProcess;
   };
 
   # Linter configurations
