@@ -8,6 +8,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # instead of the checked-out script; unset, it falls back to the sibling
 # scripts/ copy (used at build/dev time).
 GUARD="${GH_GUARD_BIN:-$HERE/../scripts/gh-guard.sh}"
+if [ -n "${GH_GUARD_BIN:-}" ]; then
+  run_guard() { "$GUARD" "$@"; }
+else
+  # Nix's sandbox does not provide the script's /usr/bin/env shebang path.
+  run_guard() { bash "$GUARD" "$@"; }
+fi
 
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
@@ -29,7 +35,7 @@ check3() { # name expect_rc expect_tier
   local name="$1" want_rc="$2" want_tier="$3" rc tier
   shift 3
   : >"$GH_GUARD_LOG"
-  "$GUARD" "$@" >/dev/null 2>&1; rc=$?
+  run_guard "$@" >/dev/null 2>&1; rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
   if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
     printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
@@ -137,7 +143,7 @@ git -C "$REPODIR" remote add origin https://github.com/dryvist/testrepo.git 2>/d
 scan_check() { # name expect_rc expect_tier file
   local name="$1" want_rc="$2" want_tier="$3" file="$4" rc tier
   : >"$GH_GUARD_LOG"
-  ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" "$GUARD" --scan "$file" ) >/dev/null 2>&1; rc=$?
+  ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" run_guard --scan "$file" ) >/dev/null 2>&1; rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
   if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
     printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
@@ -155,7 +161,7 @@ missing_identifier_check() { # name expect_rc expect_tier file judge_url
     cd "$REPODIR" || exit 2
     GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
       GH_GUARD_JUDGE_URL="$judge_url" \
-      "$GUARD" --scan "$file"
+      run_guard --scan "$file"
   ) >/dev/null 2>"$diagnostic"
   rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
