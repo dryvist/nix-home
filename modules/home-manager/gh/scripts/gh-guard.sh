@@ -24,9 +24,8 @@ if [ -n "${GH_GUARD_ACTIVE:-}" ]; then exec "$GH_REAL" "$@"; fi
 export GH_GUARD_ACTIVE=1
 DENYLIST="${GH_GUARD_DENYLIST:-$HOME/.config/gh-guard/identifiers.txt}"
 ALLOWLIST="${GH_GUARD_ALLOWLIST:-$HOME/.config/gh-guard/allowed.txt}"
-JUDGE_URL="${GH_GUARD_JUDGE_URL:-@LITELLM_LOCAL_BASE_URL@/chat/completions}"
-# The `judge` role served by the local LiteLLM proxy: a busy or gated local
-# backend answers 429/503 at once and the proxy falls through to its next rung.
+JUDGE_URL="${GH_GUARD_JUDGE_URL:-http://127.0.0.1:11434/v1/chat/completions}"
+# The `judge` alias selects the resident fast model.
 JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-judge}"
 LOG="${GH_GUARD_LOG:-$HOME/.local/state/gh-guard/decisions.log}"
 

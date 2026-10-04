@@ -15,7 +15,7 @@
 #
 # Return file definitions directly (merged into home.file in common.nix).
 
-{ pkgs, litellmLocalDefaults, ... }:
+{ pkgs, ... }:
 
 let
   ghGuardPkg = pkgs.writeShellApplication {
@@ -26,17 +26,9 @@ let
       pkgs.gnugrep
       pkgs.coreutils
     ];
-    text =
-      builtins.replaceStrings
-        [
-          "/etc/profiles/per-user/jevans/bin/gh"
-          "@LITELLM_LOCAL_BASE_URL@"
-        ]
-        [
-          "${pkgs.gh}/bin/gh"
-          litellmLocalDefaults.baseUrl
-        ]
-        (builtins.readFile ./scripts/gh-guard.sh);
+    text = builtins.replaceStrings [ "/etc/profiles/per-user/jevans/bin/gh" ] [ "${pkgs.gh}/bin/gh" ] (
+      builtins.readFile ./scripts/gh-guard.sh
+    );
   };
 in
 {
