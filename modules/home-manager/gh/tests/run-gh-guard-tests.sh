@@ -17,6 +17,7 @@ fi
 
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
+export GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
 export GH_TOKEN=test-token GITHUB_TOKEN=test-token
 export OPENBAO_GH_CLAIM=dryvist/pub
@@ -45,7 +46,49 @@ check3() { # name expect_rc expect_tier
   fi
 }
 
-if [ "${GH_GUARD_TEST_MISSING_ONLY:-}" = 1 ]; then
+identifier_boundary_checks() {
+  printf '%s\n' 'ha' >"$HERE/synthetic-identifiers.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token inside prose passes" 0 clean issue create -R dryvist/pub --body "A change is ready."
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token alone blocks" 1 identifier issue create -R dryvist/pub --body "ha"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in hostname blocks" 1 identifier issue create -R dryvist/pub --body "node.ha.example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around hyphen blocks" 1 identifier issue create -R dryvist/pub --body "node-ha-example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around underscore blocks" 1 identifier issue create -R dryvist/pub --body "node_ha_name"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around colon and at blocks" 1 identifier issue create -R dryvist/pub --body "user@node:ha.example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in URL blocks" 1 identifier issue create -R dryvist/pub --body "https://example.test/ha/path"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in path blocks" 1 identifier issue create -R dryvist/pub --body "/tmp/ha/file"
+
+  printf '%s\n' 'office' >"$HERE/synthetic-identifiers.txt"
+  printf '%s\n' 'of' >"$HERE/synthetic-allowlist.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
+    check3 "allowlist token does not strip word" 1 identifier issue create -R dryvist/pub --body $'office\nA change is ready.'
+
+  printf '%s\n' 'ha' >"$HERE/synthetic-identifiers.txt"
+  printf '%s\n' 'ha' >"$HERE/synthetic-allowlist.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
+    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body $'ha\nA change is ready.'
+  rm -f "$HERE/synthetic-identifiers.txt" "$HERE/synthetic-allowlist.txt"
+}
+
+if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
+  identifier_boundary_checks
   rm -f "$HERE/missing-identifiers.txt"
   GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
     check3 "missing identifier file blocks publish" 1 identifier \
@@ -54,6 +97,8 @@ if [ "${GH_GUARD_TEST_MISSING_ONLY:-}" = 1 ]; then
   [ "$fail" -eq 0 ]
   exit $?
 fi
+
+identifier_boundary_checks
 
 printf '%s\n' "$LEAK" >"$HERE/leak.md"
 # The shell expands this BEFORE the guard runs — the case a static
