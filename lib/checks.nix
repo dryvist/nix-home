@@ -86,6 +86,29 @@
     touch $out
   '';
 
+  # Exercise the publish gate's fail-closed behavior without requiring a live judge.
+  gh-guard =
+    pkgs.runCommand "check-gh-guard"
+      {
+        nativeBuildInputs = [
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.gawk
+          pkgs.git
+          pkgs.gnugrep
+          pkgs.jq
+          pkgs.python3
+        ];
+      }
+      ''
+        cp -r ${../modules/home-manager/gh} "$TMPDIR/gh-guard"
+        chmod -R u+w "$TMPDIR/gh-guard"
+        patchShebangs "$TMPDIR/gh-guard/tests/fakegh"
+        GH_GUARD_TEST_MISSING_ONLY=1 bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
+        touch $out
+      '';
+
   # `use children` loads each directory once and skips non-default worktrees.
   direnv-use-children =
     pkgs.runCommand "check-direnv-use-children"
