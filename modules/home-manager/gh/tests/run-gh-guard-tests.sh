@@ -45,6 +45,16 @@ check3() { # name expect_rc expect_tier
   fi
 }
 
+if [ "${GH_GUARD_TEST_MISSING_ONLY:-}" = 1 ]; then
+  rm -f "$HERE/missing-identifiers.txt"
+  GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
+    check3 "missing identifier file blocks publish" 1 identifier \
+      issue create -R dryvist/pub --body "$CLEAN"
+  printf '\n%s passed, %s failed\n' "$pass" "$fail"
+  [ "$fail" -eq 0 ]
+  exit $?
+fi
+
 printf '%s\n' "$LEAK" >"$HERE/leak.md"
 # The shell expands this BEFORE the guard runs — the case a static
 # command-string parser structurally cannot see.

@@ -86,7 +86,7 @@
     touch $out
   '';
 
-  # Exercise the publish gate, including its missing-identifier-file case.
+  # Exercise the publish gate's fail-closed behavior without requiring a live judge.
   gh-guard =
     pkgs.runCommand "check-gh-guard"
       {
@@ -104,7 +104,8 @@
       ''
         cp -r ${../modules/home-manager/gh} "$TMPDIR/gh-guard"
         chmod -R u+w "$TMPDIR/gh-guard"
-        bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
+        patchShebangs "$TMPDIR/gh-guard/tests/fakegh"
+        GH_GUARD_TEST_MISSING_ONLY=1 bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
         touch $out
       '';
 
