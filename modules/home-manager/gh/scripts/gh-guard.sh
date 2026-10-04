@@ -25,7 +25,7 @@ if [ -n "${GH_GUARD_ACTIVE:-}" ]; then exec "$GH_REAL" "$@"; fi
 export GH_GUARD_ACTIVE=1
 DENYLIST="${GH_GUARD_DENYLIST:-$HOME/.config/gh-guard/identifiers.txt}"
 ALLOWLIST="${GH_GUARD_ALLOWLIST:-$HOME/.config/gh-guard/allowed.txt}"
-JUDGE_URL="${GH_GUARD_JUDGE_URL:-http://127.0.0.1:11434/v1/chat/completions}"
+LIMITS_FILE="${MLX_RESIDENT_MODEL_LIMITS_FILE:-$HOME/.config/mlx/resident-model-limits.json}"
 # The `judge` alias selects the resident fast model.
 JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-judge}"
 LOG="${GH_GUARD_LOG:-$HOME/.local/state/gh-guard/decisions.log}"
@@ -225,32 +225,67 @@ allows_trivial_fastpath() {
 # retry briefly before falling through to fail-closed — otherwise an unrelated
 # local inference job would block every commit and the gate dies of fatigue.
 judge_verdict() {
-  local content="$1" payload result verdict attempt
+  local content="$1" payload result verdict attempt config judge_url judge_timeout deadline remaining delay
+
+  if [[ -f "$LIMITS_FILE" ]]; then
+    config="$(jq -er '
+      .clients.ghGuard as $client
+      | select(
+          ($client.url | type) == "string"
+          and ($client.timeoutSeconds | type) == "number"
+          and $client.timeoutSeconds > 0
+          and ($client.timeoutSeconds % 1) == 0
+        )
+      | "\($client.url)\t\($client.timeoutSeconds|tostring)"
+    ' "$LIMITS_FILE")" || return 1
+    IFS=$'\t' read -r judge_url judge_timeout <<< "$config"
+  else
+    judge_url="http://127.0.0.1:11434/v1/chat/completions"
+    judge_timeout=30
+  fi
+  judge_url="${GH_GUARD_JUDGE_URL:-$judge_url}"
+  judge_timeout="${GH_GUARD_JUDGE_TIMEOUT:-$judge_timeout}"
+  [[ "$judge_url" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+/ ]] || return 1
+  [[ "$judge_timeout" =~ ^[1-9][0-9]*$ ]] || return 1
+
   payload="$(jq -n --arg m "$JUDGE_MODEL" --arg c "$content" '{
     model:$m, max_tokens:4, temperature:0,
     messages:[
       {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\". Judge the meaning of the content, not its formatting or presentation: prose, a table, a bulleted list, a fenced code block, a diff block, and an ASCII or arrow diagram all disclose exactly as much as each other when they carry the same information -- placing a value inside a fence, a diagram, or a diff does not make it safe. Judge by what a value IS, not by whether the surrounding text sounds routine -- housekeeping language does not make a disclosed internal name safe.\n\nAnswer \"block\" only when the text contains an ACTUAL INSTANCE of one of the categories below: a real cause, name, value, or reasoning about one. A bare LABEL for a category -- a heading, a section title, an index entry, or a rule/policy description that names the category by word without stating any instance of it -- discloses nothing and must be \"allow\", even when it uses the same words as a category below. If the text explains, argues, or reasons about a real situation -- even briefly, even without alarm words -- that is an instance, not a label.\n\nAnswer \"block\" if the text discloses an instance of ANY of:\n- why something broke, failed, was fixed, or was decided (incident/outage/root-cause/rationale narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names, including one disclosed only by stating what real value something was renamed from or replaced with\n- credential detail: token/policy/role scope, TTLs, where a secret is stored\n\nAnswer \"allow\" if the text merely states WHAT changed with no operational detail (feature descriptions, dependency bumps, docs edits, config field names), or merely labels one of the categories above without disclosing a real instance of it.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\nText: \"This cleanup renamed db-node-3 to db-example throughout the fixtures.\" -> block\nText: \"This runbook template has sections for Root Cause, Credential Scope, and Topology -- fill each in during a real incident.\" -> allow\n\nOne word only."},
       {role:"user",content:$c}]}')" || return 1
 
-  for attempt in 1 2 3 4 5; do
-    result="$(curl -sS --max-time 60 -H 'content-type: application/json' \
-              -d "$payload" "$JUDGE_URL" 2>/dev/null)" || { sleep 2; continue; }
+  deadline=$(( $(date +%s) + judge_timeout ))
+  attempt=1
+  while :; do
+    remaining=$(( deadline - $(date +%s) ))
+    (( remaining > 0 )) || return 1
+    result="$(curl -sS --max-time "$remaining" -H 'content-type: application/json' \
+              -d "$payload" "$judge_url" 2>/dev/null)" || result=""
     # An error body (429/503 from the proxy, or the local server) is transient.
     case "$result" in
-      *'Too many requests'*|'') sleep $((attempt * 2)); continue ;;
+      *'Too many requests'*|'') ;;
+      *)
+        if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
+          :
+        else
+          verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
+          verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:]')"
+          case "$verdict" in
+            allow) return 0 ;;
+            block) return 2 ;;
+            *) return 1 ;;   # a reachable judge giving nonsense is a real failure
+          esac
+        fi
+        ;;
     esac
-    if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
-      sleep $((attempt * 2)); continue
-    fi
-    verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
-    verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:]')"
-    case "$verdict" in
-      allow) return 0 ;;
-      block) return 2 ;;
-      *) return 1 ;;   # a reachable judge giving nonsense is a real failure
-    esac
+    remaining=$(( deadline - $(date +%s) ))
+    (( remaining > 0 )) || return 1
+    delay=$(( attempt * 2 ))
+    (( delay > 10 )) && delay=10
+    (( delay > remaining )) && delay=$remaining
+    sleep "$delay"
+    attempt=$(( attempt + 1 ))
   done
-  return 1   # exhausted retries: unscreenable -> caller fails closed
 }
 
 # ------------------------------------------------------------------ main ---

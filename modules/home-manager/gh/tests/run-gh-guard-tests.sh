@@ -71,8 +71,23 @@ OPENBAO_GH_CLAIM=dryvist/privaterepo \
   check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
 # --- fail-closed when the judge is genuinely absent ---------------------
-GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "judge absent -> fail closed"  1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
+
+# A static limits file supplies both the local judge URL and its total retry
+# budget. The unreachable fixture must fail within its one-second budget.
+printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":1}}}\n' >"$HERE/resident-model-limits.json"
+export MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json"
+start_time="$(date +%s)"
+check3 "resident limits configure judge" 1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
+elapsed=$(( $(date +%s) - start_time ))
+if [ "$elapsed" -le 3 ]; then
+  printf 'PASS  %-38s [%ss]\n' "resident timeout bounds retries" "$elapsed"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s expected <=3s, got %ss\n' "resident timeout bounds retries" "$elapsed"; fail=$((fail + 1))
+fi
+unset MLX_RESIDENT_MODEL_LIMITS_FILE
+rm -f "$HERE/resident-model-limits.json"
 
 # --- calibrated classes: private host addresses -------------------------
 # Derived from measuring 102 real bodies in the two topology-heavy repos.
