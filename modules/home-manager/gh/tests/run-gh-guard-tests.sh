@@ -13,6 +13,7 @@ export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
 export GH_TOKEN=test-token GITHUB_TOKEN=test-token
+export OPENBAO_GH_CLAIM=dryvist/pub
 : >"$GH_GUARD_LOG"
 
 LEAK="node-alpha-7 is unreachable"
@@ -52,8 +53,13 @@ check3 "identifier via \$BODY expansion" 1 identifier issue create -R dryvist/pu
 check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/pub/issues -f body="$LEAK"
 
 # --- visibility tier ----------------------------------------------------
-check3 "unresolvable visibility"        1 visibility issue create --body "$CLEAN"
-GH_TOKEN='' GITHUB_TOKEN='' check3 "missing credential cannot use gh login" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM='' check3 "unclaimed write blocks before repo lookup" 1 auth issue create --body "$CLEAN"
+GH_TOKEN=test-token GITHUB_TOKEN=test-token OPENBAO_GH_CLAIM='' \
+  check3 "ambient credential requires claim" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM=dryvist/other \
+  check3 "claim is bound to target repo" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+GH_TOKEN=test-token GITHUB_TOKEN='' \
+  check3 "GH_TOKEN alone cannot publish" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
@@ -61,7 +67,8 @@ check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub 
 # --- must pass through --------------------------------------------------
 check3 "non-publish verb"               0 none pr list -R dryvist/pub
 check3 "clean body on public repo"      0 clean issue create -R dryvist/pub --body "$CLEAN"
-check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
+OPENBAO_GH_CLAIM=dryvist/privaterepo \
+  check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
 # --- fail-closed when the judge is genuinely absent ---------------------
 GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
