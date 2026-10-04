@@ -24,9 +24,8 @@ if [ -n "${GH_GUARD_ACTIVE:-}" ]; then exec "$GH_REAL" "$@"; fi
 export GH_GUARD_ACTIVE=1
 DENYLIST="${GH_GUARD_DENYLIST:-$HOME/.config/gh-guard/identifiers.txt}"
 ALLOWLIST="${GH_GUARD_ALLOWLIST:-$HOME/.config/gh-guard/allowed.txt}"
-JUDGE_URL="${GH_GUARD_JUDGE_URL:-@LITELLM_LOCAL_BASE_URL@/chat/completions}"
-# The `judge` role served by the local LiteLLM proxy: a busy or gated local
-# backend answers 429/503 at once and the proxy falls through to its next rung.
+JUDGE_URL="${GH_GUARD_JUDGE_URL:-http://127.0.0.1:11434/v1/chat/completions}"
+# The `judge` alias selects the resident fast model.
 JUDGE_MODEL="${GH_GUARD_JUDGE_MODEL:-judge}"
 LOG="${GH_GUARD_LOG:-$HOME/.local/state/gh-guard/decisions.log}"
 
@@ -146,18 +145,11 @@ resolve_repo() {
 # an unresolved lookup and therefore silently never fires; that polarity is the
 # bug this inverts.
 #
-# Auth note: interactively, the zsh `gh` function mints a token and re-execs via
-# `command gh`, so GITHUB_TOKEN is already set by the time we run. In a
-# non-interactive shell (Claude Code's Bash tool, scripts, cron) no function is
-# loaded and no token exists, so mint one here — otherwise every lookup returns
-# UNKNOWN and the gate blocks everything, which reads as "broken" and gets it
-# disabled. Owner is parseable without auth, so there is no chicken-and-egg.
+# Auth: the lookup uses the GH_TOKEN / GITHUB_TOKEN the caller already exported
+# for the gh command itself. With neither set the lookup is UNKNOWN and the
+# text is screened.
 repo_is_public() {
-  local repo="$1" vis tok
-  if [ -z "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ] && command -v openbao-github-creds >/dev/null 2>&1; then
-    tok="$(openbao-github-creds token read "${repo%%/*}" 2>/dev/null)" || tok=""
-    [ -n "$tok" ] && export GITHUB_TOKEN="$tok"
-  fi
+  local repo="$1" vis
   vis="$("$GH_REAL" repo view "$repo" --json visibility -q .visibility 2>/dev/null)" || return 0
   case "$vis" in
     PUBLIC) return 0 ;;
