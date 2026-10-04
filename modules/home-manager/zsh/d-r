@@ -1,0 +1,34 @@
+#!/bin/sh
+set -u
+
+host="$(hostname -s)" || exit 1
+[ -n "$host" ] || {
+  printf 'd-r: unable to determine the local host attribute\n' >&2
+  exit 1
+}
+
+old_nix_config="${NIX_CONFIG:-}"
+token="$(env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run -- openbao-github-creds token read dryvist)" || {
+  printf 'd-r: unable to read the GitHub evaluation token\n' >&2
+  exit 1
+}
+
+export NIX_CONFIG="${old_nix_config:+$old_nix_config
+}access-tokens = github.com=$token"
+unset token
+
+closure="$(nix build "github:dryvist/nix-darwin-host#darwinConfigurations.${host}.system" \
+  --refresh --no-write-lock-file --accept-flake-config --no-link --print-out-paths --print-build-logs)"
+build_rc=$?
+
+if [ -n "$old_nix_config" ]; then
+  export NIX_CONFIG="$old_nix_config"
+else
+  unset NIX_CONFIG
+fi
+unset old_nix_config
+
+[ "$build_rc" -eq 0 ] || exit "$build_rc"
+
+printf 'closure=%s\n' "$closure"
+sudo -S sh -c 'nix build --profile /nix/var/nix/profiles/system "$1" && "$1/activate-user" && "$1/activate"' d-r "$closure" < /dev/null
