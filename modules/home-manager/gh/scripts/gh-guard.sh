@@ -288,6 +288,10 @@ REPO="$(resolve_repo "$@" || true)"
 [ -z "$REPO" ] && die visibility "?" "$VERB" \
   "Cannot resolve the target repository, so its visibility is unknown. Pass -R OWNER/REPO, or run from inside the repo."
 
+if [ -z "${GH_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
+  die auth "$REPO" "$VERB" "An explicit credential is required for this write."
+fi
+
 repo_is_public "$REPO" || exec "$GH_REAL" "$@"
 
 CONTENT="$(collect_content "$@")"

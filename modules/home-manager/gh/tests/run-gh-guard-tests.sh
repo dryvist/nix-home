@@ -12,6 +12,7 @@ GUARD="${GH_GUARD_BIN:-$HERE/../scripts/gh-guard.sh}"
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
+export GH_TOKEN=test-token GITHUB_TOKEN=test-token
 : >"$GH_GUARD_LOG"
 
 LEAK="node-alpha-7 is unreachable"
@@ -52,6 +53,7 @@ check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/p
 
 # --- visibility tier ----------------------------------------------------
 check3 "unresolvable visibility"        1 visibility issue create --body "$CLEAN"
+GH_TOKEN='' GITHUB_TOKEN='' check3 "missing credential cannot use gh login" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
