@@ -12,6 +12,8 @@ GUARD="${GH_GUARD_BIN:-$HERE/../scripts/gh-guard.sh}"
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
+export GH_TOKEN=test-token GITHUB_TOKEN=test-token
+export OPENBAO_GH_CLAIM=dryvist/pub
 : >"$GH_GUARD_LOG"
 
 LEAK="node-alpha-7 is unreachable"
@@ -51,7 +53,13 @@ check3 "identifier via \$BODY expansion" 1 identifier issue create -R dryvist/pu
 check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/pub/issues -f body="$LEAK"
 
 # --- visibility tier ----------------------------------------------------
-check3 "unresolvable visibility"        1 visibility issue create --body "$CLEAN"
+OPENBAO_GH_CLAIM='' check3 "unclaimed write blocks before repo lookup" 1 auth issue create --body "$CLEAN"
+GH_TOKEN=test-token GITHUB_TOKEN=test-token OPENBAO_GH_CLAIM='' \
+  check3 "ambient credential requires claim" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM=dryvist/other \
+  check3 "claim is bound to target repo" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+GH_TOKEN=test-token GITHUB_TOKEN='' \
+  check3 "GH_TOKEN alone cannot publish" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
@@ -59,17 +67,47 @@ check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub 
 # --- must pass through --------------------------------------------------
 check3 "non-publish verb"               0 none pr list -R dryvist/pub
 check3 "clean body on public repo"      0 clean issue create -R dryvist/pub --body "$CLEAN"
-check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
+OPENBAO_GH_CLAIM=dryvist/privaterepo \
+  check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
 # --- fail-closed when the judge is genuinely absent ---------------------
-GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "judge absent -> fail closed"  1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
 
-# --- calibrated classes: private host addresses -------------------------
-# Derived from measuring 102 real bodies in the two topology-heavy repos.
+# A static limits file supplies both the local judge URL and its total retry
+# budget. The unreachable fixture must fail within its one-second budget.
+printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":1}}}\n' >"$HERE/resident-model-limits.json"
+export MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json"
+start_time="$(date +%s)"
+check3 "resident limits configure judge" 1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
+elapsed=$(( $(date +%s) - start_time ))
+if [ "$elapsed" -le 3 ]; then
+  printf 'PASS  %-38s [%ss]\n' "resident timeout bounds retries" "$elapsed"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s expected <=3s, got %ss\n' "resident timeout bounds retries" "$elapsed"; fail=$((fail + 1))
+fi
+unset MLX_RESIDENT_MODEL_LIMITS_FILE
+rm -f "$HERE/resident-model-limits.json"
+
+# --- deterministic private host-address shapes --------------------------
 check3 "private host addr 10.x"         1 identifier issue create -R dryvist/pub --body "host 10.4.7.22 is down"
 check3 "private host addr 172.16-31"    1 identifier issue create -R dryvist/pub --body "reached 172.20.3.9 ok"
 check3 "private host addr 192.168.x"    1 identifier issue create -R dryvist/pub --body "gateway 192.168.7.1"
+check3 "private host addr CGNAT"        1 identifier issue create -R dryvist/pub --body "peer 100.64.3.9 is waiting"
+check3 "private host addr link-local"   1 identifier issue create -R dryvist/pub --body "peer 169.254.3.9 is waiting"
+check3 "private host addr IPv6 ULA"     1 identifier issue create -R dryvist/pub --body "peer fd12:3456::9 is waiting"
+check3 "private host addr IPv6 local"   1 identifier issue create -R dryvist/pub --body "peer fe80::9 is waiting"
+check3 "private host addr mapped IPv4"  1 identifier issue create -R dryvist/pub --body "peer ::ffff:192.168.1.9 is waiting"
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+  check3 "private suffix .internal"      1 identifier issue create -R dryvist/pub --body "Adds fake-service.internal support."
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+  check3 "private suffix .lan"           1 identifier issue create -R dryvist/pub --body "Adds fake-service.lan support."
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+  check3 "private suffix .local"         1 identifier issue create -R dryvist/pub --body "Adds fake-service.local support."
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+  check3 "private suffix .home.arpa"     1 identifier issue create -R dryvist/pub --body "Adds fake-service.home.arpa support."
+GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" \
+  check3 "private suffix .corp"          1 identifier issue create -R dryvist/pub --body "Adds fake-service.corp support."
 # Calibration's key finding: leaks arrive inside PASTED EVIDENCE (transcripts,
 # tables, repro blocks), not composed prose. Quoted output must be scanned at
 # full strength, never down-weighted as "just logs".
@@ -77,10 +115,12 @@ PASTED="$(printf 'command output follows:\n    PING 10.9.9.9: 56 data bytes\n   
 check3 "identifier in pasted output"    1 identifier issue create -R dryvist/pub --body "$PASTED"
 
 # --- MUST NOT block: measured false-positive traps ----------------------
-# A CIDR range describes policy, not a host. Placeholder and doc ranges,
-# semver, ports, and issue refs all collided with naive rules in the corpus.
+# A CIDR range describes policy, not a host. Doc ranges, semver, ports, and
+# issue refs all collided with naive rules in the corpus. RFC 1918 addresses,
+# including the former 192.168.x placeholder case, are always private targets.
 check3 "CIDR range is policy not host"  0 clean issue create -R dryvist/pub --body "allow 10.0.0.0/8 in the firewall rule"
-check3 "documented placeholder block"   0 clean issue create -R dryvist/pub --body "use 192.168.0.10 as the placeholder"
+check3 "private /24 range is policy"     0 clean issue create -R dryvist/pub --body "allow 192.168.0.0/24 in the firewall rule"
+check3 "documentation range is public"   0 clean issue create -R dryvist/pub --body "use 192.0.2.10 as the documentation placeholder"
 check3 "semver is not an address"       0 clean issue create -R dryvist/pub --body "bump to v1.24.3 and 10.2.1 tooling"
 check3 "ports and issue refs"           0 clean issue create -R dryvist/pub --body "closes #1771, exposes :8088 and :49152"
 
@@ -107,10 +147,54 @@ scan_check() { # name expect_rc expect_tier file
   fi
 }
 
+missing_identifier_check() { # name expect_rc expect_tier file judge_url
+  local name="$1" want_rc="$2" want_tier="$3" file="$4" judge_url="$5" rc tier warnings diagnostic
+  diagnostic="$(mktemp)"
+  : >"$GH_GUARD_LOG"
+  (
+    cd "$REPODIR" || exit 2
+    GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
+      GH_GUARD_JUDGE_URL="$judge_url" \
+      "$GUARD" --scan "$file"
+  ) >/dev/null 2>"$diagnostic"
+  rc=$?
+  tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
+  warnings="$(grep -cF 'gh-guard: WARNING: identifier file is missing or unreadable' "$diagnostic" || true)"
+  rm -f "$diagnostic"
+  if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ] && [ "$warnings" -eq 1 ]; then
+    printf 'PASS  %-38s [%s, one warning]\n' "$name" "$want_tier"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s expected rc=%s tier=%s warnings=1, got rc=%s tier=%s warnings=%s\n' \
+      "$name" "$want_rc" "$want_tier" "$rc" "${tier:-none}" "${warnings:-0}"; fail=$((fail + 1))
+  fi
+}
+
 printf '%s\n' "$CLEAN"  >"$HERE/msg-clean.txt"
 printf '%s\n' "$LEAK"   >"$HERE/msg-leak.txt"
 scan_check "commit msg with identifier"  1 identifier "$HERE/msg-leak.txt"
 scan_check "clean commit msg"            0 clean      "$HERE/msg-clean.txt"
+
+printf '%s\n' 'Adds fake-service.internal support.' >"$HERE/msg-private-internal.txt"
+printf '%s\n' 'Adds fake-service.lan and fake-service.local support.' >"$HERE/msg-private-local-suffixes.txt"
+printf '%s\n' 'Adds fake-service.home.arpa and fake-service.corp support.' >"$HERE/msg-private-home-suffixes.txt"
+printf '%s\n' 'Updates peers 10.2.3.4, 100.64.2.3, 169.254.1.2, and 172.20.4.5.' >"$HERE/msg-private-ipv4.txt"
+printf '%s\n' 'Updates peers fd12::5, fe80::1, and ::ffff:192.168.1.9.' >"$HERE/msg-private-ipv6.txt"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  scan_check "synthetic .internal hostname"  1 identifier "$HERE/msg-private-internal.txt"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  scan_check "synthetic .lan and .local"      1 identifier "$HERE/msg-private-local-suffixes.txt"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  scan_check "synthetic .home.arpa and .corp" 1 identifier "$HERE/msg-private-home-suffixes.txt"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  scan_check "synthetic private IPv4 ranges"  1 identifier "$HERE/msg-private-ipv4.txt"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  scan_check "synthetic private IPv6 ranges"  1 identifier "$HERE/msg-private-ipv6.txt"
+
+rm -f "$HERE/missing-identifiers.txt"
+missing_identifier_check "missing file warns, shape tier blocks" 1 identifier \
+  "$HERE/msg-private-internal.txt" http://127.0.0.1:9/nope
+missing_identifier_check "missing file warns, judge still runs" 1 judge-unavailable \
+  "$HERE/msg-clean.txt" http://127.0.0.1:9/nope
 
 printf '\n%s passed, %s failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

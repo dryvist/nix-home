@@ -13,11 +13,18 @@
 # clobber a caller-supplied override, defeating the script's own
 # `${GH_GUARD_REAL_GH:-default}` design (and the test suite's use of it).
 #
-# Return file definitions directly (merged into home.file in common.nix).
+# Declare the identifier-file option and install the guard and its tests.
 
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  cfg = config.programs.ghGuard;
+
   ghGuardPkg = pkgs.writeShellApplication {
     name = "gh";
     runtimeInputs = [
@@ -25,23 +32,34 @@ let
       pkgs.curl
       pkgs.gnugrep
       pkgs.coreutils
+      pkgs.python3
     ];
+    runtimeEnv.GH_GUARD_DENYLIST_DEFAULT = cfg.identifierFile;
     text = builtins.replaceStrings [ "/etc/profiles/per-user/jevans/bin/gh" ] [ "${pkgs.gh}/bin/gh" ] (
       builtins.readFile ./scripts/gh-guard.sh
     );
   };
 in
 {
-  ".local/bin/gh".source = "${ghGuardPkg}/bin/gh";
-
-  # Test suite, installed alongside so the gate is verifiable after a rebuild:
-  #   GH_GUARD_BIN=$HOME/.local/bin/gh ~/.local/state/gh-guard/tests/run-gh-guard-tests.sh
-  ".local/state/gh-guard/scripts" = {
-    source = ./scripts;
-    recursive = true;
+  options.programs.ghGuard.identifierFile = lib.mkOption {
+    type = lib.types.str;
+    default = "${config.xdg.configHome}/gh-guard/identifiers.txt";
+    defaultText = lib.literalExpression ''"''${config.xdg.configHome}/gh-guard/identifiers.txt"'';
+    description = "Path to the exact-identifier file checked before publishing.";
   };
-  ".local/state/gh-guard/tests" = {
-    source = ./tests;
-    recursive = true;
+
+  config.home.file = {
+    ".local/bin/gh".source = "${ghGuardPkg}/bin/gh";
+
+    # Test suite, installed alongside so the gate is verifiable after a rebuild:
+    #   GH_GUARD_BIN=$HOME/.local/bin/gh ~/.local/state/gh-guard/tests/run-gh-guard-tests.sh
+    ".local/state/gh-guard/scripts" = {
+      source = ./scripts;
+      recursive = true;
+    };
+    ".local/state/gh-guard/tests" = {
+      source = ./tests;
+      recursive = true;
+    };
   };
 }
