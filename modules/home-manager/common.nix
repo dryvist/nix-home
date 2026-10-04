@@ -47,9 +47,6 @@ let
     };
   };
 
-  # gh-guard: publish-boundary gate, shadows the real gh on PATH
-  ghGuardFiles = import ./gh { inherit pkgs litellmLocalDefaults; };
-
   # Shell aliases
   shellAliases = import ./zsh/aliases.nix;
 
@@ -81,7 +78,7 @@ in
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
     packages = commonPackages;
 
-    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers // ghGuardFiles;
+    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers;
 
     sessionVariables = {
       EDITOR = "vim";
