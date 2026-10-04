@@ -191,9 +191,12 @@ GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
   scan_check "synthetic private IPv6 ranges"  1 identifier "$HERE/msg-private-ipv6.txt"
 
 rm -f "$HERE/missing-identifiers.txt"
+GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
+  check3 "missing identifier file blocks publish" 1 identifier \
+    issue create -R dryvist/pub --body "$CLEAN"
 missing_identifier_check "missing file warns, shape tier blocks" 1 identifier \
   "$HERE/msg-private-internal.txt" http://127.0.0.1:9/nope
-missing_identifier_check "missing file warns, judge still runs" 1 judge-unavailable \
+missing_identifier_check "missing file warns and clean scan blocks" 1 identifier \
   "$HERE/msg-clean.txt" http://127.0.0.1:9/nope
 
 printf '\n%s passed, %s failed\n' "$pass" "$fail"

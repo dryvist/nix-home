@@ -177,7 +177,7 @@ repo_is_public() {
 # docs site host), and must not block legitimate cross-references.
 hits_denylist() {
   local content="$1" stripped="$1"
-  [ -r "$DENYLIST" ] && [ -f "$DENYLIST" ] || return 1
+  [ -r "$DENYLIST" ] && [ -f "$DENYLIST" ] || return 2
   if [ -r "$ALLOWLIST" ]; then
     stripped="$(grep -vFf <(grep -vE '^[[:space:]]*(#|$)' "$ALLOWLIST") <<<"$content" || true)"
   fi
