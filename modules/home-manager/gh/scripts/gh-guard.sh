@@ -176,12 +176,16 @@ repo_is_public() {
 # ALLOWLIST first: some literals on the real domain are deliberately public (the
 # docs site host), and must not block legitimate cross-references.
 hits_denylist() {
-  local content="$1" stripped="$1"
-  [ -r "$DENYLIST" ] && [ -f "$DENYLIST" ] || return 1
+  local content stripped
+  # grep -w treats underscore as a word character; normalize it on both sides
+  # so underscores, like the other punctuation separators, bound identifiers.
+  content="${1//_/ }"
+  stripped="$content"
+  [ -r "$DENYLIST" ] && [ -f "$DENYLIST" ] || return 2
   if [ -r "$ALLOWLIST" ]; then
-    stripped="$(grep -vFf <(grep -vE '^[[:space:]]*(#|$)' "$ALLOWLIST") <<<"$content" || true)"
+    stripped="$(grep -viwFf <(grep -vE '^[[:space:]]*(#|$)' "$ALLOWLIST" | tr '_' ' ') <<<"$content" || true)"
   fi
-  grep -qiFf <(grep -vE '^[[:space:]]*(#|$)' "$DENYLIST") <<<"$stripped"
+  grep -qiwFf <(grep -vE '^[[:space:]]*(#|$)' "$DENYLIST" | tr '_' ' ') <<<"$stripped"
 }
 
 # Tier 1, part B: private-name shapes are deterministic identifiers too. The

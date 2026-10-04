@@ -8,9 +8,16 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # instead of the checked-out script; unset, it falls back to the sibling
 # scripts/ copy (used at build/dev time).
 GUARD="${GH_GUARD_BIN:-$HERE/../scripts/gh-guard.sh}"
+if [ -n "${GH_GUARD_BIN:-}" ]; then
+  run_guard() { "$GUARD" "$@"; }
+else
+  # Nix's sandbox does not provide the script's /usr/bin/env shebang path.
+  run_guard() { bash "$GUARD" "$@"; }
+fi
 
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
+export GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
 export GH_TOKEN=test-token GITHUB_TOKEN=test-token
 export OPENBAO_GH_CLAIM=dryvist/pub
@@ -29,7 +36,7 @@ check3() { # name expect_rc expect_tier
   local name="$1" want_rc="$2" want_tier="$3" rc tier
   shift 3
   : >"$GH_GUARD_LOG"
-  "$GUARD" "$@" >/dev/null 2>&1; rc=$?
+  run_guard "$@" >/dev/null 2>&1; rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
   if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
     printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
@@ -38,6 +45,60 @@ check3() { # name expect_rc expect_tier
       "$name" "$want_rc" "$want_tier" "$rc" "${tier:-none}"; fail=$((fail + 1))
   fi
 }
+
+identifier_boundary_checks() {
+  printf '%s\n' 'ha' >"$HERE/synthetic-identifiers.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token inside prose passes" 0 clean issue create -R dryvist/pub --body "Bump shared-library from 1.0 to 2.0."
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token alone blocks" 1 identifier issue create -R dryvist/pub --body "ha"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in hostname blocks" 1 identifier issue create -R dryvist/pub --body "node.ha.example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around hyphen blocks" 1 identifier issue create -R dryvist/pub --body "node-ha-example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around underscore blocks" 1 identifier issue create -R dryvist/pub --body "node_ha_name"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token around colon and at blocks" 1 identifier issue create -R dryvist/pub --body "user@node:ha.example.test"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in URL blocks" 1 identifier issue create -R dryvist/pub --body "https://example.test/ha/path"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
+    check3 "short token in path blocks" 1 identifier issue create -R dryvist/pub --body "/tmp/ha/file"
+
+  printf '%s\n' 'office' >"$HERE/synthetic-identifiers.txt"
+  printf '%s\n' 'of' >"$HERE/synthetic-allowlist.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
+    check3 "allowlist token does not strip word" 1 identifier issue create -R dryvist/pub --body $'office\nA change is ready.'
+
+  printf '%s\n' 'ha' >"$HERE/synthetic-identifiers.txt"
+  printf '%s\n' 'ha' >"$HERE/synthetic-allowlist.txt"
+  GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
+    GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
+    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body "Bump ha from 1.0 to 2.0."
+  rm -f "$HERE/synthetic-identifiers.txt" "$HERE/synthetic-allowlist.txt"
+}
+
+if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
+  identifier_boundary_checks
+  rm -f "$HERE/missing-identifiers.txt"
+  GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
+    check3 "missing identifier file blocks publish" 1 identifier \
+      issue create -R dryvist/pub --body "$CLEAN"
+  printf '\n%s passed, %s failed\n' "$pass" "$fail"
+  [ "$fail" -eq 0 ]
+  exit $?
+fi
+
+identifier_boundary_checks
 
 printf '%s\n' "$LEAK" >"$HERE/leak.md"
 # The shell expands this BEFORE the guard runs — the case a static
@@ -137,7 +198,7 @@ git -C "$REPODIR" remote add origin https://github.com/dryvist/testrepo.git 2>/d
 scan_check() { # name expect_rc expect_tier file
   local name="$1" want_rc="$2" want_tier="$3" file="$4" rc tier
   : >"$GH_GUARD_LOG"
-  ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" "$GUARD" --scan "$file" ) >/dev/null 2>&1; rc=$?
+  ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" run_guard --scan "$file" ) >/dev/null 2>&1; rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
   if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
     printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
@@ -155,7 +216,7 @@ missing_identifier_check() { # name expect_rc expect_tier file judge_url
     cd "$REPODIR" || exit 2
     GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
       GH_GUARD_JUDGE_URL="$judge_url" \
-      "$GUARD" --scan "$file"
+      run_guard --scan "$file"
   ) >/dev/null 2>"$diagnostic"
   rc=$?
   tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
@@ -191,9 +252,12 @@ GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
   scan_check "synthetic private IPv6 ranges"  1 identifier "$HERE/msg-private-ipv6.txt"
 
 rm -f "$HERE/missing-identifiers.txt"
+GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
+  check3 "missing identifier file blocks publish" 1 identifier \
+    issue create -R dryvist/pub --body "$CLEAN"
 missing_identifier_check "missing file warns, shape tier blocks" 1 identifier \
   "$HERE/msg-private-internal.txt" http://127.0.0.1:9/nope
-missing_identifier_check "missing file warns, judge still runs" 1 judge-unavailable \
+missing_identifier_check "missing file warns and clean scan blocks" 1 identifier \
   "$HERE/msg-clean.txt" http://127.0.0.1:9/nope
 
 printf '\n%s passed, %s failed\n' "$pass" "$fail"
