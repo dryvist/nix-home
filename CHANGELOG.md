@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.2](https://github.com/dryvist/nix-home/compare/v1.54.1...v1.54.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* **zsh:** build d-r from host wrapper ([#578](https://github.com/dryvist/nix-home/issues/578)) ([4f59319](https://github.com/dryvist/nix-home/commit/4f59319ff149fabf76423ca342d1c8a68a7ed3be))
+
 ## [1.54.1](https://github.com/dryvist/nix-home/compare/v1.54.0...v1.54.1) (2026-10-04)
 
 
