@@ -5,7 +5,8 @@
 # stdin, and referenced files at exec time, so it sees content a static
 # command-string parser cannot: BODY="$(...)", heredocs, --body-file, --input -.
 #
-# Two tiers, both fully automated. No `ask`, no human, no override:
+# Publish requests require an active per-repository OpenBao claim before content
+# screening. The two content tiers are fully automated; no `ask` or override:
 #   1. identifiers  -> deterministic regex, blocks, no bypass
 #   2. narrative    -> local on-machine judge, blocks on its verdict
 #
@@ -283,13 +284,24 @@ if ! is_publish_verb "${1:-}" "${2:-}"; then exec "$GH_REAL" "$@"; fi
 if [ "${1:-}" = "api" ] && ! api_is_publish "$@"; then exec "$GH_REAL" "$@"; fi
 
 VERB="${1:-}${2:+ $2}"
+if [ -z "${OPENBAO_GH_CLAIM:-}" ]; then
+  die auth "?" "$VERB" "An active OpenBao write claim is required for this operation."
+fi
+if [ -z "${GITHUB_TOKEN:-}" ]; then
+  die auth "$OPENBAO_GH_CLAIM" "$VERB" "The active OpenBao write claim has no credential."
+fi
+# `gh` prefers GH_TOKEN when both are set. Pin it to the token created by the
+# active claim so an older ambient GH_TOKEN cannot replace that credential.
+GH_TOKEN="$GITHUB_TOKEN"
+export GH_TOKEN
+
 REPO="$(resolve_repo "$@" || true)"
 
 [ -z "$REPO" ] && die visibility "?" "$VERB" \
   "Cannot resolve the target repository, so its visibility is unknown. Pass -R OWNER/REPO, or run from inside the repo."
 
-if [ -z "${GH_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
-  die auth "$REPO" "$VERB" "An explicit credential is required for this write."
+if [ "$OPENBAO_GH_CLAIM" != "$REPO" ]; then
+  die auth "$REPO" "$VERB" "The active OpenBao write claim is for a different repository."
 fi
 
 repo_is_public "$REPO" || exec "$GH_REAL" "$@"
