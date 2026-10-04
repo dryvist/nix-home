@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.54.0](https://github.com/dryvist/nix-home/compare/v1.53.0...v1.54.0) (2026-10-04)
+
+
+### Features
+
+* add managed ProxMan setup assistant ([#542](https://github.com/dryvist/nix-home/issues/542)) ([7396d9e](https://github.com/dryvist/nix-home/commit/7396d9e5176c1ddb2def2e05fdb4fa6f43eaf22b))
+
+
+### Bug Fixes
+
+* **gh:** use the local judge by default ([#565](https://github.com/dryvist/nix-home/issues/565)) ([dfc02d0](https://github.com/dryvist/nix-home/commit/dfc02d0b21519041a35e64ebb21fc9b1c47a1c64))
+
 ## [1.53.0](https://github.com/dryvist/nix-home/compare/v1.52.0...v1.53.0) (2026-10-03)
 
 
