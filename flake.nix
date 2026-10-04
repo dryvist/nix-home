@@ -83,6 +83,7 @@
         imports = [
           ./modules/home-manager/profiles
           ./modules/home-manager/common.nix
+          ./modules/home-manager/gh
           ./modules/home-manager/aws/options.nix
           ./modules/home-manager/workspace.nix
           ./modules/home-manager/tmux.nix
