@@ -83,7 +83,7 @@ identifier_boundary_checks() {
   printf '%s\n' 'ha' >"$HERE/synthetic-allowlist.txt"
   GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
     GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
-    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body $'ha\nBump shared-library from 1.0 to 2.0.'
+    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body "Bump ha from 1.0 to 2.0."
   rm -f "$HERE/synthetic-identifiers.txt" "$HERE/synthetic-allowlist.txt"
 }
 
