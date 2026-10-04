@@ -78,7 +78,18 @@ in
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
     packages = commonPackages;
 
-    file = npmFiles // awsConfig.files // linterFiles // gitHooks // gitMergeDrivers;
+    file =
+      npmFiles
+      // awsConfig.files
+      // linterFiles
+      // gitHooks
+      // gitMergeDrivers
+      // lib.optionalAttrs pkgs.stdenv.isDarwin {
+        ".local/bin/d-r" = {
+          source = ./zsh/d-r;
+          executable = true;
+        };
+      };
 
     sessionVariables = {
       EDITOR = "vim";

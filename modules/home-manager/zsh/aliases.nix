@@ -34,13 +34,8 @@
   # ===========================================================================
   # Nix / Darwin
   # ===========================================================================
-  # REQUIRES SUDO: darwin-rebuild modifies system-level configurations
-  # This activates both system (nix-darwin) and user (home-manager) configs
-  # Pulls the canonical remote flake so a rebuild never depends on local
-  # checkout state; darwin-rebuild resolves darwinConfigurations.<hostName>
-  # from the machine's hostname, so one alias serves every host.
-  # Usage: d-r            # darwin-rebuild switch from github:dryvist/nix-darwin
-  d-r = "sudo darwin-rebuild switch --flake github:dryvist/nix-darwin --refresh --no-write-lock-file --print-build-logs";
+  # d-r is installed as a script from common.nix so it can build the wrapper
+  # as the user before activating the closure with sudo.
 
   # NO SUDO: Updates flake.lock to latest nixpkgs (must commit before d-r)
   # Usage: nf-u            # update flake in current directory
