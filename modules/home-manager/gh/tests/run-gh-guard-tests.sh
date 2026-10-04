@@ -50,7 +50,7 @@ identifier_boundary_checks() {
   printf '%s\n' 'ha' >"$HERE/synthetic-identifiers.txt"
   GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
     GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
-    check3 "short token inside prose passes" 0 clean issue create -R dryvist/pub --body "A change is ready."
+    check3 "short token inside prose passes" 0 clean issue create -R dryvist/pub --body "Bump shared-library from 1.0 to 2.0."
   GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
     GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt" \
     check3 "short token alone blocks" 1 identifier issue create -R dryvist/pub --body "ha"
@@ -83,7 +83,7 @@ identifier_boundary_checks() {
   printf '%s\n' 'ha' >"$HERE/synthetic-allowlist.txt"
   GH_GUARD_DENYLIST="$HERE/synthetic-identifiers.txt" \
     GH_GUARD_ALLOWLIST="$HERE/synthetic-allowlist.txt" \
-    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body $'ha\nA change is ready.'
+    check3 "allowlist still strips exact token" 0 clean issue create -R dryvist/pub --body $'ha\nBump shared-library from 1.0 to 2.0.'
   rm -f "$HERE/synthetic-identifiers.txt" "$HERE/synthetic-allowlist.txt"
 }
 
