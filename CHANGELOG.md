@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.54.3](https://github.com/dryvist/nix-home/compare/v1.54.2...v1.54.3) (2026-10-04)
+
+
+### Bug Fixes
+
+* **gh-guard:** fail closed without identifier file ([#582](https://github.com/dryvist/nix-home/issues/582)) ([c651e7d](https://github.com/dryvist/nix-home/commit/c651e7db4a1505e78768c72b51dee6eeeabb3dd3))
+* **gh-guard:** match identifiers at token boundaries ([#584](https://github.com/dryvist/nix-home/issues/584)) ([b709767](https://github.com/dryvist/nix-home/commit/b70976704b09b587f3ad24c56062fdeec6609102))
+* promote branch ([5e69fc9](https://github.com/dryvist/nix-home/commit/5e69fc95d1e085a0f760a042bdc871584134c0fb))
+
 ## [1.54.2](https://github.com/dryvist/nix-home/compare/v1.54.1...v1.54.2) (2026-10-04)
 
 
