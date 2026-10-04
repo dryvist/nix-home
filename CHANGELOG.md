@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.54.1](https://github.com/dryvist/nix-home/compare/v1.54.0...v1.54.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **gh-guard:** preflight publish requests ([#569](https://github.com/dryvist/nix-home/issues/569)) ([ee9d41f](https://github.com/dryvist/nix-home/commit/ee9d41f71972e668ff87847fa8ecafa0cdf37c8d))
+* **gh-guard:** read resident judge limits ([cf43bb5](https://github.com/dryvist/nix-home/commit/cf43bb565aca34ef723815564162416b1b450dd9))
+* **gh-guard:** screen private target shapes ([#572](https://github.com/dryvist/nix-home/issues/572)) ([1e50c75](https://github.com/dryvist/nix-home/commit/1e50c7567de8e71339dd19d025d9a0e40bbb842f))
+* **gh-guard:** validate publishing targets ([#570](https://github.com/dryvist/nix-home/issues/570)) ([e4a751a](https://github.com/dryvist/nix-home/commit/e4a751a18967dc624035366651c4dc51dc14de34))
+
 ## [1.54.0](https://github.com/dryvist/nix-home/compare/v1.53.0...v1.54.0) (2026-10-04)
 
 
