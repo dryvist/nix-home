@@ -53,7 +53,7 @@ check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/p
 
 # --- visibility tier ----------------------------------------------------
 check3 "unresolvable visibility"        1 visibility issue create --body "$CLEAN"
-GH_TOKEN= GITHUB_TOKEN= check3 "missing credential cannot use gh login" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+GH_TOKEN='' GITHUB_TOKEN='' check3 "missing credential cannot use gh login" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
