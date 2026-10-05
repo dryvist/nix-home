@@ -105,6 +105,7 @@
         cp -r ${../modules/home-manager/gh} "$TMPDIR/gh-guard"
         chmod -R u+w "$TMPDIR/gh-guard"
         patchShebangs "$TMPDIR/gh-guard/tests/fakegh"
+        patchShebangs "$TMPDIR/gh-guard/tests/fakecurl"
         GH_GUARD_TEST_CI=1 bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
         touch $out
       '';
