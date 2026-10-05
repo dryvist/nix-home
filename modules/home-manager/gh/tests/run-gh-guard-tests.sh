@@ -16,6 +16,7 @@ else
 fi
 
 export GH_GUARD_REAL_GH="$HERE/fakegh"
+export GH_GUARD_CURL="$HERE/fakecurl"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
 export GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
@@ -44,6 +45,32 @@ check3() { # name expect_rc expect_tier
     printf 'FAIL  %-38s expected rc=%s tier=%s, got rc=%s tier=%s\n' \
       "$name" "$want_rc" "$want_tier" "$rc" "${tier:-none}"; fail=$((fail + 1))
   fi
+}
+
+visibility_check() { # name expect_rc expect_tier unauth_response auth_response token
+  local name="$1" want_rc="$2" want_tier="$3" unauth_response="$4" auth_response="$5" token="$6" rc tier
+  : >"$GH_GUARD_LOG"
+  GH_GUARD_TEST_UNAUTH_API="$unauth_response" \
+    GH_GUARD_TEST_AUTH_API="$auth_response" \
+    GH_REPO=dryvist/privaterepo \
+    GH_TOKEN="$token" GITHUB_TOKEN="$token" \
+    run_guard --scan "$HERE/visibility-probe.txt" >/dev/null 2>&1
+  rc=$?
+  tier="$(awk -F'\t' 'END{print $2}' "$GH_GUARD_LOG" 2>/dev/null)"
+  if [ "$rc" -eq "$want_rc" ] && [ "${tier:-none}" = "$want_tier" ]; then
+    printf 'PASS  %-38s [%s]\n' "$name" "$want_tier"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s expected rc=%s tier=%s, got rc=%s tier=%s\n' \
+      "$name" "$want_rc" "$want_tier" "$rc" "${tier:-none}"; fail=$((fail + 1))
+  fi
+}
+
+visibility_checks() {
+  printf '%s\n' "$LEAK" >"$HERE/visibility-probe.txt"
+  visibility_check "404 plus authenticated private" 0 none 404 private test-token
+  visibility_check "authenticated error stays public" 1 identifier 404 error test-token
+  visibility_check "404 without token stays public" 1 identifier 404 private ''
+  rm -f "$HERE/visibility-probe.txt"
 }
 
 identifier_boundary_checks() {
@@ -89,6 +116,7 @@ identifier_boundary_checks() {
 
 if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
   identifier_boundary_checks
+  visibility_checks
   rm -f "$HERE/missing-identifiers.txt"
   GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
     check3 "missing identifier file blocks publish" 1 identifier \
@@ -99,6 +127,7 @@ if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
 fi
 
 identifier_boundary_checks
+visibility_checks
 
 printf '%s\n' "$LEAK" >"$HERE/leak.md"
 # The shell expands this BEFORE the guard runs — the case a static
@@ -129,6 +158,7 @@ check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub 
 check3 "non-publish verb"               0 none pr list -R dryvist/pub
 check3 "clean body on public repo"      0 clean issue create -R dryvist/pub --body "$CLEAN"
 OPENBAO_GH_CLAIM=dryvist/privaterepo \
+  GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
   check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
 # --- fail-closed when the judge is genuinely absent ---------------------
