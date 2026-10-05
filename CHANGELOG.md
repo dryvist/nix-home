@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.4](https://github.com/dryvist/nix-home/compare/v1.54.3...v1.54.4) (2026-10-05)
+
+
+### Bug Fixes
+
+* **gh-guard:** retry visibility on HTTP 404 ([#590](https://github.com/dryvist/nix-home/issues/590)) ([60de60b](https://github.com/dryvist/nix-home/commit/60de60be99f5a7f1e3828f5ebc78515d1afacbe2))
+
 ## [1.54.3](https://github.com/dryvist/nix-home/compare/v1.54.2...v1.54.3) (2026-10-04)
 
 
