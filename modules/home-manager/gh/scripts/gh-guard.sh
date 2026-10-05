@@ -152,15 +152,41 @@ resolve_repo() {
 # an unresolved lookup and therefore silently never fires; that polarity is the
 # bug this inverts.
 #
-# Auth: the lookup uses the GH_TOKEN / GITHUB_TOKEN the caller already exported
-# for the gh command itself. With neither set the lookup is UNKNOWN and the
-# text is screened.
+# GitHub hides private repositories behind 404s on anonymous REST reads. Retry
+# only that case through gh, which uses the caller's exported GH_TOKEN or
+# GITHUB_TOKEN without putting the credential on argv.
 repo_is_public() {
-  local repo="$1" vis
-  vis="$("$GH_REAL" repo view "$repo" --json visibility -q .visibility 2>/dev/null)" || return 0
+  local repo="$1" response status body token vis
+  response="$(
+    unset GH_TOKEN GITHUB_TOKEN
+    "${GH_GUARD_CURL:-curl}" -q --silent --show-error \
+      --header 'Accept: application/vnd.github+json' \
+      --write-out $'\n%{http_code}' \
+      "https://api.github.com/repos/$repo" 2>/dev/null
+  )" || return 0
+
+  status="${response##*$'\n'}"
+  body="${response%$'\n'*}"
+  case "$status" in
+    200)
+      vis="$(printf '%s' "$body" | python3 -c '
+import json
+import sys
+
+value = json.load(sys.stdin).get("visibility")
+print(value if isinstance(value, str) else "")
+' 2>/dev/null)" || return 0
+      ;;
+    404)
+      token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+      [ -n "$token" ] || return 0
+      vis="$("$GH_REAL" api "repos/$repo" --jq .visibility 2>/dev/null)" || return 0
+      ;;
+    *) return 0 ;;
+  esac
+
   case "$vis" in
-    PUBLIC) return 0 ;;
-    PRIVATE|INTERNAL) return 1 ;;
+    private|PRIVATE) return 1 ;;
     *) return 0 ;;   # unknown -> screen it
   esac
 }

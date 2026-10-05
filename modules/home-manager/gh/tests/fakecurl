@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Unauthenticated GitHub REST API stub for gh-guard tests.
+set -u
+[ -z "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ] || exit 97
+case "${GH_GUARD_TEST_UNAUTH_API:-public}" in
+  public) printf '%s\n%s\n' '{"visibility":"public"}' 200 ;;
+  404) printf '%s\n%s\n' '{"message":"Not Found"}' 404 ;;
+  error) printf '%s\n%s\n' '{"message":"Server Error"}' 500 ;;
+  *) exit 2 ;;
+esac

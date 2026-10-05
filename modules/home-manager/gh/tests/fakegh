@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 # Test stub standing in for the real gh binary. Never contacts GitHub.
+if [ "$1" = api ] && [[ "${2:-}" == repos/* ]]; then
+  [ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ] || exit 1
+  case "${GH_GUARD_TEST_AUTH_API:-error}" in
+    private) printf '%s\n' private ;;
+    public) printf '%s\n' public ;;
+    *) exit 1 ;;
+  esac
+  exit 0
+fi
 if [ "$1" = "repo" ] && [ "$2" = "view" ]; then
   case "$*" in *nameWithOwner*) echo "dryvist/testrepo"; exit 0 ;; esac
   case "$3" in
