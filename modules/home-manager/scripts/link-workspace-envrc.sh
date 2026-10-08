@@ -11,6 +11,8 @@ for dir in "$root" "$public" "$private" "$public"/*/ "$private"/*/ "$private"/*/
   envrc=$dir/.envrc
 
   [[ -d $dir ]] || continue
+  # A stray link (e.g. a `result` from a nix build) is not a grouping directory.
+  [[ -L $dir ]] && continue
   # A repository (work tree or bare), not a grouping directory.
   [[ -e $dir/.git || -f $dir/HEAD ]] && continue
   # Already linked.
@@ -21,5 +23,6 @@ for dir in "$root" "$public" "$private" "$public"/*/ "$private"/*/ "$private"/*/
     continue
   fi
 
-  ln -sfn "$target" "$envrc"
+  # One unwritable directory must not abort the activation for the rest.
+  ln -sfn "$target" "$envrc" || echo "workspace .envrc: could not link $envrc; skipping" >&2
 done
