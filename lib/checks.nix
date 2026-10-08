@@ -132,13 +132,11 @@
       '';
 
   # The workspace .envrc linker acts only on real grouping directories.
-  workspace-envrc-linker =
-    pkgs.runCommand "check-workspace-envrc-linker" { }
-      ''
-        bash ${../modules/home-manager/scripts/tests/run-link-workspace-envrc-tests.sh} \
-          ${../modules/home-manager/scripts/link-workspace-envrc.sh}
-        touch $out
-      '';
+  workspace-envrc-linker = pkgs.runCommand "check-workspace-envrc-linker" { } ''
+    bash ${../modules/home-manager/scripts/tests/run-link-workspace-envrc-tests.sh} \
+      ${../modules/home-manager/scripts/link-workspace-envrc.sh}
+    touch $out
+  '';
 
   # Telemetry wiring regression.
   #
