@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.54.5](https://github.com/dryvist/nix-home/compare/v1.54.4...v1.54.5) (2026-10-08)
+
+
+### Bug Fixes
+
+* **ci:** grant actions: read to daily run limit callers ([#615](https://github.com/dryvist/nix-home/issues/615)) ([11fdc9c](https://github.com/dryvist/nix-home/commit/11fdc9cca87ba10658793fb21e75e91b233d0840))
+* **workspace:** link .envrc only into real grouping directories ([#616](https://github.com/dryvist/nix-home/issues/616)) ([24c0937](https://github.com/dryvist/nix-home/commit/24c09371e60d03c3bd4176b352118617b97f1585))
+
 ## [1.54.4](https://github.com/dryvist/nix-home/compare/v1.54.3...v1.54.4) (2026-10-05)
 
 
