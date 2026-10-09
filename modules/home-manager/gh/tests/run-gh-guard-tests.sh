@@ -161,6 +161,31 @@ OPENBAO_GH_CLAIM=dryvist/privaterepo \
   GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
   check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
+# --- a reasoning judge that returns no verdict within the small budget ---
+# The request asks for no thinking; a reasoning-only reply earns exactly one
+# retry with a larger budget, and a second reasoning-only reply fails closed.
+export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
+: >"$GH_GUARD_TEST_JUDGE_LOG"
+PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+  check3 "reasoning judge widens once"   0 clean issue create -R dryvist/pub --body "$CLEAN"
+requests="$(jq -sc 'map([.max_tokens, .chat_template_kwargs.enable_thinking])' "$GH_GUARD_TEST_JUDGE_LOG")"
+if [ "$requests" = '[[4,false],[512,false]]' ]; then
+  printf 'PASS  %-38s\n' "no-thinking request, one widening"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s got %s\n' "no-thinking request, one widening" "$requests"; fail=$((fail + 1))
+fi
+: >"$GH_GUARD_TEST_JUDGE_LOG"
+PATH="$HERE/fakejudge:$PATH" \
+  check3 "reasoning-only judge -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
+requests="$(jq -sc 'map(.max_tokens)' "$GH_GUARD_TEST_JUDGE_LOG")"
+if [ "$requests" = '[4,512]' ]; then
+  printf 'PASS  %-38s\n' "reasoning-only judge: two requests"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s got %s\n' "reasoning-only judge: two requests" "$requests"; fail=$((fail + 1))
+fi
+rm -f "$GH_GUARD_TEST_JUDGE_LOG"
+unset GH_GUARD_TEST_JUDGE_LOG
+
 # --- fail-closed when the judge is genuinely absent ---------------------
 GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "judge absent -> fail closed"  1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
