@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.6](https://github.com/dryvist/nix-home/compare/v1.54.5...v1.54.6) (2026-10-09)
+
+
+### Bug Fixes
+
+* **gh-guard:** get a verdict from reasoning judge models ([#625](https://github.com/dryvist/nix-home/issues/625)) ([d67e6b7](https://github.com/dryvist/nix-home/commit/d67e6b7148d8231316edf4e28c21962354806d1c))
+
 ## [1.54.5](https://github.com/dryvist/nix-home/compare/v1.54.4...v1.54.5) (2026-10-08)
 
 
