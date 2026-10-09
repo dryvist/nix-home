@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Judge stub for gh-guard tests: a reasoning model that returns only
+# reasoning within a 4-token budget. A larger budget gets the verdict in
+# GH_GUARD_TEST_JUDGE_VERDICT, or reasoning again when it is unset.
+set -u
+payload=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -d) payload="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+printf '%s\n' "$payload" >>"$GH_GUARD_TEST_JUDGE_LOG"
+if [ "$(jq -r .max_tokens <<<"$payload")" -gt 4 ] && [ -n "${GH_GUARD_TEST_JUDGE_VERDICT:-}" ]; then
+  jq -cn --arg v "$GH_GUARD_TEST_JUDGE_VERDICT" '{choices:[{finish_reason:"stop",message:{content:$v}}]}'
+else
+  printf '%s\n' '{"choices":[{"finish_reason":"length","message":{"content":null,"reasoning_content":"The user wants"}}]}'
+fi

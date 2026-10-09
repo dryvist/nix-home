@@ -315,6 +315,7 @@ allows_trivial_fastpath() {
 # local inference job would block every commit and the gate dies of fatigue.
 judge_verdict() {
   local content="$1" payload result verdict attempt config judge_url judge_timeout deadline remaining delay
+  local max_tokens=4 widened=0
 
   if [[ -f "$LIMITS_FILE" ]]; then
     config="$(jq -er '
@@ -337,11 +338,18 @@ judge_verdict() {
   [[ "$judge_url" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+/ ]] || return 1
   [[ "$judge_timeout" =~ ^[1-9][0-9]*$ ]] || return 1
 
-  payload="$(jq -n --arg m "$JUDGE_MODEL" --arg c "$content" '{
-    model:$m, max_tokens:4, temperature:0,
+  # Reasoning models spend a small budget thinking and return no content, so
+  # the request asks the chat template to skip thinking. A server that
+  # ignores it gets one retry with a budget large enough to finish reasoning.
+  build_payload() {
+    jq -n --arg m "$JUDGE_MODEL" --arg c "$content" --argjson n "$max_tokens" '{
+    model:$m, max_tokens:$n, temperature:0,
+    chat_template_kwargs:{enable_thinking:false},
     messages:[
       {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\". Judge the meaning of the content, not its formatting or presentation: prose, a table, a bulleted list, a fenced code block, a diff block, and an ASCII or arrow diagram all disclose exactly as much as each other when they carry the same information -- placing a value inside a fence, a diagram, or a diff does not make it safe. Judge by what a value IS, not by whether the surrounding text sounds routine -- housekeeping language does not make a disclosed internal name safe.\n\nAnswer \"block\" only when the text contains an ACTUAL INSTANCE of one of the categories below: a real cause, name, value, or reasoning about one. A bare LABEL for a category -- a heading, a section title, an index entry, or a rule/policy description that names the category by word without stating any instance of it -- discloses nothing and must be \"allow\", even when it uses the same words as a category below. If the text explains, argues, or reasons about a real situation -- even briefly, even without alarm words -- that is an instance, not a label.\n\nAnswer \"block\" if the text discloses an instance of ANY of:\n- why something broke, failed, was fixed, or was decided (incident/outage/root-cause/rationale narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names, including one disclosed only by stating what real value something was renamed from or replaced with\n- credential detail: token/policy/role scope, TTLs, where a secret is stored\n\nAnswer \"allow\" if the text merely states WHAT changed with no operational detail (feature descriptions, dependency bumps, docs edits, config field names), or merely labels one of the categories above without disclosing a real instance of it.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\nText: \"This cleanup renamed db-node-3 to db-example throughout the fixtures.\" -> block\nText: \"This runbook template has sections for Root Cause, Credential Scope, and Topology -- fill each in during a real incident.\" -> allow\n\nOne word only."},
-      {role:"user",content:$c}]}')" || return 1
+      {role:"user",content:$c}]}'
+  }
+  payload="$(build_payload)" || return 1
 
   deadline=$(( $(date +%s) + judge_timeout ))
   attempt=1
@@ -358,10 +366,21 @@ judge_verdict() {
           :
         else
           verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
-          verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:]')"
+          verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:][:punct:]')"
           case "$verdict" in
             allow) return 0 ;;
             block) return 2 ;;
+            '')
+              # Reasoning only, cut off by the budget: widen once, then fail.
+              if [ "$widened" -eq 0 ] &&
+                jq -e '(.choices[0].message.reasoning_content // "") != ""' <<<"$result" >/dev/null 2>&1; then
+                widened=1
+                max_tokens=512
+                payload="$(build_payload)" || return 1
+                continue
+              fi
+              return 1
+              ;;
             *) return 1 ;;   # a reachable judge giving nonsense is a real failure
           esac
         fi
