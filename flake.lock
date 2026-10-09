@@ -63,11 +63,11 @@
     "nix-ai": {
       "flake": false,
       "locked": {
-        "lastModified": 1791500831,
-        "narHash": "sha256-TcWwMooa8xdlVRjn3SXu3UFFnj/JuMVvygS8py3qT5Y=",
+        "lastModified": 1791502312,
+        "narHash": "sha256-2SKpz9301ONzho3Dg66sKmbIB3wGZofwzMAzODD7ga4=",
         "owner": "dryvist",
         "repo": "nix-ai",
-        "rev": "d725cecace4ae89139b2883c04274e11e6181c91",
+        "rev": "1548f7544cc5c5294250fea9a1a7df19c2333312",
         "type": "github"
       },
       "original": {
