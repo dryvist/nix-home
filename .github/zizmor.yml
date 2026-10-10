@@ -18,7 +18,6 @@ rules:
   # TODO: Create a separate PR to evaluate restricting these triggers further
   dangerous-triggers:
     ignore:
-      - ci-fail-issue.yml
       - ci-fix.yml
 
   # IGNORED: Broad permissions are required by these reusable workflow callers
@@ -35,7 +34,6 @@ rules:
   # TODO: Create a separate PR to pass only required secrets explicitly
   secrets-inherit:
     ignore:
-      - ci-fail-issue.yml
       - ci-fix.yml
       - claude-review.yml
       - final-pr-review.yml
