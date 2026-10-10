@@ -40,6 +40,7 @@ jobs:
       profile: nix
       osv_scan: true
       nix_validate: true
+      nix_build: true
       dependency_review: false
       zizmor: false
       filters: |
