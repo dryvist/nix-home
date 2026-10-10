@@ -38,7 +38,7 @@ jobs:
   # --- END DISABLED ---
 
   review:
-    uses: dryvist/ai-workflows/.github/workflows/cc-post-merge-tests.yml@main
+    uses: dryvist/ai-workflows/.github/workflows/cc-post-merge-tests.yml@e77c7f08b2f33f5dd3e1dff25c65056892ece445 # main
     with:
       commit_sha: ${{ inputs.commit_sha || github.sha }}
     secrets: inherit
