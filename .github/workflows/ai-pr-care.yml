@@ -6,15 +6,20 @@
 #
 # Gates in the reusable workflows keep non-matching PRs at github-script cost.
 # Permissions are job-scoped and the secret is passed explicitly (zizmor:
-# excessive-permissions, secrets-inherit). No concurrency block on purpose: a
-# caller sharing the reusable workflow's exact concurrency group causes an
-# opaque 0-job startup_failure.
+# excessive-permissions, secrets-inherit). The caller group must differ from
+# the reusable workflows' groups: a shared exact group causes an opaque 0-job
+# startup_failure. Runs are queued, not cancelled, because the reusable AI
+# jobs spend tokens per run.
 
 name: AI PR Care
 
 on:
   pull_request:
     types: [opened, synchronize]
+
+concurrency:
+  group: caller-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   dep-review:
