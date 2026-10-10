@@ -20,7 +20,20 @@ rules:
     ignore:
       - ci-fix.yml
 
-  # Matches the org policy: secrets: inherit into first-party reusable
-  # workflows is the standard delegation pattern, so the audit is disabled.
+  # IGNORED: these callers pass secrets: inherit to first-party reusable
+  # workflows. Each file is listed so new callers are still audited.
   secrets-inherit:
-    disable: true
+    ignore:
+      - ai-merge-gate.yml
+      - ai-pr-care.yml
+      - best-practices.yml
+      - ci-fix.yml
+      - code-simplifier.yml
+      - dispatch-lock-updates.yml
+      - issue-auto-resolve.yml
+      - issue-backlog-sweep.yml
+      - issue-hygiene.yml
+      - issue-sweeper.yml
+      - next-steps.yml
+      - post-merge-docs-review.yml
+      - post-merge-tests.yml
