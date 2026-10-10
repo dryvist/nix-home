@@ -18,32 +18,22 @@ rules:
   # TODO: Create a separate PR to evaluate restricting these triggers further
   dangerous-triggers:
     ignore:
-      - ci-fail-issue.yml
       - ci-fix.yml
 
-  # IGNORED: Broad permissions are required by these reusable workflow callers
-  # The called workflows (from ai-workflows) need write access to operate.
-  # TODO: Create a separate PR to scope permissions to individual jobs
-  excessive-permissions:
-    ignore:
-      - issue-auto-resolve.yml
-      - post-merge-docs-review.yml
-      - post-merge-tests.yml
-
-  # IGNORED: secrets: inherit is used intentionally to pass tokens to reusable workflows
-  # The called workflows (from ai-workflows) require secrets for GitHub API access.
-  # TODO: Create a separate PR to pass only required secrets explicitly
+  # IGNORED: these callers pass secrets: inherit to first-party reusable
+  # workflows. Each file is listed so new callers are still audited.
   secrets-inherit:
     ignore:
-      - ci-fail-issue.yml
-      - ci-fix.yml
-      - claude-review.yml
-      - final-pr-review.yml
-      - issue-auto-resolve.yml
-      - post-merge-docs-review.yml
-      - post-merge-tests.yml
+      - ai-merge-gate.yml
+      - ai-pr-care.yml
       - best-practices.yml
+      - ci-fix.yml
       - code-simplifier.yml
+      - dispatch-lock-updates.yml
+      - issue-auto-resolve.yml
+      - issue-backlog-sweep.yml
       - issue-hygiene.yml
       - issue-sweeper.yml
       - next-steps.yml
+      - post-merge-docs-review.yml
+      - post-merge-tests.yml

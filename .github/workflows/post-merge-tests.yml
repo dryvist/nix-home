@@ -12,11 +12,7 @@ on:
   #   branches: [main]
   # --- END DISABLED ---
 
-permissions:
-  actions: write
-  contents: write
-  id-token: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   # --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
@@ -38,6 +34,11 @@ jobs:
   # --- END DISABLED ---
 
   review:
+    permissions:
+      actions: write
+      contents: write
+      id-token: write
+      pull-requests: write
     uses: dryvist/ai-workflows/.github/workflows/cc-post-merge-tests.yml@d1d335bdb010b47108374e8a6152a7926477a32a # v0.48.1
     with:
       commit_sha: ${{ inputs.commit_sha || github.sha }}
