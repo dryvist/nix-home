@@ -41,6 +41,7 @@ jobs:
       osv_scan: true
       nix_validate: true
       nix_build: true
+      nix_build_command: nix build .#bws .#git-flow-next .#grip .#gh-stack --print-build-logs
       dependency_review: false
       zizmor: false
       filters: |
