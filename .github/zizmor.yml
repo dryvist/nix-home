@@ -20,28 +20,7 @@ rules:
     ignore:
       - ci-fix.yml
 
-  # IGNORED: Broad permissions are required by these reusable workflow callers
-  # The called workflows (from ai-workflows) need write access to operate.
-  # TODO: Create a separate PR to scope permissions to individual jobs
-  excessive-permissions:
-    ignore:
-      - issue-auto-resolve.yml
-      - post-merge-docs-review.yml
-      - post-merge-tests.yml
-
-  # IGNORED: secrets: inherit is used intentionally to pass tokens to reusable workflows
-  # The called workflows (from ai-workflows) require secrets for GitHub API access.
-  # TODO: Create a separate PR to pass only required secrets explicitly
+  # Matches the org policy: secrets: inherit into first-party reusable
+  # workflows is the standard delegation pattern, so the audit is disabled.
   secrets-inherit:
-    ignore:
-      - ci-fix.yml
-      - claude-review.yml
-      - final-pr-review.yml
-      - issue-auto-resolve.yml
-      - post-merge-docs-review.yml
-      - post-merge-tests.yml
-      - best-practices.yml
-      - code-simplifier.yml
-      - issue-hygiene.yml
-      - issue-sweeper.yml
-      - next-steps.yml
+    disable: true

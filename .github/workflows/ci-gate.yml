@@ -7,9 +7,9 @@
 # check context stays exactly "Merge Gate" (what branch protection requires) —
 # a called-workflow job would instead report as "<job-id> / Merge Gate".
 #
-# dependency_review and zizmor are left off to keep this migration purely
-# structural (this repo has never run them, so enabling here would be a new,
-# separately-reviewed change); flip both to true as a fast-follow.
+# dependency_review is left off to keep this migration purely structural
+# (this repo has never run it, so enabling here would be a new,
+# separately-reviewed change); flip it to true as a fast-follow.
 
 name: CI Gate
 
@@ -43,7 +43,6 @@ jobs:
       nix_build: true
       nix_build_command: nix build .#bws .#git-flow-next .#grip .#gh-stack --print-build-logs
       dependency_review: false
-      zizmor: false
       filters: |
         nix:
           - '**.nix'
