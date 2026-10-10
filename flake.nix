@@ -34,7 +34,7 @@
     # inside the inventory_resolve Ansible role; a workstation has no such path,
     # so without this they are absent from PATH.
     homelab-contracts = {
-      url = "github:dryvist/homelab-contracts";
+      url = "github:dryvist/homelab-contracts?ref=v5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -44,7 +44,7 @@
     # locking nix-ai's own transitive inputs (nix-claude-code, nix-codex,
     # nix-agy, ...) into this repo's flake.lock.
     nix-ai = {
-      url = "github:dryvist/nix-ai";
+      url = "github:dryvist/nix-ai?ref=v7";
       flake = false;
     };
   };

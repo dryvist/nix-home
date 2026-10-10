@@ -10,12 +10,7 @@ on:
   issues:
     types: [opened, labeled]
 
-permissions:
-  actions: write
-  contents: write
-  id-token: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   dispatch:
@@ -64,19 +59,31 @@ jobs:
             -f issue_number="$ISSUE_NUM"
 
   run-triage:
+    permissions:
+      actions: write
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
     if: github.event_name == 'workflow_dispatch'
-    uses: dryvist/ai-workflows/.github/workflows/issue-triage.yml@main
+    uses: dryvist/ai-workflows/.github/workflows/issue-triage.yml@aa4ed4a4bca92a3094bf4432689ddc5d84b98649 # v0.48.3
     secrets: inherit
     with:
       issue_number: ${{ inputs.issue_number }}
 
   resolve-issue:
+    permissions:
+      actions: write
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
     needs: [run-triage]
     if: >-
       always() &&
       github.event_name == 'workflow_dispatch' &&
       (needs.run-triage.result == 'success' || needs.run-triage.result == 'skipped')
-    uses: dryvist/ai-workflows/.github/workflows/cc-issue-resolver.yml@main
+    uses: dryvist/ai-workflows/.github/workflows/cc-issue-resolver.yml@aa4ed4a4bca92a3094bf4432689ddc5d84b98649 # v0.48.3
     secrets: inherit
     with:
       repo_context: "Nix home-manager dev environment configuration"
