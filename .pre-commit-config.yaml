@@ -21,11 +21,12 @@ repos:
   - repo: local
     hooks:
       - id: nix-fmt-check
-        name: Nix formatting (nixfmt-rfc-style)
-        entry: "bash -c 'nixfmt --check \"$@\" || (echo \"Run: nix fmt\"; exit 1)' --"
+        name: Nix formatting (treefmt + nixfmt, same invocation as the flake check)
+        entry: treefmt --fail-on-change --no-cache --formatters nixfmt .
         language: system
         files: \.nix$
         types: [file]
+        pass_filenames: false
 
       - id: nix-statix
         name: Nix linting (statix)
