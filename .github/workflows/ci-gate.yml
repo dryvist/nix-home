@@ -2,7 +2,7 @@
 #
 # Change detection, the standard checks (Nix Validate, Markdown Lint, File
 # Size), the queue watchdog, and result aggregation are delegated to
-# dryvist/.github/.github/workflows/_ci-gate.yml@main. A repo-local "Merge Gate"
+# dryvist/.github/.github/workflows/_ci-gate.yml@v1. A repo-local "Merge Gate"
 # job re-aggregates the shared gate's single result so the required status
 # check context stays exactly "Merge Gate" (what branch protection requires) —
 # a called-workflow job would instead report as "<job-id> / Merge Gate".
@@ -35,10 +35,13 @@ jobs:
       # actions: write must be granted here or the run fails at graph
       # validation (startup_failure).
       actions: write
-    uses: dryvist/.github/.github/workflows/_ci-gate.yml@main
+    uses: dryvist/.github/.github/workflows/_ci-gate.yml@v1
     with:
+      profile: nix
       osv_scan: true
       nix_validate: true
+      nix_build: true
+      nix_build_command: nix build .#bws .#git-flow-next .#grip .#gh-stack --print-build-logs
       dependency_review: false
       zizmor: false
       filters: |
@@ -58,6 +61,7 @@ jobs:
     needs: [shared-gate]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Aggregate results
         uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
