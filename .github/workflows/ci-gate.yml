@@ -7,9 +7,7 @@
 # check context stays exactly "Merge Gate" (what branch protection requires) —
 # a called-workflow job would instead report as "<job-id> / Merge Gate".
 #
-# dependency_review is left off to keep this migration purely structural
-# (this repo has never run it, so enabling here would be a new,
-# separately-reviewed change); flip it to true as a fast-follow.
+# dependency_review is off in this repo.
 
 name: CI Gate
 
