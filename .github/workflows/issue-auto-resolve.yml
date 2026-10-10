@@ -21,6 +21,7 @@ jobs:
   dispatch:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       actions: write
       issues: write

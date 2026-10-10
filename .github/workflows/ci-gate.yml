@@ -37,6 +37,7 @@ jobs:
       actions: write
     uses: dryvist/.github/.github/workflows/_ci-gate.yml@main
     with:
+      profile: nix
       osv_scan: true
       nix_validate: true
       dependency_review: false
@@ -58,6 +59,7 @@ jobs:
     needs: [shared-gate]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Aggregate results
         uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
