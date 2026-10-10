@@ -10,12 +10,7 @@ on:
   issues:
     types: [opened, labeled]
 
-permissions:
-  actions: write
-  contents: write
-  id-token: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   dispatch:
@@ -64,6 +59,12 @@ jobs:
             -f issue_number="$ISSUE_NUM"
 
   run-triage:
+    permissions:
+      actions: write
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
     if: github.event_name == 'workflow_dispatch'
     uses: dryvist/ai-workflows/.github/workflows/issue-triage.yml@d1d335bdb010b47108374e8a6152a7926477a32a # v0.48.1
     secrets: inherit
@@ -71,6 +72,12 @@ jobs:
       issue_number: ${{ inputs.issue_number }}
 
   resolve-issue:
+    permissions:
+      actions: write
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
     needs: [run-triage]
     if: >-
       always() &&
