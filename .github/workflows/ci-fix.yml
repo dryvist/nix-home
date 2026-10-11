@@ -27,7 +27,7 @@ jobs:
     #   github.event.workflow_run.conclusion == 'failure' &&
     #   github.event.workflow_run.head_branch != 'main'
     # --- END DISABLED ---
-    uses: dryvist/ai-workflows/.github/workflows/cc-ci-fix.yml@a5fcd42bd8843822f56f05346f6392ca7d9e0aec # v0.48.6
+    uses: dryvist/ai-workflows/.github/workflows/cc-ci-fix.yml@70d7a6ad0d566017d6c063c5786b997084f3f5c4 # v0.48.7
     with:
       repo_context: "Nix home-manager modules for cross-platform dev environment (git, zsh, VS Code, tmux)"
       ci_structure: "ci-gate.yml (dorny/paths-filter + nix-check + markdown-lint + alls-green gate)"
