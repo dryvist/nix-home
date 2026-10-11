@@ -94,13 +94,13 @@ api_parse() {
     case "$a" in
       -X|--method) next=method ;;
       --method=*) API_METHOD="${a#*=}" ;;
-      -X?*) API_METHOD="${a#-X}" ;;
+      -X?*) a="${a#-X}"; API_METHOD="${a#=}" ;;
       -f|--raw-field) next=raw ;;
       --raw-field=*) API_FIELDS+=("raw:${a#*=}") ;;
-      -f?*) API_FIELDS+=("raw:${a#-f}") ;;
+      -f?*) a="${a#-f}"; API_FIELDS+=("raw:${a#=}") ;;
       -F|--field) next=typed ;;
       --field=*) API_FIELDS+=("typed:${a#*=}") ;;
-      -F?*) API_FIELDS+=("typed:${a#-F}") ;;
+      -F?*) a="${a#-F}"; API_FIELDS+=("typed:${a#=}") ;;
       --input) next=input ;;
       --input=*) API_INPUT="${a#*=}" ;;
       -H|--header|-t|--template|-q|--jq|--hostname|--cache|-p|--preview) next=skip ;;
@@ -154,7 +154,8 @@ gql_is_text_free() {
     q="${f#*=}"; n=$((n + 1))
   done
   [ "$n" = 1 ] || return 1
-  case "$q" in @*|*'"""'*) return 1 ;; esac
+  # A carriage return ends a comment, so a query holding one is judged.
+  case "$q" in @*|*'"""'*|*$'\r'*) return 1 ;; esac
   # GraphQL ignores a byte-order mark like whitespace; any non-ASCII byte is judged.
   LC_ALL=C grep -q '[^[:print:][:space:]]' <<<"$q" && return 1
   calls="$(sed -E 's/"([^"\\]|\\.)*"//g; s/#.*$//' <<<"$q" | tr '\n' ' ' |

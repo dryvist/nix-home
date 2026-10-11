@@ -179,7 +179,12 @@ GH_REPO=dryvist/pub \
   check3 "--field=query=@file screened"   1 identifier api graphql "--field=query=@$HERE/mut.graphql"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "clustered -iFquery=@file is a write" 1 auth api graphql "-iFquery=@$HERE/mut.graphql"
+GH_REPO=dryvist/pub \
+  check3 "-F=query=@file reads the file"  1 identifier api graphql "-F=query=@$HERE/mut.graphql"
 rm -f "$HERE/mut.graphql"
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "carriage return ends a comment" 1 judge-unavailable api graphql \
+    -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId } # note\r addComment(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "clustered -ifquery= mutation"   1 auth api graphql \
     "-ifquery=mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }"
