@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.55.0](https://github.com/dryvist/nix-home/compare/v1.54.10...v1.55.0) (2026-10-11)
+
+
+### Features
+
+* **git:** lint commit subjects against the org ruleset pattern ([#673](https://github.com/dryvist/nix-home/issues/673)) ([67f7f12](https://github.com/dryvist/nix-home/commit/67f7f12b698e544610ae9f056af9d3aa54d6e738))
+
 ## [1.54.10](https://github.com/dryvist/nix-home/compare/v1.54.9...v1.54.10) (2026-10-11)
 
 
