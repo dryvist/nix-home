@@ -4,6 +4,8 @@
 # Imported by common.nix
 {
   config,
+  pkgs,
+  commitMessagePattern,
   userConfig,
   gitAliases,
 }:
@@ -59,6 +61,16 @@
       # mechanism. Files in ~/.git-templates/hooks are copied into .git/hooks/
       # on `git init`/`git clone`. Passive — doesn't override per-repo hooks.
       templateDir = "${config.home.homeDirectory}/.git-templates";
+    };
+
+    # Global commit-msg lint via git's config-based hooks: runs in every repo
+    # alongside per-repo .git/hooks, without core.hooksPath (see core above).
+    # The subject regex is the org ruleset's own copy (commitMessagePattern,
+    # see the tofu-github input in flake.nix); every other gitlint rule is
+    # ignored. gitlint skips merge, fixup and squash commits.
+    hook.commit-subject = {
+      event = "commit-msg";
+      command = "${pkgs.gitlint}/bin/gitlint --ignore T1,T2,T3,T4,T5,T6,T8,B1,B2,B3,B4,B5,B6,B7,B8 -c ${pkgs.lib.escapeShellArg "title-match-regex.regex=${commitMessagePattern}"} --msg-filename";
     };
 
     # Pull behavior - rebase keeps history cleaner than merge commits

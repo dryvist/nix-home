@@ -47,6 +47,14 @@
       url = "github:dryvist/nix-ai?ref=v7";
       flake = false;
     };
+
+    # Source-only: one file (config/commit-message-pattern.txt), the commit
+    # subject regex the org rulesets enforce, so the local commit-msg hook
+    # and the server check read the same copy.
+    tofu-github = {
+      url = "github:dryvist/tofu-github?ref=v1.29.0";
+      flake = false;
+    };
   };
 
   outputs =
@@ -58,6 +66,7 @@
       orbstack-kubernetes,
       homelab-contracts,
       nix-ai,
+      tofu-github,
       ...
     }:
     let
@@ -94,6 +103,9 @@
         _module.args = {
           orbstackKubernetesSrc = orbstack-kubernetes;
           homelabContracts = homelab-contracts;
+          # Conventional Commits subject regex: the org rulesets' single copy,
+          # read by the global commit-msg hook (modules/home-manager/git).
+          commitMessagePattern = nixpkgs.lib.fileContents "${tofu-github}/config/commit-message-pattern.txt";
           # The one committed router capability alias list nix-ai owns
           # (modules/litellm-local/aliases.nix) — see the `nix-ai` input
           # comment above for why this is a direct file import rather than a

@@ -11,6 +11,7 @@
   # own userConfig; this default lives in one place (see lib/user-defaults.nix).
   userConfig ? import ../../lib/user-defaults.nix,
   homelabContracts,
+  commitMessagePattern,
   litellmLocalDefaults,
   ...
 }:
@@ -37,7 +38,15 @@ let
   gitHooks = import ./git/hooks.nix { inherit config pkgs; };
 
   # Git configuration
-  gitConfig = import ./git/config.nix { inherit config userConfig gitAliases; };
+  gitConfig = import ./git/config.nix {
+    inherit
+      config
+      pkgs
+      commitMessagePattern
+      userConfig
+      gitAliases
+      ;
+  };
 
   # Git merge driver for flake.lock
   gitMergeDrivers = {
