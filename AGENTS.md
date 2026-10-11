@@ -63,10 +63,10 @@ repo owns its own `flake.nix`:
 
 ```bash
 # Scaffold a new repo's dev environment from a nix-devenv template
-nix flake init -t github:dryvist/nix-devenv#mkshell
+nix flake init -t "github:dryvist/nix-devenv?ref=vN#mkshell"
 
 # Or use a pre-built shell directly
-nix develop github:dryvist/nix-devenv?dir=shells/ansible
+nix develop "github:dryvist/nix-devenv?dir=shells/ansible&ref=vN"
 
 # Or use community templates for standard languages
 nix flake init -t github:the-nix-way/dev-templates#go

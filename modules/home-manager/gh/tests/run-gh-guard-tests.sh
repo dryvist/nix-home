@@ -158,6 +158,24 @@ GH_TOKEN=test-token GITHUB_TOKEN='' \
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
 
+# --- checkbox toggle on a bot-written body --------------------------------
+# The current body already carries text the identifier tier would block, so a
+# pass proves the toggle path skipped screening only because nothing is new.
+BOT_BODY=$'Update dep\n'"$LEAK"$'\n- [ ] <!-- rebase-check -->If you want to rebase'
+printf '%s\n' "${BOT_BODY/- \[ \]/- [x]}" >"$HERE/toggle.md"
+GH_GUARD_TEST_VIEW_BOT=1 GH_GUARD_TEST_VIEW_BODY="$BOT_BODY" \
+  check3 "bot body checkbox toggle passes"  0 checkbox pr edit 12 -R dryvist/pub --body-file "$HERE/toggle.md"
+printf '%s\nadded line\n' "${BOT_BODY/- \[ \]/- [x]}" >"$HERE/toggle.md"
+GH_GUARD_TEST_VIEW_BOT=1 GH_GUARD_TEST_VIEW_BODY="$BOT_BODY" \
+  check3 "bot body toggle plus text screens" 1 identifier pr edit 12 -R dryvist/pub --body-file "$HERE/toggle.md"
+printf '%s\n' "${BOT_BODY/- \[ \]/- [x]}" >"$HERE/toggle.md"
+GH_GUARD_TEST_VIEW_BOT='' GH_GUARD_TEST_VIEW_BODY="$BOT_BODY" \
+  check3 "human body toggle screens"        1 identifier pr edit 12 -R dryvist/pub --body-file "$HERE/toggle.md"
+printf '%s\n' "${BOT_BODY/- \[ \]/- [x]}" >"$HERE/toggle.md"
+GH_GUARD_TEST_VIEW_BOT=1 GH_GUARD_TEST_VIEW_BODY="$BOT_BODY" \
+  check3 "bot toggle with extra flag screens" 1 identifier pr edit 12 -R dryvist/pub --body-file "$HERE/toggle.md" --add-label x
+rm -f "$HERE/toggle.md"
+
 # --- must pass through --------------------------------------------------
 check3 "non-publish verb"               0 none pr list -R dryvist/pub
 check3 "clean body on public repo"      0 clean issue create -R dryvist/pub --body "$CLEAN"

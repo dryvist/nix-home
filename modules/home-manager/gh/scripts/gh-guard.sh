@@ -310,6 +310,33 @@ allows_trivial_fastpath() {
   grep -qiE '^(chore(\(deps[a-zA-Z0-9_.-]*\))?: )?bumps? [][[:alnum:]/_.@-]+ from [[:alnum:]._+-]+ to [[:alnum:]._+-]+\.?$' <<<"$content"
 }
 
+# A checkbox toggle on a bot-written PR or issue body (a Renovate rebase or
+# Dependency Dashboard request) publishes no new text: the body is already
+# public and only "[ ]"/"[x]" states change. Any other difference, a non-bot
+# author, any flag besides the repo and the body, or a selector that is not
+# the first argument after "edit" falls through to normal screening.
+is_bot_checkbox_toggle() { # content repo gh-args...
+  local content="$1" repo="$2" kind sel current
+  shift 2
+  case "${1:-} ${2:-}" in "pr edit"|"issue edit") kind="$1" ;; *) return 1 ;; esac
+  case "${3:-}" in ""|-*) return 1 ;; esac
+  sel="$3"
+  shift 3
+  # Only the repo and one body flag may follow: any other flag (a title, a
+  # label, an assignee) carries text this check never compares.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -R|--repo|--body|-b|--body-file|-F) [ $# -ge 2 ] || return 1; shift 2 ;;
+      --repo=*|--body=*|--body-file=*) shift ;;
+      *) return 1 ;;
+    esac
+  done
+  current="$("$GH_REAL" "$kind" view "$sel" -R "$repo" --json body,author \
+    --jq 'select(.author.is_bot == true) | .body' 2>/dev/null)" || return 1
+  [ -n "$current" ] || return 1
+  [ "$(sed -E 's/\[[xX ]\]/[ ]/g' <<<"$content")" = "$(sed -E 's/\[[xX ]\]/[ ]/g' <<<"$current")" ]
+}
+
 # Local judge. On-machine only: its input IS the candidate disclosure, so a
 # cloud call would perform the very leak this gate prevents.
 # The local server serializes requests and answers a concurrent call with
@@ -349,7 +376,7 @@ judge_verdict() {
     model:$m, max_tokens:$n, temperature:0,
     chat_template_kwargs:{enable_thinking:false},
     messages:[
-      {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\". Judge the meaning of the content, not its formatting or presentation: prose, a table, a bulleted list, a fenced code block, a diff block, and an ASCII or arrow diagram all disclose exactly as much as each other when they carry the same information -- placing a value inside a fence, a diagram, or a diff does not make it safe. Judge by what a value IS, not by whether the surrounding text sounds routine -- housekeeping language does not make a disclosed internal name safe.\n\nAnswer \"block\" only when the text contains an ACTUAL INSTANCE of one of the categories below: a real cause, name, value, or reasoning about one. A bare LABEL for a category -- a heading, a section title, an index entry, or a rule/policy description that names the category by word without stating any instance of it -- discloses nothing and must be \"allow\", even when it uses the same words as a category below. If the text explains, argues, or reasons about a real situation -- even briefly, even without alarm words -- that is an instance, not a label.\n\nAnswer \"block\" if the text discloses an instance of ANY of:\n- why something broke, failed, was fixed, or was decided (incident/outage/root-cause/rationale narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names, including one disclosed only by stating what real value something was renamed from or replaced with\n- credential detail: token/policy/role scope, TTLs, where a secret is stored\n\nAnswer \"allow\" if the text merely states WHAT changed with no operational detail (feature descriptions, dependency bumps, docs edits, config field names, the NAME of a secret or variable and which workflow step receives it -- a name is not a value, a scope, or a storage location), or merely labels one of the categories above without disclosing a real instance of it.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\nText: \"Passes the DEPLOY_KEY secret to the reusable release workflow, which uses it to post a status check.\" -> allow\nText: \"fix(review): pass the bot App private key (BOT_APP_PRIVATE_KEY) to the reusable review workflow\" -> allow\nText: \"DEPLOY_KEY is kept in the ops vault under the ci path and can write to every repository.\" -> block\nText: \"This cleanup renamed db-node-3 to db-example throughout the fixtures.\" -> block\nText: \"This runbook template has sections for Root Cause, Credential Scope, and Topology -- fill each in during a real incident.\" -> allow\n\nOne word only."},
+      {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\". Judge the meaning of the content, not its formatting or presentation: prose, a table, a bulleted list, a fenced code block, a diff block, and an ASCII or arrow diagram all disclose exactly as much as each other when they carry the same information -- placing a value inside a fence, a diagram, or a diff does not make it safe. Judge by what a value IS, not by whether the surrounding text sounds routine -- housekeeping language does not make a disclosed internal name safe.\n\nAnswer \"block\" only when the text contains an ACTUAL INSTANCE of one of the categories below: a real cause, name, value, or reasoning about one. A bare LABEL for a category -- a heading, a section title, an index entry, or a rule/policy description that names the category by word without stating any instance of it -- discloses nothing and must be \"allow\", even when it uses the same words as a category below. If the text explains, argues, or reasons about a real situation -- even briefly, even without alarm words -- that is an instance, not a label.\n\nAnswer \"block\" if the text discloses an instance of ANY of:\n- why something broke, failed, was fixed, or was decided (incident/outage/root-cause/rationale narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names, including one disclosed only by stating what real value something was renamed from or replaced with\n- credential detail: what a token, policy or role is permitted to read, write or do (paths, capabilities, grants), its TTLs or use limits, or where a secret is stored\n\nAnswer \"allow\" if the text merely states WHAT changed with no operational detail (feature descriptions, dependency bumps, docs edits, config field names, the NAME of a secret or variable and which workflow step receives it -- a name is not a value, a scope, or a storage location), or merely names the variables, policies, roles, lists or tests that the change adds, removes, renames or attaches -- those identifiers are already public in the diff, and saying which named policies are added to a named list, or that a test checks such a list, is not credential detail unless the text also says what those policies permit -- or merely labels one of the categories above without disclosing a real instance of it.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\nText: \"Passes the DEPLOY_KEY secret to the reusable release workflow, which uses it to post a status check.\" -> allow\nText: \"fix(review): pass the bot App private key (BOT_APP_PRIVATE_KEY) to the reusable review workflow\" -> allow\nText: \"DEPLOY_KEY is kept in the ops vault under the ci path and can write to every repository.\" -> block\nText: \"fix(sync): exclude the deploy token\u0027s policies from reconcile. Adds the deploy and backup policies to `reconcile_excluded_policies`; a test asserts every policy on the deploy token is in that list.\" -> allow\nText: \"The deploy token can write every secret under the apps mount, so reconcile could grant itself more.\" -> block\nText: \"Moves the sync token to the shared platform path, where every read-only identity can read it.\" -> block\nText: \"This cleanup renamed db-node-3 to db-example throughout the fixtures.\" -> block\nText: \"This runbook template has sections for Root Cause, Credential Scope, and Topology -- fill each in during a real incident.\" -> allow\n\nOne word only."},
       {role:"user",content:$c}]}'
   }
   payload="$(build_payload)" || return 1
@@ -453,6 +480,11 @@ repo_is_public "$REPO" || exec "$GH_REAL" "$@"
 
 CONTENT="$(collect_content "$@")"
 [ -z "$CONTENT" ] && exec "$GH_REAL" "$@"
+
+if is_bot_checkbox_toggle "$CONTENT" "$REPO" "$@"; then
+  audit checkbox ALLOW "$REPO" "$VERB"
+  exec "$GH_REAL" "$@"
+fi
 
 screen_identifiers "$CONTENT" "$REPO" "$VERB"
 
