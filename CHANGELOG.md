@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.54.7](https://github.com/dryvist/nix-home/compare/v1.54.6...v1.54.7) (2026-10-11)
+
+
+### Bug Fixes
+
+* **gh-guard:** allow identifier names that a change adds to a list ([#664](https://github.com/dryvist/nix-home/issues/664)) ([8b55f7e](https://github.com/dryvist/nix-home/commit/8b55f7e9f8ad903c9351d489f682b35102099656))
+* **gh-guard:** pass checkbox-only edits to bot-written bodies ([#662](https://github.com/dryvist/nix-home/issues/662)) ([ed6f97a](https://github.com/dryvist/nix-home/commit/ed6f97a101205a935db2e12c793506d59385d450))
+
 ## [1.54.6](https://github.com/dryvist/nix-home/compare/v1.54.5...v1.54.6) (2026-10-09)
 
 
