@@ -145,10 +145,10 @@ check3 "identifier via gh api -F field" 1 identifier api -X POST repos/dryvist/p
 
 # --- graphql: reads and text-free mutations pass; published text is screened
 GQL_RESOLVE='mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOabc123"}) { thread { isResolved } } }'
-GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "graphql read needs no claim"    0 none api graphql -f query='query { viewer { login } }' -F prId=PR_kwDOabc123
-GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
-  check3 "text-free mutation skips judge" 0 none api graphql -f query="$GQL_RESOLVE"
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "text-free mutation skips judge" 0 clean api graphql -f query="$GQL_RESOLVE"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "graphql mutation needs claim"   1 auth api graphql -f query="$GQL_RESOLVE"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
@@ -159,6 +159,25 @@ GH_REPO=dryvist/pub \
 GH_REPO=dryvist/pub \
   check3 "mutation variable screened"     1 narrative api graphql \
     -f query="mutation(\$b:String!){ addComment(input:{subjectId:\"PR_kwDOabc123\", body:\$b}) { clientMutationId } }" -f b="$NARR"
+
+# --- gh api argument forms that must not dodge screening -----------------
+JOINED="Root_cause_was_the_failed_token_scope_on_the_app_install"
+check3 "REST POST is the default method" 1 identifier api repos/dryvist/pub/issues/1/comments -f body="$LEAK"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "REST underscore prose kept"     1 judge-unavailable api -X POST repos/dryvist/pub/issues/1/comments -f body="$JOINED"
+GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "-f @path is a literal"          1 judge-unavailable api -X POST repos/dryvist/pub/issues/1/comments -f body="@$HERE/no-such-file"
+check3 "--template graphql is not graphql" 1 identifier api -X POST repos/dryvist/pub/issues/1/comments \
+  -f body="$LEAK" --template graphql
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "graphql underscore prose kept"  1 judge-unavailable api graphql \
+    -f query="mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$JOINED\"}) { clientMutationId } }"
+printf '%s\n' "mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }" >"$HERE/mut.graphql"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "attached -Fquery=@file is a write" 1 auth api graphql "-Fquery=@$HERE/mut.graphql"
+GH_REPO=dryvist/pub \
+  check3 "--field=query=@file screened"   1 identifier api graphql "--field=query=@$HERE/mut.graphql"
+rm -f "$HERE/mut.graphql"
 GH_GUARD_ACTIVE=1 \
   check3 "re-entry env flag still screens" 1 identifier issue create -R dryvist/pub --body "$LEAK"
 GH_GUARD_REAL_GH="$GUARD" \

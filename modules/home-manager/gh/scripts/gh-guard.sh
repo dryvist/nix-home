@@ -74,45 +74,108 @@ is_publish_verb() {
   return 1
 }
 
-# `gh api` only matters when it MUTATES an issue/PR/comment surface.
-api_is_publish() {
-  local method="" path="" mutating=0 graphql=0 gql_write=0 a
+# Parses `gh api` arguments: the endpoint positional, the method, every
+# field ("raw:k=v" for -f, "typed:k=v" for -F, attached forms included), and
+# the --input source. Values of flags that take one are never the endpoint.
+api_parse() {
+  API_ENDPOINT="" API_METHOD="" API_INPUT="" API_FIELDS=()
+  local a next=""
+  shift
   for a in "$@"; do
-    case "$a" in
-      -X|--method) method="NEXT" ;;
-      POST|PATCH|PUT) [ "$method" = "NEXT" ] && { mutating=1; method=""; } ;;
-      graphql) graphql=1 ;;
-      */issues|*/issues/*|*/pulls|*/pulls/*|*/comments|*/comments/*) path="$a" ;;
+    case "$next" in
+      method) API_METHOD="$a"; next=""; continue ;;
+      raw|typed) API_FIELDS+=("$next:$a"); next=""; continue ;;
+      input) API_INPUT="$a"; next=""; continue ;;
+      skip) next=""; continue ;;
     esac
-    # A query read from a file or stdin cannot be inspected here.
-    case "$a" in *mutation*|--input|--input=*|query=@*) gql_write=1 ;; esac
+    case "$a" in
+      -X|--method) next=method ;;
+      --method=*) API_METHOD="${a#*=}" ;;
+      -X?*) API_METHOD="${a#-X}" ;;
+      -f|--raw-field) next=raw ;;
+      --raw-field=*) API_FIELDS+=("raw:${a#*=}") ;;
+      -f?*) API_FIELDS+=("raw:${a#-f}") ;;
+      -F|--field) next=typed ;;
+      --field=*) API_FIELDS+=("typed:${a#*=}") ;;
+      -F?*) API_FIELDS+=("typed:${a#-F}") ;;
+      --input) next=input ;;
+      --input=*) API_INPUT="${a#*=}" ;;
+      -H|--header|-t|--template|-q|--jq|--hostname|--cache|-p|--preview) next=skip ;;
+      -*) : ;;
+      *) [ -n "$API_ENDPOINT" ] || API_ENDPOINT="$a" ;;
+    esac
   done
-  # A graphql read executes as-is; a mutation (or an uninspectable query) is
-  # screened like any other publish.
-  [ "$graphql" = 1 ] && return "$((1 - gql_write))"
-  [ -n "$path" ] && { [ "$mutating" = 1 ] && return 0; }
-  return 1
+}
+
+api_is_graphql() { case "$API_ENDPOINT" in graphql|/graphql) return 0 ;; esac; return 1; }
+
+# `gh api` only matters when it MUTATES an issue/PR/comment surface, or runs a
+# graphql mutation. A graphql query whose text cannot be inspected here (from
+# --input or a file) counts as a mutation.
+api_is_publish() {
+  local f
+  api_parse "$@"
+  if api_is_graphql; then
+    [ -n "$API_INPUT" ] && return 0
+    for f in ${API_FIELDS[@]+"${API_FIELDS[@]}"}; do
+      case "$f" in *mutation*|typed:*=@*) return 0 ;; esac
+    done
+    return 1
+  fi
+  case "$API_ENDPOINT" in
+    */issues|*/issues/*|*/pulls|*/pulls/*|*/comments|*/comments/*) ;;
+    *) return 1 ;;
+  esac
+  case "${API_METHOD^^}" in
+    POST|PATCH|PUT) return 0 ;;
+    # gh api sends a POST when fields or --input are given without a method.
+    "") [ "${#API_FIELDS[@]}" -gt 0 ] || [ -n "$API_INPUT" ] ;;
+    *) return 1 ;;
+  esac
+}
+
+# GitHub node IDs (PR_kwDO..., PRRT_kwDO..., U_kgDO...): an uppercase type
+# prefix, an underscore, then the base64url payload.
+NODE_ID_RE='^[A-Z]{1,5}_k[A-Za-z0-9_-]{6,}$'
+
+# Every value a `gh api` call sends. With GQL_PROSE=1 on a graphql call, the
+# query contributes only its string literals (judged whole if it holds a block
+# string) and node IDs are dropped, so the judge sees prose, not syntax.
+api_content() {
+  local f kind kv key v out=""
+  api_parse "$@"
+  for f in ${API_FIELDS[@]+"${API_FIELDS[@]}"}; do
+    kind="${f%%:*}" kv="${f#*:}"
+    key="${kv%%=*}" v="${kv#*=}"
+    # Only -F reads a file; -f sends "@path" literally.
+    if [ "$kind" = typed ]; then
+      if [ "$v" = "@-" ]; then v="$(cat)"
+      elif [ "${v:0:1}" = @ ] && [ -r "${v#@}" ]; then v="$(cat -- "${v#@}")"; fi
+    fi
+    if [ "${GQL_PROSE:-0}" = 1 ] && api_is_graphql; then
+      if [ "$key" = query ] && [[ "$v" != *'"""'* ]]; then
+        v="$(grep -oE '"([^"\\]|\\.)*"' <<<"$v" | sed -E 's/^"//; s/"$//')"
+      fi
+      v="$(grep -vxE "$NODE_ID_RE" <<<"$v" || true)"
+    fi
+    out+="$v"$'\n'
+  done
+  if [ "$API_INPUT" = "-" ]; then out+="$(cat)"$'\n'
+  elif [ -n "$API_INPUT" ] && [ -r "$API_INPUT" ]; then out+="$(cat -- "$API_INPUT")"$'\n'; fi
+  printf '%s' "$out"
 }
 
 # ------------------------------------------------- content reconstruction ---
 # Collects every channel a body can arrive through. This is the whole point of
 # the shim: by the time we run, "$BODY" has already been expanded by the shell.
-# A `gh api` field value as published text. GraphQL syntax and node IDs are
-# not prose: a graphql query contributes only its string literals, unless it
-# holds a block string the literal scan cannot split, which is judged whole.
-field_text() { # key=value graphql
-  local key="${1%%=*}" v="${1#*=}"
-  case "$v" in @*) [ -r "${v#@}" ] && v="$(cat -- "${v#@}")" ;; esac
-  if [ "$2" = 1 ] && [ "$key" = query ] && [[ "$v" != *'"""'* ]]; then
-    v="$(grep -oE '"([^"\\]|\\.)*"' <<<"$v" | sed -E 's/^"//; s/"$//')"
-  fi
-  grep -vE '^[A-Z][A-Za-z]{0,4}_[A-Za-z0-9_-]+$' <<<"$v" | grep . || true
-}
-
 collect_content() {
-  local out="" next="" api=0 graphql=0 a v
-  [ "${1:-}" = api ] && api=1
-  [ "$api" = 1 ] && [[ " $* " == *" graphql "* ]] && graphql=1
+  local out="" next="" a v
+  if [ "${1:-}" = api ]; then
+    out="$(api_content "$@")"
+    if [ -z "$out" ] && [ ! -t 0 ]; then out="$(cat)"; fi
+    printf '%s' "$out"
+    return
+  fi
   for a in "$@"; do
     if [ -n "$next" ]; then
       case "$next" in
@@ -123,13 +186,9 @@ collect_content() {
           elif [ -r "$a" ]; then
             out+="$(cat -- "$a")"$'\n'
           fi ;;
-        field) out+="$(field_text "$a" "$graphql")"$'\n' ;;
+        field) out+="${a#*=}"$'\n' ;;
       esac
       next=""; continue
-    fi
-    # For `gh api`, -F is a typed field (key=value or key=@file), not a body file.
-    if [ "$api" = 1 ]; then
-      case "$a" in -F|--field) next="field"; continue ;; esac
     fi
     case "$a" in
       --body|-b|--title|-t|--notes|--description) next="literal" ;;
@@ -509,8 +568,20 @@ fi
 
 screen_identifiers "$CONTENT" "$REPO" "$VERB"
 
-if ! allows_trivial_fastpath "$CONTENT"; then
-  set +e; judge_verdict "$CONTENT"; rc=$?; set -e
+# The judge reads prose: for a graphql mutation, its literals and values minus
+# syntax and node IDs. Stdin cannot be read twice, so a body from stdin is
+# judged whole. A mutation with no prose left (resolving a thread) publishes
+# no text and skips the judge.
+PROSE="$CONTENT"
+if [ "${1:-}" = api ]; then
+  api_parse "$@"
+  if api_is_graphql && [ "$API_INPUT" != "-" ] && [[ " ${API_FIELDS[*]-} " != *"=@- "* ]]; then
+    PROSE="$(GQL_PROSE=1 collect_content "$@" </dev/null)"
+  fi
+fi
+
+if [ -n "$PROSE" ] && ! allows_trivial_fastpath "$PROSE"; then
+  set +e; judge_verdict "$PROSE"; rc=$?; set -e
   case "$rc" in
     0) : ;;
     2) die narrative "$REPO" "$VERB" "The local judge classified this as operational-security narrative." ;;
