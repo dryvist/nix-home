@@ -141,6 +141,10 @@ check3 "identifier via --body-file"     1 identifier issue create -R dryvist/pub
 check3 "identifier via -F"              1 identifier pr create -R dryvist/pub -F "$HERE/leak.md"
 check3 "identifier via \$BODY expansion" 1 identifier issue create -R dryvist/pub --body "$BODY"
 check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/pub/issues -f body="$LEAK"
+GH_GUARD_ACTIVE=1 \
+  check3 "re-entry env flag still screens" 1 identifier issue create -R dryvist/pub --body "$LEAK"
+GH_GUARD_REAL_GH="$GUARD" \
+  check3 "real gh pointing at guard stops" 2 none issue create -R dryvist/pub --body "$CLEAN"
 
 # --- visibility tier ----------------------------------------------------
 OPENBAO_GH_CLAIM='' check3 "unclaimed write blocks before repo lookup" 1 auth issue create --body "$CLEAN"
