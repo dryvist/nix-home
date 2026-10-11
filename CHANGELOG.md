@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.8](https://github.com/dryvist/nix-home/compare/v1.54.7...v1.54.8) (2026-10-11)
+
+
+### Bug Fixes
+
+* **gh-guard:** screen regardless of environment and allow secret names ([#667](https://github.com/dryvist/nix-home/issues/667)) ([7ddd754](https://github.com/dryvist/nix-home/commit/7ddd754f31c67e5cf207e605ebdad833221f7f0a))
+
 ## [1.54.7](https://github.com/dryvist/nix-home/compare/v1.54.6...v1.54.7) (2026-10-11)
 
 
