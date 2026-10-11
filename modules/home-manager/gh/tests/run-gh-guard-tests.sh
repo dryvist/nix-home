@@ -141,6 +141,24 @@ check3 "identifier via --body-file"     1 identifier issue create -R dryvist/pub
 check3 "identifier via -F"              1 identifier pr create -R dryvist/pub -F "$HERE/leak.md"
 check3 "identifier via \$BODY expansion" 1 identifier issue create -R dryvist/pub --body "$BODY"
 check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/pub/issues -f body="$LEAK"
+check3 "identifier via gh api -F field" 1 identifier api -X POST repos/dryvist/pub/issues -F body="$LEAK"
+
+# --- graphql: reads and text-free mutations pass; published text is screened
+GQL_RESOLVE='mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOabc123"}) { thread { isResolved } } }'
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  check3 "graphql read needs no claim"    0 none api graphql -f query='query { viewer { login } }' -F prId=PR_kwDOabc123
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope \
+  check3 "text-free mutation skips judge" 0 none api graphql -f query="$GQL_RESOLVE"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "graphql mutation needs claim"   1 auth api graphql -f query="$GQL_RESOLVE"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "graphql --input needs claim"    1 auth api graphql --input "$HERE/leak.md"
+GH_REPO=dryvist/pub \
+  check3 "mutation inline literal screened" 1 identifier api graphql \
+    -f query="mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }"
+GH_REPO=dryvist/pub \
+  check3 "mutation variable screened"     1 narrative api graphql \
+    -f query="mutation(\$b:String!){ addComment(input:{subjectId:\"PR_kwDOabc123\", body:\$b}) { clientMutationId } }" -f b="$NARR"
 GH_GUARD_ACTIVE=1 \
   check3 "re-entry env flag still screens" 1 identifier issue create -R dryvist/pub --body "$LEAK"
 GH_GUARD_REAL_GH="$GUARD" \

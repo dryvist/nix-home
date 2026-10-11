@@ -76,7 +76,7 @@ is_publish_verb() {
 
 # `gh api` only matters when it MUTATES an issue/PR/comment surface.
 api_is_publish() {
-  local method="" path="" mutating=0 graphql=0 a
+  local method="" path="" mutating=0 graphql=0 gql_write=0 a
   for a in "$@"; do
     case "$a" in
       -X|--method) method="NEXT" ;;
@@ -84,9 +84,12 @@ api_is_publish() {
       graphql) graphql=1 ;;
       */issues|*/issues/*|*/pulls|*/pulls/*|*/comments|*/comments/*) path="$a" ;;
     esac
+    # A query read from a file or stdin cannot be inspected here.
+    case "$a" in *mutation*|--input|--input=*|query=@*) gql_write=1 ;; esac
   done
-  # A body/field flag on graphql implies a mutation payload we must inspect.
-  [ "$graphql" = 1 ] && return 0
+  # A graphql read executes as-is; a mutation (or an uninspectable query) is
+  # screened like any other publish.
+  [ "$graphql" = 1 ] && return "$((1 - gql_write))"
   [ -n "$path" ] && { [ "$mutating" = 1 ] && return 0; }
   return 1
 }
@@ -94,8 +97,22 @@ api_is_publish() {
 # ------------------------------------------------- content reconstruction ---
 # Collects every channel a body can arrive through. This is the whole point of
 # the shim: by the time we run, "$BODY" has already been expanded by the shell.
+# A `gh api` field value as published text. GraphQL syntax and node IDs are
+# not prose: a graphql query contributes only its string literals, unless it
+# holds a block string the literal scan cannot split, which is judged whole.
+field_text() { # key=value graphql
+  local key="${1%%=*}" v="${1#*=}"
+  case "$v" in @*) [ -r "${v#@}" ] && v="$(cat -- "${v#@}")" ;; esac
+  if [ "$2" = 1 ] && [ "$key" = query ] && [[ "$v" != *'"""'* ]]; then
+    v="$(grep -oE '"([^"\\]|\\.)*"' <<<"$v" | sed -E 's/^"//; s/"$//')"
+  fi
+  grep -vE '^[A-Z][A-Za-z]{0,4}_[A-Za-z0-9_-]+$' <<<"$v" | grep . || true
+}
+
 collect_content() {
-  local out="" next="" a v
+  local out="" next="" api=0 graphql=0 a v
+  [ "${1:-}" = api ] && api=1
+  [ "$api" = 1 ] && [[ " $* " == *" graphql "* ]] && graphql=1
   for a in "$@"; do
     if [ -n "$next" ]; then
       case "$next" in
@@ -106,9 +123,13 @@ collect_content() {
           elif [ -r "$a" ]; then
             out+="$(cat -- "$a")"$'\n'
           fi ;;
-        field) out+="${a#*=}"$'\n' ;;
+        field) out+="$(field_text "$a" "$graphql")"$'\n' ;;
       esac
       next=""; continue
+    fi
+    # For `gh api`, -F is a typed field (key=value or key=@file), not a body file.
+    if [ "$api" = 1 ]; then
+      case "$a" in -F|--field) next="field"; continue ;; esac
     fi
     case "$a" in
       --body|-b|--title|-t|--notes|--description) next="literal" ;;
