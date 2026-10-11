@@ -157,6 +157,10 @@ GH_TOKEN=test-token GITHUB_TOKEN='' \
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
+IAC_ADOPT=$'fix(iac-drift): adopt the drift variables under a renamed resource\n- Renames `github_actions_variable.iac_drift_enabled` to `github_actions_variable.iac_drift`.\n- A `removed` block (`destroy = false`) forgets the old resource; a `for_each` `import` block adopts each enabled repo\'s `IAC_DRIFT_ENABLED` variable under the new name.'
+IAC_OUTAGE="Re-imports the variable because the previous apply deleted it and drift detection was down for a day."
+check3 "IaC removed/import blocks allow" 0 clean issue create -R dryvist/pub --body "$IAC_ADOPT"
+check3 "IaC outage narrative blocks"     1 narrative issue create -R dryvist/pub --body "$IAC_OUTAGE"
 
 # --- checkbox toggle on a bot-written body --------------------------------
 # The current body already carries text the identifier tier would block, so a
