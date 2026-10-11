@@ -52,7 +52,7 @@
     # subject regex the org rulesets enforce, so the local commit-msg hook
     # and the server check read the same copy.
     tofu-github = {
-      url = "github:dryvist/tofu-github/80910e5852197732dac937b213eb608c393bb47c";
+      url = "github:dryvist/tofu-github?ref=v1.29.0";
       flake = false;
     };
   };

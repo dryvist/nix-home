@@ -156,17 +156,17 @@
     "tofu-github": {
       "flake": false,
       "locked": {
-        "lastModified": 1791725010,
-        "narHash": "sha256-weo6XtZRTQEI0UuJCX//GSrLQQ01yonRBU6ooXLQnbg=",
+        "lastModified": 1791741311,
+        "narHash": "sha256-peh/LR48a0GHATpwl/Ly2WPO8XXiMEx+M8UiVaM+P78=",
         "owner": "dryvist",
         "repo": "tofu-github",
-        "rev": "80910e5852197732dac937b213eb608c393bb47c",
+        "rev": "8ab8f6912d2e2f7bf24a95856934c7a32698a021",
         "type": "github"
       },
       "original": {
         "owner": "dryvist",
+        "ref": "v1.29.0",
         "repo": "tofu-github",
-        "rev": "80910e5852197732dac937b213eb608c393bb47c",
         "type": "github"
       }
     }
