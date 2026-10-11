@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.9](https://github.com/dryvist/nix-home/compare/v1.54.8...v1.54.9) (2026-10-11)
+
+
+### Bug Fixes
+
+* **gh-guard:** allow infrastructure-as-code constructs in the judge prompt ([#676](https://github.com/dryvist/nix-home/issues/676)) ([703fa5b](https://github.com/dryvist/nix-home/commit/703fa5b341ecc52cc92d67cdad4ba1de4b9554e4))
+
 ## [1.54.8](https://github.com/dryvist/nix-home/compare/v1.54.7...v1.54.8) (2026-10-11)
 
 
