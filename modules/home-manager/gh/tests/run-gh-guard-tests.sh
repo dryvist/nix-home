@@ -177,7 +177,20 @@ GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "attached -Fquery=@file is a write" 1 auth api graphql "-Fquery=@$HERE/mut.graphql"
 GH_REPO=dryvist/pub \
   check3 "--field=query=@file screened"   1 identifier api graphql "--field=query=@$HERE/mut.graphql"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "clustered -iFquery=@file is a write" 1 auth api graphql "-iFquery=@$HERE/mut.graphql"
 rm -f "$HERE/mut.graphql"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "clustered -ifquery= mutation"   1 auth api graphql \
+    "-ifquery=mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }"
+check3 "clustered -if REST body"         1 identifier api -if body="$LEAK" repos/dryvist/pub/issues/1/comments
+check3 "clustered -ifbody= REST"         1 identifier api "-ifbody=$LEAK" repos/dryvist/pub/issues/1/comments
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "node-ID-shaped prose judged"    1 judge-unavailable api graphql \
+    -f query='mutation { addComment(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause_was_the_expired_app_token_scope"}) { clientMutationId } }'
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "split call with resolve judged" 1 judge-unavailable api graphql \
+    -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOabc123"}) { clientMutationId }\n x: addComment # c\n (input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_GUARD_ACTIVE=1 \
   check3 "re-entry env flag still screens" 1 identifier issue create -R dryvist/pub --body "$LEAK"
 GH_GUARD_REAL_GH="$GUARD" \

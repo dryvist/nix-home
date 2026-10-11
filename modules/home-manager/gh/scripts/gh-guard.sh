@@ -88,6 +88,9 @@ api_parse() {
       input) API_INPUT="$a"; next=""; continue ;;
       skip) next=""; continue ;;
     esac
+    # Clustered shorthand: -i is gh api's only boolean short flag, so
+    # -ifk=v is -i -fk=v.
+    while [[ "$a" == -i?* ]]; do a="-${a#-i}"; done
     case "$a" in
       -X|--method) next=method ;;
       --method=*) API_METHOD="${a#*=}" ;;
@@ -101,7 +104,9 @@ api_parse() {
       --input) next=input ;;
       --input=*) API_INPUT="${a#*=}" ;;
       -H|--header|-t|--template|-q|--jq|--hostname|--cache|-p|--preview) next=skip ;;
-      -*) : ;;
+      -H?*|-t?*|-q?*|-p?*|-i|--*) : ;;
+      # Any other short-flag word may carry a body: screen it as one.
+      -?*) API_FIELDS+=("raw:unparsed=$a") ;;
       *) [ -n "$API_ENDPOINT" ] || API_ENDPOINT="$a" ;;
     esac
   done
@@ -134,13 +139,31 @@ api_is_publish() {
   esac
 }
 
-# GitHub node IDs (PR_kwDO..., PRRT_kwDO..., U_kgDO...): an uppercase type
-# prefix, an underscore, then the base64url payload.
-NODE_ID_RE='^[A-Z]{1,5}_k[A-Za-z0-9_-]{6,}$'
+# Mutations whose arguments are node IDs only. A string in one is a valid ID
+# or a GitHub error, never published text.
+TEXT_FREE_MUTATIONS='mutation|resolveReviewThread|unresolveReviewThread'
+
+# True when the single inline graphql query calls only TEXT_FREE_MUTATIONS.
+# Strings and comments are removed and lines joined before every `name(` call
+# is collected, so a call split across lines or comments is still seen.
+gql_is_text_free() {
+  local f q="" n=0 calls
+  for f in ${API_FIELDS[@]+"${API_FIELDS[@]}"}; do
+    f="${f#*:}"
+    [ "${f%%=*}" = query ] || continue
+    q="${f#*=}"; n=$((n + 1))
+  done
+  [ "$n" = 1 ] || return 1
+  case "$q" in @*|*'"""'*) return 1 ;; esac
+  calls="$(sed -E 's/"([^"\\]|\\.)*"//g; s/#.*$//' <<<"$q" | tr '\n' ' ' |
+    grep -oE '[_A-Za-z][_A-Za-z0-9]*[[:space:],]*\(' | tr -d '(,[:space:]')"
+  [ -n "$calls" ] || return 1
+  ! grep -qvxE "$TEXT_FREE_MUTATIONS" <<<"$calls"
+}
 
 # Every value a `gh api` call sends. With GQL_PROSE=1 on a graphql call, the
 # query contributes only its string literals (judged whole if it holds a block
-# string) and node IDs are dropped, so the judge sees prose, not syntax.
+# string), so the judge sees prose, not syntax.
 api_content() {
   local f kind kv key v out=""
   api_parse "$@"
@@ -152,11 +175,9 @@ api_content() {
       if [ "$v" = "@-" ]; then v="$(cat)"
       elif [ "${v:0:1}" = @ ] && [ -r "${v#@}" ]; then v="$(cat -- "${v#@}")"; fi
     fi
-    if [ "${GQL_PROSE:-0}" = 1 ] && api_is_graphql; then
-      if [ "$key" = query ] && [[ "$v" != *'"""'* ]]; then
-        v="$(grep -oE '"([^"\\]|\\.)*"' <<<"$v" | sed -E 's/^"//; s/"$//')"
-      fi
-      v="$(grep -vxE "$NODE_ID_RE" <<<"$v" || true)"
+    if [ "${GQL_PROSE:-0}" = 1 ] && api_is_graphql && [ "$key" = query ] &&
+      [[ "$v" != *'"""'* ]]; then
+      v="$(grep -oE '"([^"\\]|\\.)*"' <<<"$v" | sed -E 's/^"//; s/"$//')"
     fi
     out+="$v"$'\n'
   done
@@ -568,15 +589,19 @@ fi
 
 screen_identifiers "$CONTENT" "$REPO" "$VERB"
 
-# The judge reads prose: for a graphql mutation, its literals and values minus
-# syntax and node IDs. Stdin cannot be read twice, so a body from stdin is
-# judged whole. A mutation with no prose left (resolving a thread) publishes
-# no text and skips the judge.
+# The judge reads prose: for a graphql mutation, its string literals and field
+# values, not its syntax. Stdin cannot be read twice, so a body from stdin is
+# judged whole. A text-free mutation (resolving a thread) skips the judge.
 PROSE="$CONTENT"
 if [ "${1:-}" = api ]; then
   api_parse "$@"
   if api_is_graphql && [ "$API_INPUT" != "-" ] && [[ " ${API_FIELDS[*]-} " != *"=@- "* ]]; then
-    PROSE="$(GQL_PROSE=1 collect_content "$@" </dev/null)"
+    if gql_is_text_free; then
+      PROSE=""
+    else
+      PROSE="$(GQL_PROSE=1 collect_content "$@" </dev/null)"
+      [ -n "$PROSE" ] || PROSE="$CONTENT"
+    fi
   fi
 fi
 
