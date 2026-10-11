@@ -13,6 +13,6 @@ permissions: {}
 
 jobs:
   dispatch:
-    uses: dryvist/.github/.github/workflows/_dispatch-flake-consumers.yml@f9e8814ad8f82e4bc8cdaac73ee49b1ffa6d4cf2 # v1.12.1
+    uses: dryvist/.github/.github/workflows/_dispatch-flake-consumers.yml@3d5ae6608afc2e30760499415a29b8e1edfe0ad7 # v1.13.0
     # source_input defaults to the calling repo name (nix-home).
     secrets: inherit
