@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.54.10](https://github.com/dryvist/nix-home/compare/v1.54.9...v1.54.10) (2026-10-11)
+
+
+### Bug Fixes
+
+* **gh-guard:** parse gh api arguments; judge every mutation but thread resolution ([#684](https://github.com/dryvist/nix-home/issues/684)) ([4fde531](https://github.com/dryvist/nix-home/commit/4fde531c49d0594f1aada8b38955943ff315a1ed))
+* **gh-guard:** screen graphql by published text, read gh api -F as a field ([20ba01f](https://github.com/dryvist/nix-home/commit/20ba01f75cda67a21008cb467f4e5b654f716cc3))
+* **gh-guard:** screen graphql by published text, read gh api -F as a field ([#682](https://github.com/dryvist/nix-home/issues/682)) ([723c59a](https://github.com/dryvist/nix-home/commit/723c59a16459264d308386fdfefb37ce4c650760))
+
 ## [1.54.9](https://github.com/dryvist/nix-home/compare/v1.54.8...v1.54.9) (2026-10-11)
 
 
