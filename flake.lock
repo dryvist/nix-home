@@ -134,7 +134,8 @@
         "nix-ai": "nix-ai",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "orbstack-kubernetes": "orbstack-kubernetes"
+        "orbstack-kubernetes": "orbstack-kubernetes",
+        "tofu-github": "tofu-github"
       }
     },
     "systems": {
@@ -149,6 +150,23 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tofu-github": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791725010,
+        "narHash": "sha256-weo6XtZRTQEI0UuJCX//GSrLQQ01yonRBU6ooXLQnbg=",
+        "owner": "dryvist",
+        "repo": "tofu-github",
+        "rev": "80910e5852197732dac937b213eb608c393bb47c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dryvist",
+        "repo": "tofu-github",
+        "rev": "80910e5852197732dac937b213eb608c393bb47c",
         "type": "github"
       }
     }
