@@ -113,15 +113,16 @@
     "orbstack-kubernetes": {
       "flake": false,
       "locked": {
-        "lastModified": 1783538898,
-        "narHash": "sha256-nfzMube6gHuYX787wMB69Ehsnp6WXYFix+WGYxNQ39I=",
+        "lastModified": 1782974643,
+        "narHash": "sha256-ge2/RtvN2ZCsO7oFgzzwtNwPC7xnAzPcImv8CLvk9pI=",
         "owner": "dryvist",
         "repo": "orbstack-kubernetes",
-        "rev": "cf46b9fc78be97dca3a7f34c98a66f99939fb7cc",
+        "rev": "1048f9a4fb9d3d2c8fb70d3e23bd50127d135c59",
         "type": "github"
       },
       "original": {
         "owner": "dryvist",
+        "ref": "v2.0.6",
         "repo": "orbstack-kubernetes",
         "type": "github"
       }
