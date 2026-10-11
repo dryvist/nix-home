@@ -155,8 +155,10 @@ gql_is_text_free() {
   done
   [ "$n" = 1 ] || return 1
   case "$q" in @*|*'"""'*) return 1 ;; esac
+  # GraphQL ignores a byte-order mark like whitespace; any non-ASCII byte is judged.
+  LC_ALL=C grep -q '[^[:print:][:space:]]' <<<"$q" && return 1
   calls="$(sed -E 's/"([^"\\]|\\.)*"//g; s/#.*$//' <<<"$q" | tr '\n' ' ' |
-    grep -oE '[_A-Za-z][_A-Za-z0-9]*[[:space:],]*\(' | tr -d '(,[:space:]')"
+    grep -oE '[_A-Za-z][_A-Za-z0-9]*[[:space:],]*\(' | sed -E 's/[[:space:],]*\($//')"
   [ -n "$calls" ] || return 1
   ! grep -qvxE "$TEXT_FREE_MUTATIONS" <<<"$calls"
 }

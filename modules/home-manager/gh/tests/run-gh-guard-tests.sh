@@ -189,6 +189,12 @@ GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TI
   check3 "node-ID-shaped prose judged"    1 judge-unavailable api graphql \
     -f query='mutation { addComment(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause_was_the_expired_app_token_scope"}) { clientMutationId } }'
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "resolve plus unresolve skips judge" 0 clean api graphql \
+    -f query=$'mutation {\n a: resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId }\n b: unresolveReviewThread(input:{threadId:"PRRT_kwDOb"}) { clientMutationId } }'
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
+  check3 "byte-order mark before ( judged" 1 judge-unavailable api graphql \
+    -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId } addComment\xef\xbb\xbf(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
+GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "split call with resolve judged" 1 judge-unavailable api graphql \
     -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOabc123"}) { clientMutationId }\n x: addComment # c\n (input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_GUARD_ACTIVE=1 \
