@@ -307,6 +307,33 @@ allows_trivial_fastpath() {
   grep -qiE '^(chore(\(deps[a-zA-Z0-9_.-]*\))?: )?bumps? [][[:alnum:]/_.@-]+ from [[:alnum:]._+-]+ to [[:alnum:]._+-]+\.?$' <<<"$content"
 }
 
+# A checkbox toggle on a bot-written PR or issue body (a Renovate rebase or
+# Dependency Dashboard request) publishes no new text: the body is already
+# public and only "[ ]"/"[x]" states change. Any other difference, a non-bot
+# author, any flag besides the repo and the body, or a selector that is not
+# the first argument after "edit" falls through to normal screening.
+is_bot_checkbox_toggle() { # content repo gh-args...
+  local content="$1" repo="$2" kind sel current
+  shift 2
+  case "${1:-} ${2:-}" in "pr edit"|"issue edit") kind="$1" ;; *) return 1 ;; esac
+  case "${3:-}" in ""|-*) return 1 ;; esac
+  sel="$3"
+  shift 3
+  # Only the repo and one body flag may follow: any other flag (a title, a
+  # label, an assignee) carries text this check never compares.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -R|--repo|--body|-b|--body-file|-F) [ $# -ge 2 ] || return 1; shift 2 ;;
+      --repo=*|--body=*|--body-file=*) shift ;;
+      *) return 1 ;;
+    esac
+  done
+  current="$("$GH_REAL" "$kind" view "$sel" -R "$repo" --json body,author \
+    --jq 'select(.author.is_bot == true) | .body' 2>/dev/null)" || return 1
+  [ -n "$current" ] || return 1
+  [ "$(sed -E 's/\[[xX ]\]/[ ]/g' <<<"$content")" = "$(sed -E 's/\[[xX ]\]/[ ]/g' <<<"$current")" ]
+}
+
 # Local judge. On-machine only: its input IS the candidate disclosure, so a
 # cloud call would perform the very leak this gate prevents.
 # The local server serializes requests and answers a concurrent call with
@@ -450,6 +477,11 @@ repo_is_public "$REPO" || exec "$GH_REAL" "$@"
 
 CONTENT="$(collect_content "$@")"
 [ -z "$CONTENT" ] && exec "$GH_REAL" "$@"
+
+if is_bot_checkbox_toggle "$CONTENT" "$REPO" "$@"; then
+  audit checkbox ALLOW "$REPO" "$VERB"
+  exec "$GH_REAL" "$@"
+fi
 
 screen_identifiers "$CONTENT" "$REPO" "$VERB"
 
