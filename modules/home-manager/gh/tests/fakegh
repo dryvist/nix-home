@@ -18,4 +18,9 @@ if [ "$1" = "repo" ] && [ "$2" = "view" ]; then
   esac
   exit 0
 fi
+if { [ "$1" = pr ] || [ "$1" = issue ]; } && [ "${2:-}" = view ]; then
+  # Stands in for `--json body,author --jq 'select(.author.is_bot)|.body'`.
+  [ "${GH_GUARD_TEST_VIEW_BOT:-}" = 1 ] && printf '%s\n' "${GH_GUARD_TEST_VIEW_BODY:-}"
+  exit 0
+fi
 echo "REAL-GH-REACHED: $*"

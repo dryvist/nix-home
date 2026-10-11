@@ -25,7 +25,7 @@
     # locally with `--override-input orbstack-kubernetes path:<checkout>` for
     # development.
     orbstack-kubernetes = {
-      url = "github:dryvist/orbstack-kubernetes";
+      url = "github:dryvist/orbstack-kubernetes?ref=v2.0.6";
       flake = false;
     };
 
