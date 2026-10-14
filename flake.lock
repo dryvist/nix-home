@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "ai-llm-prompts": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791979349,
+        "narHash": "sha256-5q+by8siZgV+8b7ghE2PiR1osO+pXGZPlH3qCqAzR1E=",
+        "owner": "dryvist",
+        "repo": "ai-llm-prompts",
+        "rev": "b4dd0aa28810b7389f39d372bc8c4b46bf84778c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dryvist",
+        "repo": "ai-llm-prompts",
+        "rev": "b4dd0aa28810b7389f39d372bc8c4b46bf84778c",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -129,6 +146,7 @@
     },
     "root": {
       "inputs": {
+        "ai-llm-prompts": "ai-llm-prompts",
         "home-manager": "home-manager",
         "homelab-contracts": "homelab-contracts",
         "nix-ai": "nix-ai",

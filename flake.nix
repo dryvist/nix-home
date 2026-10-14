@@ -48,6 +48,12 @@
       flake = false;
     };
 
+    # Source-only: public gh-guard judge prompt, pinned to its reviewed commit.
+    ai-llm-prompts = {
+      url = "github:dryvist/ai-llm-prompts/b4dd0aa28810b7389f39d372bc8c4b46bf84778c";
+      flake = false;
+    };
+
     # Source-only: one file (config/commit-message-pattern.txt), the commit
     # subject regex the org rulesets enforce, so the local commit-msg hook
     # and the server check read the same copy.
@@ -66,6 +72,7 @@
       orbstack-kubernetes,
       homelab-contracts,
       nix-ai,
+      ai-llm-prompts,
       tofu-github,
       ...
     }:
@@ -103,6 +110,7 @@
         _module.args = {
           orbstackKubernetesSrc = orbstack-kubernetes;
           homelabContracts = homelab-contracts;
+          aiLlmPrompts = ai-llm-prompts;
           # Conventional Commits subject regex: the org rulesets' single copy,
           # read by the global commit-msg hook (modules/home-manager/git).
           commitMessagePattern = nixpkgs.lib.fileContents "${tofu-github}/config/commit-message-pattern.txt";
