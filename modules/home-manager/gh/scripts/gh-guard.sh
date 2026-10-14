@@ -443,14 +443,8 @@ is_bot_checkbox_toggle() { # content repo gh-args...
 
 # Local judge. On-machine only: its input IS the candidate disclosure, so a
 # cloud call would perform the very leak this gate prevents.
-# The local server serializes requests and answers a concurrent call with
-# {"error":"Too many requests"}. That is transient, not a screening failure, so
-# retry briefly before falling through to fail-closed — otherwise an unrelated
-# local inference job would block every commit and the gate dies of fatigue.
-judge_verdict() {
-  local content="$1" payload result verdict attempt config judge_url judge_timeout deadline remaining delay
-  local max_tokens=4 widened=0
-
+judge_verdict() (
+  local content="$1" config result verdict judge_url judge_timeout api_base judge_prompt llm_user_path
   if [[ -f "$LIMITS_FILE" ]]; then
     config="$(jq -er '
       .clients.ghGuard as $client
@@ -461,7 +455,7 @@ judge_verdict() {
           and ($client.timeoutSeconds % 1) == 0
         )
       | "\($client.url)\t\($client.timeoutSeconds|tostring)"
-    ' "$LIMITS_FILE")" || return 1
+    ' "$LIMITS_FILE")" || return 2
     IFS=$'\t' read -r judge_url judge_timeout <<< "$config"
   else
     judge_url="http://127.0.0.1:11434/v1/chat/completions"
@@ -469,66 +463,41 @@ judge_verdict() {
   fi
   judge_url="${GH_GUARD_JUDGE_URL:-$judge_url}"
   judge_timeout="${GH_GUARD_JUDGE_TIMEOUT:-$judge_timeout}"
-  [[ "$judge_url" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+/ ]] || return 1
-  [[ "$judge_timeout" =~ ^[1-9][0-9]*$ ]] || return 1
+  [[ "$judge_url" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+(/[[:alnum:]_.-]+)+/chat/completions$ ]] || return 2
+  [[ "$judge_timeout" =~ ^[1-9][0-9]*$ ]] || return 2
+  [[ "$JUDGE_MODEL" =~ ^[[:alnum:]][[:alnum:]_.-]*$ ]] || return 2
+  [[ -r "${GH_GUARD_JUDGE_PROMPT_FILE:-}" ]] || return 2
 
-  # Reasoning models spend a small budget thinking and return no content, so
-  # the request asks the chat template to skip thinking. A server that
-  # ignores it gets one retry with a budget large enough to finish reasoning.
-  build_payload() {
-    jq -n --arg m "$JUDGE_MODEL" --arg c "$content" --argjson n "$max_tokens" '{
-    model:$m, max_tokens:$n, temperature:0,
-    chat_template_kwargs:{enable_thinking:false},
-    messages:[
-      {role:"system",content:"You screen text that is about to be published to a PUBLIC GitHub repository.\nAnswer with exactly one word: \"block\" or \"allow\". Judge the meaning of the content, not its formatting or presentation: prose, a table, a bulleted list, a fenced code block, a diff block, and an ASCII or arrow diagram all disclose exactly as much as each other when they carry the same information -- placing a value inside a fence, a diagram, or a diff does not make it safe. Judge by what a value IS, not by whether the surrounding text sounds routine -- housekeeping language does not make a disclosed internal name safe.\n\nAnswer \"block\" only when the text contains an ACTUAL INSTANCE of one of the categories below: a real cause, name, value, or reasoning about one. A bare LABEL for a category -- a heading, a section title, an index entry, or a rule/policy description that names the category by word without stating any instance of it -- discloses nothing and must be \"allow\", even when it uses the same words as a category below. If the text explains, argues, or reasons about a real situation -- even briefly, even without alarm words -- that is an instance, not a label.\n\nAnswer \"block\" if the text discloses an instance of ANY of:\n- why something broke, failed, was fixed, or was decided (incident/outage/root-cause/rationale narrative)\n- internal system topology: clusters, nodes, voters, leaders, VLANs, ports, hosts\n- hostnames, IP addresses, or internal service names, including one disclosed only by stating what real value something was renamed from or replaced with\n- credential detail: what a token, policy or role is permitted to read, write or do (paths, capabilities, grants), its TTLs or use limits, or where a secret is stored\n\n\nAnswer \"allow\" if the text merely states WHAT changed with no operational detail (feature descriptions, dependency bumps, docs edits, config field names, the NAME of a secret or variable and which workflow step receives it -- a name is not a value, a scope, or a storage location, the infrastructure-as-code constructs a change adds or edits -- resource addresses, renamed resources, and moved, removed or import blocks with their arguments such as destroy = false -- which are code in the diff, not operational detail), or merely names the variables, policies, roles, lists or tests that the change adds, removes, renames or attaches -- those identifiers are already public in the diff, and saying which named policies are added to a named list, or that a test checks such a list, is not credential detail unless the text also says what those policies permit -- or merely labels one of the categories above without disclosing a real instance of it. Model-alias or key-scope configuration code describes code behavior rather than a deployed credential grant; credential-detail blocking applies only when text identifies an actual token, policy, or role and its effective access. Text that describes code reading named credential fields, rendering a config value, or creating/updating an application credential record only when a value differs is also code behavior. Naming an application credential-record collection as the target of that code is allowed; actual credential-storage locations or paths, credential values, and effective grants or capabilities remain blocked.\n\nExamples:\nText: \"Adds a retry to the upload helper and bumps the client to 2.1.\" -> allow\nText: \"The node lost quorum because the leader was fenced, so writes stalled.\" -> block\nText: \"The role grants read on the secret mount with a 30 minute TTL.\" -> block\nText: \"chore(deps): update the lockfile.\" -> allow\nText: \"- Defines key scopes for keys that allow both `auto` and the primary group, while preserving rendered output when no classifier guest exists.\" -> allow\nText: \"The deployed router key permits both the `auto` alias and the primary group.\" -> block\nText: \"Passes the DEPLOY_KEY secret to the reusable release workflow, which uses it to post a status check.\" -> allow\nText: \"fix(review): pass the bot App private key (BOT_APP_PRIVATE_KEY) to the reusable review workflow\" -> allow\nText: \"DEPLOY_KEY is kept in the ops vault under the ci path and can write to every repository.\" -> block\nText: \"fix(sync): exclude the deploy token\u0027s policies from reconcile. Adds the deploy and backup policies to `reconcile_excluded_policies`; a test asserts every policy on the deploy token is in that list.\" -> allow\nText: \"The deploy token can write every secret under the apps mount, so reconcile could grant itself more.\" -> block\nText: \"Moves the sync token to the shared platform path, where every read-only identity can read it.\" -> block\nText: \"This cleanup renamed db-node-3 to db-example throughout the fixtures.\" -> block\nText: \"Renames `aws_s3_bucket.logs` to `aws_s3_bucket.audit`; a `removed` block (`destroy = false`) forgets the old resource and an `import` block adopts the existing bucket under the new name.\" -> allow\nText: \"The last apply destroyed the production bucket, so this import block restores it after the outage.\" -> block\nText: \"This runbook template has sections for Root Cause, Credential Scope, and Topology -- fill each in during a real incident.\" -> allow\nText: \"Creates or updates an application credential record only when its value differs.\" -> allow\nText: \"The Splunk service token is stored at the ops path and can create any alert action.\" -> block\n\nOne word only."},
-      {role:"user",content:$c}]}'
-  }
-  payload="$(build_payload)" || return 1
+  api_base="${judge_url%/chat/completions}"
+  judge_prompt="$(sed '1,/^---$/d' "$GH_GUARD_JUDGE_PROMPT_FILE")" || return 2
+  [ -n "$judge_prompt" ] || return 2
 
-  deadline=$(( $(date +%s) + judge_timeout ))
-  attempt=1
-  while :; do
-    remaining=$(( deadline - $(date +%s) ))
-    (( remaining > 0 )) || return 1
-    result="$(curl -sS --max-time "$remaining" -H 'content-type: application/json' \
-              -d "$payload" "$judge_url" 2>/dev/null)" || result=""
-    # An error body (429/503 from the proxy, or the local server) is transient.
-    case "$result" in
-      *'Too many requests'*|'') ;;
-      *)
-        if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
-          :
-        else
-          verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
-          verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:][:punct:]')"
-          case "$verdict" in
-            allow) return 0 ;;
-            block) return 2 ;;
-            '')
-              # Reasoning only, cut off by the budget: widen once, then fail.
-              if [ "$widened" -eq 0 ] &&
-                jq -e '(.choices[0].message.reasoning_content // "") != ""' <<<"$result" >/dev/null 2>&1; then
-                widened=1
-                max_tokens=512
-                payload="$(build_payload)" || return 1
-                continue
-              fi
-              return 1
-              ;;
-            *) return 1 ;;   # a reachable judge giving nonsense is a real failure
-          esac
-        fi
-        ;;
-    esac
-    remaining=$(( deadline - $(date +%s) ))
-    (( remaining > 0 )) || return 1
-    delay=$(( attempt * 2 ))
-    (( delay > 10 )) && delay=10
-    (( delay > remaining )) && delay=$remaining
-    sleep "$delay"
-    attempt=$(( attempt + 1 ))
-  done
-}
+  if [ -n "${GH_GUARD_LLM_USER_PATH:-}" ]; then
+    llm_user_path="$GH_GUARD_LLM_USER_PATH"
+    mkdir -p "$llm_user_path" || return 2
+  else
+    llm_user_path="$(mktemp -d)" || return 2
+    trap 'rm -rf -- "$llm_user_path"' EXIT
+  fi
+  export LLM_USER_PATH="$llm_user_path"
+  cat >"$LLM_USER_PATH/extra-openai-models.yaml" <<EOF
+- model_id: $JUDGE_MODEL
+  model_name: $JUDGE_MODEL
+  api_base: "$api_base"
+  api_key_name: openai
+EOF
+
+  result="$(printf '%s' "$content" | OPENAI_API_KEY=placeholder \
+    timeout "$judge_timeout" llm prompt --model "$JUDGE_MODEL" --system "$judge_prompt" \
+      --no-log --no-stream 2>/dev/null)" || return 2
+  verdict="${result%%$'\n'*}"
+  verdict="${verdict#"${verdict%%[![:space:]]*}"}"
+  verdict="${verdict%"${verdict##*[![:space:]]}"}"
+  case "$verdict" in
+    allow) return 0 ;;
+    block|*) return 2 ;;
+  esac
+)
 
 # ------------------------------------------------------------------ main ---
 # `--scan FILE` screens arbitrary text against the same two tiers and exits

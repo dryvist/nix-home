@@ -17,6 +17,7 @@
 
 {
   config,
+  aiLlmPrompts,
   lib,
   pkgs,
   ...
@@ -32,9 +33,12 @@ let
       pkgs.curl
       pkgs.gnugrep
       pkgs.coreutils
+      pkgs.gnused
+      pkgs.llm
       pkgs.python3
     ];
     runtimeEnv.GH_GUARD_DENYLIST_DEFAULT = cfg.identifierFile;
+    runtimeEnv.GH_GUARD_JUDGE_PROMPT_FILE = "${aiLlmPrompts}/developer-tools/public-disclosure-judge.md";
     text = builtins.replaceStrings [ "/etc/profiles/per-user/jevans/bin/gh" ] [ "${pkgs.gh}/bin/gh" ] (
       builtins.readFile ./scripts/gh-guard.sh
     );
