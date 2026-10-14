@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.55.2](https://github.com/dryvist/nix-home/compare/v1.55.1...v1.55.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* **gh-guard:** resolve visibility with the token when the anonymous lookup is rate-limited ([1ba7ab4](https://github.com/dryvist/nix-home/commit/1ba7ab4607708f8a0b2efdaa8f02109d35ed26ca))
+
 ## [1.55.1](https://github.com/dryvist/nix-home/compare/v1.55.0...v1.55.1) (2026-10-14)
 
 
