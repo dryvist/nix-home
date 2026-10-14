@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.55.1](https://github.com/dryvist/nix-home/compare/v1.55.0...v1.55.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **gh-guard:** resolve the repo before the claim check and say what to do next ([8729ccb](https://github.com/dryvist/nix-home/commit/8729ccb7d9330cc7c3e9b65e279937de52f9f64e))
+* **gh-guard:** resolve the repo before the claim check and say what to do next ([#700](https://github.com/dryvist/nix-home/issues/700)) ([0d6a1d8](https://github.com/dryvist/nix-home/commit/0d6a1d8528920edfcc5bc2797368da54584df65d))
+
 ## [1.55.0](https://github.com/dryvist/nix-home/compare/v1.54.10...v1.55.0) (2026-10-11)
 
 

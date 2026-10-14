@@ -48,9 +48,17 @@ audit() { # tier verdict repo verb
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" "${3:-?}" "${4:-?}" >>"$LOG" 2>/dev/null || true
 }
 
+# Set by repo_is_public: public, private, or unknown (lookup failed, screened).
+REPO_VIS=""
+
 die() { # tier repo verb message
   audit "$1" BLOCK "$2" "$3"
   printf 'gh-guard: BLOCKED (%s tier)\n\n%s\n\n' "$1" "$4" >&2
+  # An auth or visibility refusal says nothing about content, so the disclosure
+  # text belongs only to a repository confirmed public.
+  case "$1" in
+    auth|visibility) [ "$REPO_VIS" = public ] || exit 1 ;;
+  esac
   printf 'This artifact targets a PUBLIC repository. Public text states WHAT,\n' >&2
   printf 'never why, what broke, or internal topology. Route incident narrative\n' >&2
   printf 'to Zammad and follow-ups to Vikunja.\n' >&2
@@ -112,6 +120,13 @@ api_parse() {
   done
 }
 
+# True when the graphql document in file $1 holds a mutation token. An
+# unreadable file counts as one: it cannot be shown to be a read.
+gql_file_mutates() {
+  [ -r "$1" ] && [ -f "$1" ] || return 0
+  grep -qi 'mutation' -- "$1"
+}
+
 api_is_graphql() { case "$API_ENDPOINT" in graphql|/graphql) return 0 ;; esac; return 1; }
 
 # `gh api` only matters when it MUTATES an issue/PR/comment surface, or runs a
@@ -121,9 +136,18 @@ api_is_publish() {
   local f
   api_parse "$@"
   if api_is_graphql; then
-    [ -n "$API_INPUT" ] && return 0
+    if [ -n "$API_INPUT" ]; then
+      # stdin cannot be inspected; a file counts only when it holds no mutation.
+      [ "$API_INPUT" = "-" ] && return 0
+      gql_file_mutates "$API_INPUT" && return 0
+    fi
     for f in ${API_FIELDS[@]+"${API_FIELDS[@]}"}; do
-      case "$f" in *mutation*|typed:*=@*) return 0 ;; esac
+      case "$f" in
+        *mutation*) return 0 ;;
+        # -F query=@file: the document is in the file, so read it.
+        typed:query=@*) gql_file_mutates "${f#typed:query=@}" && return 0 ;;
+        typed:*=@*) return 0 ;;
+      esac
     done
     return 1
   fi
@@ -264,13 +288,14 @@ resolve_repo() {
 # GITHUB_TOKEN without putting the credential on argv.
 repo_is_public() {
   local repo="$1" response status body token vis
+  REPO_VIS=unknown
   response="$(
     unset GH_TOKEN GITHUB_TOKEN
     "${GH_GUARD_CURL:-curl}" -q --silent --show-error \
       --header 'Accept: application/vnd.github+json' \
       --write-out $'\n%{http_code}' \
       "https://api.github.com/repos/$repo" 2>/dev/null
-  )" || return 0
+  )" || { REPO_VIS=unknown; return 0; }
 
   status="${response##*$'\n'}"
   body="${response%$'\n'*}"
@@ -293,8 +318,9 @@ print(value if isinstance(value, str) else "")
   esac
 
   case "$vis" in
-    private|PRIVATE) return 1 ;;
-    *) return 0 ;;   # unknown -> screen it
+    private|PRIVATE) REPO_VIS=private; return 1 ;;
+    public|PUBLIC) REPO_VIS=public; return 0 ;;
+    *) REPO_VIS=unknown; return 0 ;;   # unknown -> screen it
   esac
 }
 
@@ -560,27 +586,52 @@ if ! is_publish_verb "${1:-}" "${2:-}"; then exec "$GH_REAL" "$@"; fi
 if [ "${1:-}" = "api" ] && ! api_is_publish "$@"; then exec "$GH_REAL" "$@"; fi
 
 VERB="${1:-}${2:+ $2}"
-if [ -z "${OPENBAO_GH_CLAIM:-}" ]; then
-  die auth "?" "$VERB" "An active OpenBao write claim is required for this operation."
-fi
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  die auth "$OPENBAO_GH_CLAIM" "$VERB" "The active OpenBao write claim has no credential."
-fi
+CLAIM="${OPENBAO_GH_CLAIM:-}"
 # `gh` prefers GH_TOKEN when both are set. Pin it to the token created by the
 # active claim so an older ambient GH_TOKEN cannot replace that credential.
-GH_TOKEN="$GITHUB_TOKEN"
-export GH_TOKEN
+if [ -n "${GITHUB_TOKEN:-}" ]; then GH_TOKEN="$GITHUB_TOKEN"; export GH_TOKEN; fi
 
+# Resolve the repository and its visibility BEFORE the claim check, so every
+# refusal and its log line name the repo and say whether screening applies.
 REPO="$(resolve_repo "$@" || true)"
-
-[ -z "$REPO" ] && die visibility "?" "$VERB" \
-  "Cannot resolve the target repository, so its visibility is unknown. Pass -R OWNER/REPO, or run from inside the repo."
-
-if [ "$OPENBAO_GH_CLAIM" != "$REPO" ]; then
-  die auth "$REPO" "$VERB" "The active OpenBao write claim is for a different repository."
+if [ -n "$REPO" ]; then
+  repo_is_public "$REPO" && PUBLIC_REPO=1 || PUBLIC_REPO=0
+else
+  PUBLIC_REPO=1
 fi
 
-repo_is_public "$REPO" || exec "$GH_REAL" "$@"
+owner_kind() { # everyday unless the environment names a WORK owner
+  local owner="${REPO%%/*}" work="${OPENBAO_GITHUB_WORK_OWNER:-}"
+  if [ -n "$work" ] && [ -n "$REPO" ] && [ "${owner,,}" = "${work,,}" ]; then echo WORK; else echo everyday; fi
+}
+
+# What the refusal shows: the values it judged and the exact next command.
+observed() {
+  printf 'Observed: OPENBAO_GH_CLAIM=%s  GITHUB_TOKEN=%s  repo=%s  visibility=%s  owner=%s  content-screening=%s\n' \
+    "${CLAIM:-unset}" "$([ -n "${GITHUB_TOKEN:-}" ] && echo set || echo unset)" \
+    "${REPO:-unresolved}" "${REPO_VIS:-unchecked}" "$(owner_kind)" \
+    "$([ "$PUBLIC_REPO" = 1 ] && echo applies || echo skipped-private)"
+}
+claim_howto() { # repo
+  printf "Next: in the SAME shell as the write, run\n  eval \"\$(doppler run -- openbao-github-creds claim %s)\"\nor wrap the command:\n  doppler run -- openbao-github-creds run %s -- <command>\n" "$1" "$1"
+  [ "$(owner_kind)" = WORK ] && printf 'The WORK owner takes no lease: each claim or run is one gated mint.\n'
+  return 0
+}
+
+if [ -z "$REPO" ]; then
+  die visibility "?" "$VERB" "$(printf 'Check failed: target repository unresolved, so visibility and the claim cannot be checked.\n%s\nNext: pass -R OWNER/REPO, set GH_REPO, or run inside the clone.' "$(observed)")"
+fi
+if [ -z "$CLAIM" ]; then
+  die auth "$REPO" "$VERB" "$(printf 'Check failed: no OpenBao write claim (OPENBAO_GH_CLAIM is unset).\n%s\n%s' "$(observed)" "$(claim_howto "$REPO")")"
+fi
+if [ -z "${GITHUB_TOKEN:-}" ]; then
+  die auth "$REPO" "$VERB" "$(printf 'Check failed: the claim has no credential (GITHUB_TOKEN is unset).\n%s\n%s' "$(observed)" "$(claim_howto "$REPO")")"
+fi
+if [ "$CLAIM" != "$REPO" ]; then
+  die auth "$REPO" "$VERB" "$(printf "Check failed: the claim is for %s but this write targets %s.\n%s\nNext: eval \"\$(openbao-github-creds release)\"; then eval \"\$(doppler run -- openbao-github-creds claim %s)\", or run just this command:\n  doppler run -- openbao-github-creds run %s -- <command>" "$CLAIM" "$REPO" "$(observed)" "$REPO" "$REPO")"
+fi
+
+[ "$PUBLIC_REPO" = 1 ] || exec "$GH_REAL" "$@"
 
 CONTENT="$(collect_content "$@")"
 [ -z "$CONTENT" ] && exec "$GH_REAL" "$@"
