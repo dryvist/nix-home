@@ -27,6 +27,10 @@ export OPENBAO_GH_CLAIM=dryvist/pub
 LEAK="node-alpha-7 is unreachable"
 NARR="The outage began at 04:00; root cause was a failed token scope on the app install."
 CLEAN="fix(auth): correct refresh interval"
+W3_TITLE='feat(llm_router): route auto through local complexity classifier'
+W3_KEY_BODY="- Defines key scopes for keys that allow both \`auto\` and the primary group, while preserving rendered output when no classifier guest exists."
+W3_ALIAS_BODY="- Adds an optional \`auto\` model alias served by the native LiteLLM complexity router."
+W3_DEPLOYED_KEY="The deployed router key permits both the \`auto\` alias and the primary group."
 
 pass=0; fail=0
 
@@ -222,6 +226,9 @@ IAC_ADOPT=$'fix(iac-drift): adopt the drift variables under a renamed resource\n
 IAC_OUTAGE="Re-imports the variable because the previous apply deleted it and drift detection was down for a day."
 check3 "IaC removed/import blocks allow" 0 clean issue create -R dryvist/pub --body "$IAC_ADOPT"
 check3 "IaC outage narrative blocks"     1 narrative issue create -R dryvist/pub --body "$IAC_OUTAGE"
+check3 "W3 key-scope feature text allows" 0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_KEY_BODY"
+check3 "W3 alias feature text allows"     0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_ALIAS_BODY"
+check3 "deployed key capability blocks"   1 narrative pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_DEPLOYED_KEY"
 
 # --- checkbox toggle on a bot-written body --------------------------------
 # The current body already carries text the identifier tier would block, so a
