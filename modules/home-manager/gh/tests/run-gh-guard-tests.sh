@@ -31,6 +31,11 @@ W3_TITLE='feat(llm_router): route auto through local complexity classifier'
 W3_KEY_BODY="- Defines key scopes for keys that allow both \`auto\` and the primary group, while preserving rendered output when no classifier guest exists."
 W3_ALIAS_BODY="- Adds an optional \`auto\` model alias served by the native LiteLLM complexity router."
 W3_DEPLOYED_KEY="The deployed router key permits both the \`auto\` alias and the primary group."
+SPLUNK_TITLE='feat(splunk_docker): deliver the Zammad alert-action URL and credential'
+SPLUNK_BODY=$'## Summary\n\n- Reads the Zammad URL and token fields for the Splunk alert-action configuration.\n- Renders the URL into the splunk-homelab-alerts local \x60alert_actions.conf\x60.\n- Creates or updates the \x60zammad\x60 / \x60svc-splunk\x60 entry in Splunk \x60storage/passwords\x60, posting only when the stored value differs.\n- The tasks carry the \x60alerting\x60 tag, hide credential output, and fail with a named path and key when a field is missing or empty.\n\n## Test plan\n\n- \x60tests/templates/test_zammad_alert_action.py\x60 and every other \x60tests/templates\x60 script pass.\n- \x60yamllint\x60 and \x60ansible-lint\x60 pass on the changed role files.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n'
+SPLUNK_BULLET2=$'Renders the URL into the splunk-homelab-alerts local \x60alert_actions.conf\x60.'
+SPLUNK_BULLET3=$'Creates or updates the \x60zammad\x60 / \x60svc-splunk\x60 entry in Splunk \x60storage/passwords\x60, posting only when the stored value differs.'
+SPLUNK_STORAGE_CAPABILITY='The Splunk service token is stored at the ops path and can create any alert action.'
 
 pass=0; fail=0
 
@@ -229,6 +234,9 @@ check3 "IaC outage narrative blocks"     1 narrative issue create -R dryvist/pub
 check3 "W3 key-scope feature text allows" 0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_KEY_BODY"
 check3 "W3 alias feature text allows"     0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_ALIAS_BODY"
 check3 "deployed key capability blocks"   1 narrative pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_DEPLOYED_KEY"
+check3 "Splunk code behavior summary allows" 0 clean pr create -R dryvist/pub --title "$SPLUNK_TITLE" --body "$SPLUNK_BODY"
+check3 "Splunk credential record update allows" 0 clean issue create -R dryvist/pub --body "$SPLUNK_BULLET3"
+check3 "Splunk storage and capability blocks" 1 narrative issue create -R dryvist/pub --body "$SPLUNK_STORAGE_CAPABILITY"
 
 # --- checkbox toggle on a bot-written body --------------------------------
 # The current body already carries text the identifier tier would block, so a
