@@ -151,8 +151,18 @@ GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TI
   check3 "text-free mutation skips judge" 0 clean api graphql -f query="$GQL_RESOLVE"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "graphql mutation needs claim"   1 auth api graphql -f query="$GQL_RESOLVE"
+printf '%s\n' '{"query":"mutation { addComment(input:{}) { clientMutationId } }"}' >"$HERE/mut-input.json"
+printf '%s\n' '{"query":"query { viewer { login } }"}' >"$HERE/read-input.json"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
-  check3 "graphql --input needs claim"    1 auth api graphql --input "$HERE/leak.md"
+  check3 "graphql --input mutation needs claim" 1 auth api graphql --input "$HERE/mut-input.json"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "graphql --input stdin needs claim" 1 auth api graphql --input -
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "graphql --input read needs no claim" 0 none api graphql --input "$HERE/read-input.json"
+printf '%s\n' 'query { viewer { login } }' >"$HERE/read.graphql"
+GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
+  check3 "-F query=@file read needs no claim" 0 none api graphql -F "query=@$HERE/read.graphql"
+rm -f "$HERE/mut-input.json" "$HERE/read-input.json" "$HERE/read.graphql"
 GH_REPO=dryvist/pub \
   check3 "mutation inline literal screened" 1 identifier api graphql \
     -f query="mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }"
@@ -208,13 +218,51 @@ GH_GUARD_REAL_GH="$GUARD" \
   check3 "real gh pointing at guard stops" 2 none issue create -R dryvist/pub --body "$CLEAN"
 
 # --- visibility tier ----------------------------------------------------
-OPENBAO_GH_CLAIM='' check3 "unclaimed write blocks before repo lookup" 1 auth issue create --body "$CLEAN"
+OPENBAO_GH_CLAIM='' check3 "unclaimed write blocks, naming the repo" 1 auth issue create --body "$CLEAN"
+GIT_DIR=/nonexistent OPENBAO_GH_CLAIM='' check3 "unresolved repo blocks with -R hint" 1 visibility issue create --body "$CLEAN"
 GH_TOKEN=test-token GITHUB_TOKEN=test-token OPENBAO_GH_CLAIM='' \
   check3 "ambient credential requires claim" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 OPENBAO_GH_CLAIM=dryvist/other \
   check3 "claim is bound to target repo" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 GH_TOKEN=test-token GITHUB_TOKEN='' \
   check3 "GH_TOKEN alone cannot publish" 1 auth issue create -R dryvist/pub --body "$CLEAN"
+
+# --- refusal messages name the check, the observed values and the next command
+msg_check() { # name needle -- guard args...
+  local name="$1" needle="$2" out
+  shift 3
+  : >"$GH_GUARD_LOG"
+  out="$(run_guard "$@" 2>&1 >/dev/null)" || true
+  if grep -qF -- "$needle" <<<"$out"; then
+    printf 'PASS  %-38s\n' "$name"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s missing: %s\n' "$name" "$needle"; fail=$((fail + 1))
+  fi
+}
+msg_absent() { # name needle -- guard args...
+  local name="$1" needle="$2" out
+  shift 3
+  out="$(run_guard "$@" 2>&1 >/dev/null)" || true
+  if grep -qF -- "$needle" <<<"$out"; then
+    printf 'FAIL  %-38s unexpected: %s\n' "$name" "$needle"; fail=$((fail + 1))
+  else
+    printf 'PASS  %-38s\n' "$name"; pass=$((pass + 1))
+  fi
+}
+OPENBAO_GH_CLAIM='' msg_check "no-claim message names the repo" "repo=dryvist/pub" -- issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM='' msg_check "no-claim message gives the claim command" 'openbao-github-creds claim dryvist/pub' -- issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM='' msg_check "no-claim message gives the run command" 'openbao-github-creds run dryvist/pub -- <command>' -- issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM=dryvist/other msg_check "mismatch shows both repos" "claim is for dryvist/other but this write targets dryvist/pub" -- issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GH_CLAIM=dryvist/other msg_check "mismatch gives the release command" 'openbao-github-creds release' -- issue create -R dryvist/pub --body "$CLEAN"
+GIT_DIR=/nonexistent OPENBAO_GH_CLAIM='' msg_check "unresolved repo gives -R hint" "pass -R OWNER/REPO" -- issue create --body "$CLEAN"
+GH_TOKEN='' GITHUB_TOKEN='' msg_check "missing token is named" "GITHUB_TOKEN is unset" -- issue create -R dryvist/pub --body "$CLEAN"
+OPENBAO_GITHUB_WORK_OWNER=workorg OPENBAO_GH_CLAIM='' \
+  msg_check "WORK owner is named and takes no lease" "owner=WORK" -- issue create -R workorg/repo --body "$CLEAN"
+OPENBAO_GH_CLAIM='' GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
+  msg_absent "private repo refusal omits disclosure text" "targets a PUBLIC repository" -- issue create -R dryvist/privaterepo --body "$CLEAN"
+OPENBAO_GH_CLAIM='' GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
+  msg_check "private repo refusal says visibility" "visibility=private" -- issue create -R dryvist/privaterepo --body "$CLEAN"
+OPENBAO_GH_CLAIM='' msg_check "public repo refusal keeps disclosure text" "targets a PUBLIC repository" -- issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
 check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
