@@ -137,7 +137,9 @@ api_is_publish() {
   api_parse "$@"
   if api_is_graphql; then
     if [ -n "$API_INPUT" ]; then
-      [ "$API_INPUT" != "-" ] && ! gql_file_mutates "$API_INPUT" || return 0
+      # stdin cannot be inspected; a file counts only when it holds no mutation.
+      [ "$API_INPUT" = "-" ] && return 0
+      gql_file_mutates "$API_INPUT" && return 0
     fi
     for f in ${API_FIELDS[@]+"${API_FIELDS[@]}"}; do
       case "$f" in
