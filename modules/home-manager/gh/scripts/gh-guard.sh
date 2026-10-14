@@ -309,12 +309,13 @@ value = json.load(sys.stdin).get("visibility")
 print(value if isinstance(value, str) else "")
 ' 2>/dev/null)" || return 0
       ;;
-    404)
+    # Any other answer (404 for a private repo, 403 or 429 once the anonymous
+    # rate limit is spent, a server error) is resolved with the caller's token.
+    *)
       token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
       [ -n "$token" ] || return 0
       vis="$("$GH_REAL" api "repos/$repo" --jq .visibility 2>/dev/null)" || return 0
       ;;
-    *) return 0 ;;
   esac
 
   case "$vis" in
