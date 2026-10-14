@@ -5,6 +5,8 @@ set -u
 case "${GH_GUARD_TEST_UNAUTH_API:-public}" in
   public) printf '%s\n%s\n' '{"visibility":"public"}' 200 ;;
   404) printf '%s\n%s\n' '{"message":"Not Found"}' 404 ;;
+  403) printf '%s\n%s\n' '{"message":"API rate limit exceeded"}' 403 ;;
+  429) printf '%s\n%s\n' '{"message":"Too Many Requests"}' 429 ;;
   error) printf '%s\n%s\n' '{"message":"Server Error"}' 500 ;;
   *) exit 2 ;;
 esac

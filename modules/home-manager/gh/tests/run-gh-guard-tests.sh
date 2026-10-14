@@ -70,6 +70,10 @@ visibility_checks() {
   visibility_check "404 plus authenticated private" 0 none 404 private test-token
   visibility_check "authenticated error stays public" 1 identifier 404 error test-token
   visibility_check "404 without token stays public" 1 identifier 404 private ''
+  visibility_check "403 rate limit plus authenticated private" 0 none 403 private test-token
+  visibility_check "429 rate limit plus authenticated private" 0 none 429 private test-token
+  visibility_check "403 without token stays public" 1 identifier 403 private ''
+  visibility_check "403 plus authenticated error stays public" 1 identifier 403 error test-token
   rm -f "$HERE/visibility-probe.txt"
 }
 
