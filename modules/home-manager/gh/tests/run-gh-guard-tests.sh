@@ -17,9 +17,12 @@ fi
 
 export GH_GUARD_REAL_GH="$HERE/fakegh"
 export GH_GUARD_CURL="$HERE/fakecurl"
+export GH_GUARD_JUDGE_PROMPT_FILE="$HERE/judge-prompt.txt"
 export GH_GUARD_DENYLIST="$HERE/deny.txt"
 export GH_GUARD_ALLOWLIST="$HERE/no-allowlist.txt"
 export GH_GUARD_LOG="$HERE/decisions.log"
+export GH_GUARD_TEST_LLM_OUTPUT=allow
+export PATH="$HERE/fakejudge:$PATH"
 export GH_TOKEN=test-token GITHUB_TOKEN=test-token
 export OPENBAO_GH_CLAIM=dryvist/pub
 : >"$GH_GUARD_LOG"
@@ -33,7 +36,6 @@ W3_ALIAS_BODY="- Adds an optional \`auto\` model alias served by the native Lite
 W3_DEPLOYED_KEY="The deployed router key permits both the \`auto\` alias and the primary group."
 SPLUNK_TITLE='feat(splunk_docker): deliver the Zammad alert-action URL and credential'
 SPLUNK_BODY=$'## Summary\n\n- Reads the Zammad URL and token fields for the Splunk alert-action configuration.\n- Renders the URL into the splunk-homelab-alerts local \x60alert_actions.conf\x60.\n- Creates or updates the \x60zammad\x60 / \x60svc-splunk\x60 entry in Splunk \x60storage/passwords\x60, posting only when the stored value differs.\n- The tasks carry the \x60alerting\x60 tag, hide credential output, and fail with a named path and key when a field is missing or empty.\n\n## Test plan\n\n- \x60tests/templates/test_zammad_alert_action.py\x60 and every other \x60tests/templates\x60 script pass.\n- \x60yamllint\x60 and \x60ansible-lint\x60 pass on the changed role files.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n'
-SPLUNK_BULLET2=$'Renders the URL into the splunk-homelab-alerts local \x60alert_actions.conf\x60.'
 SPLUNK_BULLET3=$'Creates or updates the \x60zammad\x60 / \x60svc-splunk\x60 entry in Splunk \x60storage/passwords\x60, posting only when the stored value differs.'
 SPLUNK_STORAGE_CAPABILITY='The Splunk service token is stored at the ops path and can create any alert action.'
 
@@ -166,20 +168,20 @@ GH_REPO=dryvist/pub \
   check3 "mutation inline literal screened" 1 identifier api graphql \
     -f query="mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }"
 GH_REPO=dryvist/pub \
-  check3 "mutation variable screened"     1 narrative api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "mutation variable screened"     1 narrative api graphql \
     -f query="mutation(\$b:String!){ addComment(input:{subjectId:\"PR_kwDOabc123\", body:\$b}) { clientMutationId } }" -f b="$NARR"
 
 # --- gh api argument forms that must not dodge screening -----------------
 JOINED="Root_cause_was_the_failed_token_scope_on_the_app_install"
 check3 "REST POST is the default method" 1 identifier api repos/dryvist/pub/issues/1/comments -f body="$LEAK"
 GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "REST underscore prose kept"     1 judge-unavailable api -X POST repos/dryvist/pub/issues/1/comments -f body="$JOINED"
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "REST underscore prose kept"     1 narrative api -X POST repos/dryvist/pub/issues/1/comments -f body="$JOINED"
 GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "-f @path is a literal"          1 judge-unavailable api -X POST repos/dryvist/pub/issues/1/comments -f body="@$HERE/no-such-file"
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "-f @path is a literal"          1 narrative api -X POST repos/dryvist/pub/issues/1/comments -f body="@$HERE/no-such-file"
 check3 "--template graphql is not graphql" 1 identifier api -X POST repos/dryvist/pub/issues/1/comments \
   -f body="$LEAK" --template graphql
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "graphql underscore prose kept"  1 judge-unavailable api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "graphql underscore prose kept"  1 narrative api graphql \
     -f query="mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$JOINED\"}) { clientMutationId } }"
 printf '%s\n' "mutation { addComment(input:{subjectId:\"PR_kwDOabc123\", body:\"$LEAK\"}) { clientMutationId } }" >"$HERE/mut.graphql"
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
@@ -192,7 +194,7 @@ GH_REPO=dryvist/pub \
   check3 "-F=query=@file reads the file"  1 identifier api graphql "-F=query=@$HERE/mut.graphql"
 rm -f "$HERE/mut.graphql"
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "carriage return ends a comment" 1 judge-unavailable api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "carriage return ends a comment" 1 narrative api graphql \
     -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId } # note\r addComment(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
   check3 "clustered -ifquery= mutation"   1 auth api graphql \
@@ -200,16 +202,16 @@ GH_REPO=dryvist/pub OPENBAO_GH_CLAIM='' \
 check3 "clustered -if REST body"         1 identifier api -if body="$LEAK" repos/dryvist/pub/issues/1/comments
 check3 "clustered -ifbody= REST"         1 identifier api "-ifbody=$LEAK" repos/dryvist/pub/issues/1/comments
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "node-ID-shaped prose judged"    1 judge-unavailable api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "node-ID-shaped prose judged"    1 narrative api graphql \
     -f query='mutation { addComment(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause_was_the_expired_app_token_scope"}) { clientMutationId } }'
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
   check3 "resolve plus unresolve skips judge" 0 clean api graphql \
     -f query=$'mutation {\n a: resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId }\n b: unresolveReviewThread(input:{threadId:"PRRT_kwDOb"}) { clientMutationId } }'
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "byte-order mark before ( judged" 1 judge-unavailable api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "byte-order mark before ( judged" 1 narrative api graphql \
     -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOa"}) { clientMutationId } addComment\xef\xbb\xbf(input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_REPO=dryvist/pub GH_GUARD_JUDGE_URL=http://127.0.0.1:9/nope GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "split call with resolve judged" 1 judge-unavailable api graphql \
+  GH_GUARD_TEST_LLM_OUTPUT=block check3 "split call with resolve judged" 1 narrative api graphql \
     -f query=$'mutation { resolveReviewThread(input:{threadId:"PRRT_kwDOabc123"}) { clientMutationId }\n x: addComment # c\n (input:{subjectId:"PR_kwDOabc123", body:"I_kOutage_root_cause"}) { clientMutationId } }'
 GH_GUARD_ACTIVE=1 \
   check3 "re-entry env flag still screens" 1 identifier issue create -R dryvist/pub --body "$LEAK"
@@ -226,17 +228,17 @@ GH_TOKEN=test-token GITHUB_TOKEN='' \
   check3 "GH_TOKEN alone cannot publish" 1 auth issue create -R dryvist/pub --body "$CLEAN"
 
 # --- narrative tier: a reachable judge must return an actual verdict -----
-check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
+GH_GUARD_TEST_LLM_OUTPUT=block check3 "narrative -> judge blocks"      1 narrative issue create -R dryvist/pub --body "$NARR"
 IAC_ADOPT=$'fix(iac-drift): adopt the drift variables under a renamed resource\n- Renames `github_actions_variable.iac_drift_enabled` to `github_actions_variable.iac_drift`.\n- A `removed` block (`destroy = false`) forgets the old resource; a `for_each` `import` block adopts each enabled repo\'s `IAC_DRIFT_ENABLED` variable under the new name.'
 IAC_OUTAGE="Re-imports the variable because the previous apply deleted it and drift detection was down for a day."
 check3 "IaC removed/import blocks allow" 0 clean issue create -R dryvist/pub --body "$IAC_ADOPT"
-check3 "IaC outage narrative blocks"     1 narrative issue create -R dryvist/pub --body "$IAC_OUTAGE"
+GH_GUARD_TEST_LLM_OUTPUT=block check3 "IaC outage narrative blocks"     1 narrative issue create -R dryvist/pub --body "$IAC_OUTAGE"
 check3 "W3 key-scope feature text allows" 0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_KEY_BODY"
 check3 "W3 alias feature text allows"     0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_ALIAS_BODY"
-check3 "deployed key capability blocks"   1 narrative pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_DEPLOYED_KEY"
+GH_GUARD_TEST_LLM_OUTPUT=block check3 "deployed key capability blocks"   1 narrative pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_DEPLOYED_KEY"
 check3 "Splunk code behavior summary allows" 0 clean pr create -R dryvist/pub --title "$SPLUNK_TITLE" --body "$SPLUNK_BODY"
 check3 "Splunk credential record update allows" 0 clean issue create -R dryvist/pub --body "$SPLUNK_BULLET3"
-check3 "Splunk storage and capability blocks" 1 narrative issue create -R dryvist/pub --body "$SPLUNK_STORAGE_CAPABILITY"
+GH_GUARD_TEST_LLM_OUTPUT=block check3 "Splunk storage and capability blocks" 1 narrative issue create -R dryvist/pub --body "$SPLUNK_STORAGE_CAPABILITY"
 
 # --- checkbox toggle on a bot-written body --------------------------------
 # The current body already carries text the identifier tier would block, so a
@@ -263,49 +265,32 @@ OPENBAO_GH_CLAIM=dryvist/privaterepo \
   GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
   check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
-# --- a reasoning judge that returns no verdict within the small budget ---
-# The request asks for no thinking; a reasoning-only reply earns exactly one
-# retry with a larger budget, and a second reasoning-only reply fails closed.
-export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
-  check3 "reasoning judge widens once"   0 clean issue create -R dryvist/pub --body "$CLEAN"
-requests="$(jq -sc 'map([.max_tokens, .chat_template_kwargs.enable_thinking])' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$requests" = '[[4,false],[512,false]]' ]; then
-  printf 'PASS  %-38s\n' "no-thinking request, one widening"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "no-thinking request, one widening" "$requests"; fail=$((fail + 1))
-fi
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-PATH="$HERE/fakejudge:$PATH" \
-  check3 "reasoning-only judge -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
-requests="$(jq -sc 'map(.max_tokens)' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$requests" = '[4,512]' ]; then
-  printf 'PASS  %-38s\n' "reasoning-only judge: two requests"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "reasoning-only judge: two requests" "$requests"; fail=$((fail + 1))
-fi
-rm -f "$GH_GUARD_TEST_JUDGE_LOG"
-unset GH_GUARD_TEST_JUDGE_LOG
-
-# --- fail-closed when the judge is genuinely absent ---------------------
+# --- llm CLI verdict parsing and runtime configuration ------------------
+GH_GUARD_TEST_LLM_OUTPUT=$'allow\nreason follows' \
+  check3 "first verdict line allows" 0 clean pr create -R dryvist/pub --title "$W3_TITLE" --body "$W3_KEY_BODY"
+GH_GUARD_TEST_LLM_OUTPUT=unexpected GH_GUARD_TEST_LLM_ARGS="$HERE/llm-args" \
+GH_GUARD_LLM_USER_PATH="$HERE/llm-config" \
+  check3 "garbage verdict blocks" 1 narrative issue create -R dryvist/pub --body "$NARR"
+GH_GUARD_TEST_LLM_OUTPUT=ALLOW \
+  check3 "uppercase verdict blocks" 1 narrative issue create -R dryvist/pub --body "$NARR"
+GH_GUARD_TEST_LLM_EXIT=7 \
+  check3 "llm command failure blocks" 1 narrative issue create -R dryvist/pub --body "$NARR"
 GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" GH_GUARD_JUDGE_TIMEOUT=1 \
-  check3 "judge absent -> fail closed"  1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
-
-# A static limits file supplies both the local judge URL and its total retry
-# budget. The unreachable fixture must fail within its one-second budget.
-printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":1}}}\n' >"$HERE/resident-model-limits.json"
+  check3 "invalid endpoint fails closed" 1 narrative issue create -R dryvist/pub --body "$NARR"
+printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:11434/v1/chat/completions","timeoutSeconds":1}}}\n' >"$HERE/resident-model-limits.json"
 export MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json"
-start_time="$(date +%s)"
-check3 "resident limits configure judge" 1 judge-unavailable issue create -R dryvist/pub --body "$NARR"
-elapsed=$(( $(date +%s) - start_time ))
-if [ "$elapsed" -le 3 ]; then
-  printf 'PASS  %-38s [%ss]\n' "resident timeout bounds retries" "$elapsed"; pass=$((pass + 1))
+GH_GUARD_LLM_USER_PATH="$HERE/llm-config" GH_GUARD_TEST_LLM_ARGS="$HERE/llm-args" \
+  check3 "resident limits configure judge" 0 clean issue create -R dryvist/pub --body "$NARR"
+if grep -Fxq 'judge' "$HERE/llm-args" && \
+  grep -Fxq 'Test system prompt.' "$HERE/llm-args" && \
+  grep -Fxq '  api_base: "http://127.0.0.1:11434/v1"' "$HERE/llm-config/extra-openai-models.yaml"; then
+  printf 'PASS  %-38s\n' "llm uses configured model and prompt"; pass=$((pass + 1))
 else
-  printf 'FAIL  %-38s expected <=3s, got %ss\n' "resident timeout bounds retries" "$elapsed"; fail=$((fail + 1))
+  printf 'FAIL  %-38s\n' "llm uses configured model and prompt"; fail=$((fail + 1))
 fi
 unset MLX_RESIDENT_MODEL_LIMITS_FILE
-rm -f "$HERE/resident-model-limits.json"
+rm -f "$HERE/resident-model-limits.json" "$HERE/llm-args"
+rm -rf "$HERE/llm-config"
 
 # --- deterministic private host-address shapes --------------------------
 check3 "private host addr 10.x"         1 identifier issue create -R dryvist/pub --body "host 10.4.7.22 is down"

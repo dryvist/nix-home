@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Offline llm stub for the verdict parser tests.
+set -euo pipefail
+: "${LLM_USER_PATH:?}"
+[ "${OPENAI_API_KEY:-}" = placeholder ]
+[ -r "$LLM_USER_PATH/extra-openai-models.yaml" ]
+if [ -n "${GH_GUARD_TEST_LLM_ARGS:-}" ]; then
+  printf '%s\n' "$@" >"$GH_GUARD_TEST_LLM_ARGS"
+fi
+if [ -n "${GH_GUARD_TEST_LLM_INPUT:-}" ]; then
+  cat >"$GH_GUARD_TEST_LLM_INPUT"
+else
+  cat >/dev/null
+fi
+printf '%s' "${GH_GUARD_TEST_LLM_OUTPUT:-}"
+exit "${GH_GUARD_TEST_LLM_EXIT:-0}"

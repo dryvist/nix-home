@@ -92,11 +92,13 @@
       {
         nativeBuildInputs = [
           pkgs.bash
+          pkgs.bats
           pkgs.coreutils
           pkgs.curl
           pkgs.gawk
           pkgs.git
           pkgs.gnugrep
+          pkgs.gnused
           pkgs.jq
           pkgs.python3
         ];
@@ -106,7 +108,9 @@
         chmod -R u+w "$TMPDIR/gh-guard"
         patchShebangs "$TMPDIR/gh-guard/tests/fakegh"
         patchShebangs "$TMPDIR/gh-guard/tests/fakecurl"
+        patchShebangs "$TMPDIR/gh-guard/tests/fakejudge/llm"
         GH_GUARD_TEST_CI=1 bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
+        bats "$TMPDIR/gh-guard/tests/judge.bats"
         touch $out
       '';
 
