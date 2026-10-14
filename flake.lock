@@ -3,17 +3,17 @@
     "ai-llm-prompts": {
       "flake": false,
       "locked": {
-        "lastModified": 1791979349,
-        "narHash": "sha256-5q+by8siZgV+8b7ghE2PiR1osO+pXGZPlH3qCqAzR1E=",
+        "lastModified": 1791995609,
+        "narHash": "sha256-cxoN8Z6pXli1YCRb8c69PWNz7RsbUXFdK67lC0XDLpw=",
         "owner": "dryvist",
         "repo": "ai-llm-prompts",
-        "rev": "b4dd0aa28810b7389f39d372bc8c4b46bf84778c",
+        "rev": "3d257b3d6deae089c2dd2674873a376a8c489324",
         "type": "github"
       },
       "original": {
         "owner": "dryvist",
         "repo": "ai-llm-prompts",
-        "rev": "b4dd0aa28810b7389f39d372bc8c4b46bf84778c",
+        "rev": "3d257b3d6deae089c2dd2674873a376a8c489324",
         "type": "github"
       }
     },

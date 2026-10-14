@@ -50,7 +50,7 @@
 
     # Source-only: public gh-guard judge prompt, pinned to its reviewed commit.
     ai-llm-prompts = {
-      url = "github:dryvist/ai-llm-prompts/b4dd0aa28810b7389f39d372bc8c4b46bf84778c";
+      url = "github:dryvist/ai-llm-prompts/3d257b3d6deae089c2dd2674873a376a8c489324";
       flake = false;
     };
 
