@@ -89,11 +89,11 @@ sudo darwin-rebuild switch --flake . \
   --override-input nix-home $GIT_HOME_PUBLIC/nix-home/main
 ```
 
-## Tooling baseline (inherited from dryvist/.github)
+## Tooling baseline (inherited from JacobPEvans/.github)
 
 - **Markdown lint:** `markdownlint-cli2` with the canonical
   `.markdownlint-cli2.yaml` synced from
-  [`dryvist/.github`](https://github.com/dryvist/.github).
+  [`JacobPEvans/.github`](https://github.com/JacobPEvans/.github).
   `MD013 line_length: 160`; no 80-char heading/code restrictions.
   `CHANGELOG.md` and `.github/aw/**` are ignored. `MD024`
   strict-by-default everywhere actually linted — never disabled across
