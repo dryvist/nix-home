@@ -57,7 +57,7 @@ die() { # tier repo verb message
   # An auth or visibility refusal says nothing about content, so the disclosure
   # text belongs only to a repository confirmed public.
   case "$1" in
-    auth|visibility) [ "$REPO_VIS" = public ] || exit 1 ;;
+    auth|visibility|title) [ "$REPO_VIS" = public ] || exit 1 ;;
   esac
   printf 'This artifact targets a PUBLIC repository. Public text states WHAT,\n' >&2
   printf 'never why, what broke, or internal topology. Route incident narrative\n' >&2
@@ -587,6 +587,25 @@ if ! is_publish_verb "${1:-}" "${2:-}"; then exec "$GH_REAL" "$@"; fi
 if [ "${1:-}" = "api" ] && ! api_is_publish "$@"; then exec "$GH_REAL" "$@"; fi
 
 VERB="${1:-}${2:+ $2}"
+
+# PR title gate: the same commit-subject pattern the org's PR Title check
+# enforces, applied before the PR exists instead of after CI runs.
+pr_title() { # prints the --title/-t value, if any
+  local next=""
+  for a in "$@"; do
+    if [ -n "$next" ]; then printf '%s' "$a"; return 0; fi
+    case "$a" in
+      --title|-t) next=1 ;;
+      --title=*) printf '%s' "${a#*=}"; return 0 ;;
+    esac
+  done
+  return 1
+}
+if [ "${1:-}" = pr ] && { [ "${2:-}" = create ] || [ "${2:-}" = edit ]; } \
+  && [ -n "${GH_GUARD_TITLE_PATTERN:-}" ] && TITLE="$(pr_title "$@")" \
+  && ! [[ "$TITLE" =~ $GH_GUARD_TITLE_PATTERN ]]; then
+  die title "$(resolve_repo "$@" || echo '?')" "$VERB" "$(printf 'Check failed: the PR title is not a conventional commit subject.\nTitle:   %s\nPattern: %s\nNext: retry with a title like "feat(scope): add the thing" or "fix: correct the thing".' "$TITLE" "$GH_GUARD_TITLE_PATTERN")"
+fi
 CLAIM="${OPENBAO_GH_CLAIM:-}"
 # `gh` prefers GH_TOKEN when both are set. Pin it to the token created by the
 # active claim so an older ambient GH_TOKEN cannot replace that credential.
