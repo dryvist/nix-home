@@ -143,6 +143,15 @@ check3 "identifier via --body"          1 identifier issue create -R dryvist/pub
 check3 "identifier via --body=inline"   1 identifier issue create -R dryvist/pub --body="$LEAK"
 check3 "identifier via --body-file"     1 identifier issue create -R dryvist/pub --body-file "$HERE/leak.md"
 check3 "identifier via -F"              1 identifier pr create -R dryvist/pub -F "$HERE/leak.md"
+
+# PR title gate (pattern mirrors config/commit-message-pattern.txt).
+export GH_GUARD_TITLE_PATTERN='^(Merge .+|(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9_\-]+\))?(!)?: .+)'
+check3 "bad PR title blocks"             1 title pr create -R dryvist/pub --title "Route serving logs to timing" --body "$CLEAN"
+check3 "bad PR title via --title= blocks" 1 title pr edit 3 -R dryvist/privaterepo --title="Add thing"
+check3 "bad PR title via -t blocks"      1 title pr create -R dryvist/pub -t "update stuff" --body "$CLEAN"
+check3 "conventional PR title passes"    0 clean pr create -R dryvist/pub --title "feat(gh-guard): add title gate" --body "$CLEAN"
+check3 "PR without title skips gate"     0 clean pr create -R dryvist/pub --fill --body "$CLEAN"
+unset GH_GUARD_TITLE_PATTERN
 check3 "identifier via \$BODY expansion" 1 identifier issue create -R dryvist/pub --body "$BODY"
 check3 "identifier via gh api -f"       1 identifier api -X POST repos/dryvist/pub/issues -f body="$LEAK"
 check3 "identifier via gh api -F field" 1 identifier api -X POST repos/dryvist/pub/issues -F body="$LEAK"

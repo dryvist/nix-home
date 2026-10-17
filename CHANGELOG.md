@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.0](https://github.com/dryvist/nix-home/compare/v1.55.2...v1.56.0) (2026-10-17)
+
+
+### Features
+
+* **gh-guard:** refuse a non-conventional PR title before the PR exists ([#714](https://github.com/dryvist/nix-home/issues/714)) ([6ea41cd](https://github.com/dryvist/nix-home/commit/6ea41cdc61d06bc2ff9cc8d8e50e530ec165ab71))
+
 ## [1.55.2](https://github.com/dryvist/nix-home/compare/v1.55.1...v1.55.2) (2026-10-14)
 
 

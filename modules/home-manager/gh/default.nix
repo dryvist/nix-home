@@ -19,6 +19,7 @@
   config,
   lib,
   pkgs,
+  commitMessagePattern,
   ...
 }:
 
@@ -34,7 +35,10 @@ let
       pkgs.coreutils
       pkgs.python3
     ];
-    runtimeEnv.GH_GUARD_DENYLIST_DEFAULT = cfg.identifierFile;
+    runtimeEnv = {
+      GH_GUARD_DENYLIST_DEFAULT = cfg.identifierFile;
+      GH_GUARD_TITLE_PATTERN = commitMessagePattern;
+    };
     text = builtins.replaceStrings [ "/etc/profiles/per-user/jevans/bin/gh" ] [ "${pkgs.gh}/bin/gh" ] (
       builtins.readFile ./scripts/gh-guard.sh
     );
