@@ -4,7 +4,7 @@
 # — it edits version and hash strings inside .nix files and never touches
 # flake.lock. BWS is intentionally excluded: it is Bitwarden's fixed official
 # binary archive, retained outside nixpkgs so its Rust build/test graph cannot
-# regress activation time. It runs green daily, which can make the repo look
+# regress activation time. It runs green weekly, which can make the repo look
 # covered when the flake inputs are not: flake.lock has a single separate
 # writer, deps-flake-lock.yml, because Renovate cannot bump a channel branch
 # (its ref never changes).
@@ -18,13 +18,13 @@
 # - grip: PyPI Python package (via nix-update)
 #
 # Triggers:
-# - Daily at 8am UTC (schedule)
+# - Saturday 12:00 UTC (schedule)
 # - Manual (workflow_dispatch)
 name: Update custom packages (git-flow-next, grip only — not nixpkgs)
 
 on:
   schedule:
-    - cron: "0 8 * * *"  # Daily 8am UTC
+    - cron: "0 12 * * 6"  # Saturday 12:00 UTC
   workflow_dispatch: {}
 
 concurrency:
