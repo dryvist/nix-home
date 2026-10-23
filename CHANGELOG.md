@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.57.0](https://github.com/dryvist/nix-home/compare/v1.56.0...v1.57.0) (2026-10-23)
+
+
+### Features
+
+* configure seven-day package release ages ([#724](https://github.com/dryvist/nix-home/issues/724)) ([571aedf](https://github.com/dryvist/nix-home/commit/571aedfa319a81e6d0f575c7d6df0b75411a7d12))
+* configure seven-day package release-age filters ([571aedf](https://github.com/dryvist/nix-home/commit/571aedfa319a81e6d0f575c7d6df0b75411a7d12))
+
 ## [1.56.0](https://github.com/dryvist/nix-home/compare/v1.55.2...v1.56.0) (2026-10-17)
 
 
