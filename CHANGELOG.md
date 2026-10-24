@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.59.0](https://github.com/dryvist/nix-home/compare/v1.58.0...v1.59.0) (2026-10-24)
+
+
+### Features
+
+* **agent:** autonomous claude run 20261024-184948-56269 ([#740](https://github.com/dryvist/nix-home/issues/740)) ([a6da45f](https://github.com/dryvist/nix-home/commit/a6da45f218b5fe95ade0d0397f0c57508a16a2ba))
+* **agent:** claude run 20261024-184948-56269 ([a6da45f](https://github.com/dryvist/nix-home/commit/a6da45f218b5fe95ade0d0397f0c57508a16a2ba))
+
 ## [1.58.0](https://github.com/dryvist/nix-home/compare/v1.57.2...v1.58.0) (2026-10-24)
 
 
