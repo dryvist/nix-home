@@ -85,7 +85,10 @@ in
     stateVersion = userConfig.nix.homeManagerStateVersion;
 
     # User dev tools (pre-commit, linters, Python, AWS, etc.)
-    packages = commonPackages;
+    packages = commonPackages ++ [
+      pkgs.git-town
+      pkgs.ghq
+    ];
 
     file =
       npmFiles

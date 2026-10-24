@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.58.0](https://github.com/dryvist/nix-home/compare/v1.57.2...v1.58.0) (2026-10-24)
+
+
+### Features
+
+* **git:** add Git Town and ghq with rebase-first sync defaults ([#737](https://github.com/dryvist/nix-home/issues/737)) ([6539ca9](https://github.com/dryvist/nix-home/commit/6539ca9041dc76961b0cead917dd741cf78baf5b))
+
+## [1.57.2](https://github.com/dryvist/nix-home/compare/v1.57.1...v1.57.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **darwin:** drop the nixpkgs Codex package ([#733](https://github.com/dryvist/nix-home/issues/733)) ([c9d88ea](https://github.com/dryvist/nix-home/commit/c9d88ea2b28b55b6c7eaf75736bfb430cff12b05))
+
+## [1.57.1](https://github.com/dryvist/nix-home/compare/v1.57.0...v1.57.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **darwin:** add Codex and LangGraph CLI packages ([#729](https://github.com/dryvist/nix-home/issues/729)) ([e7132a0](https://github.com/dryvist/nix-home/commit/e7132a0dfb2ede05b0a4b3411774094298fbf260))
+
 ## [1.57.0](https://github.com/dryvist/nix-home/compare/v1.56.0...v1.57.0) (2026-10-23)
 
 
