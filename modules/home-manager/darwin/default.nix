@@ -8,6 +8,8 @@
 # - Config sections are gated with mkIf (only evaluated when enabled)
 # - They are only imported on Darwin (via platform guard in flake.nix)
 
+{ pkgs, ... }:
+
 {
   imports = [
     ./claude-usage-collector.nix
@@ -15,5 +17,10 @@
     ./proxman-setup.nix
     ./raycast-ai-providers.nix
     ./tmux-session-autostart.nix
+  ];
+
+  home.packages = with pkgs; [
+    codex
+    langgraph-cli
   ];
 }
