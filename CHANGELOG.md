@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.1](https://github.com/dryvist/nix-home/compare/v1.57.0...v1.57.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **darwin:** add Codex and LangGraph CLI packages ([#729](https://github.com/dryvist/nix-home/issues/729)) ([e7132a0](https://github.com/dryvist/nix-home/commit/e7132a0dfb2ede05b0a4b3411774094298fbf260))
+
 ## [1.57.0](https://github.com/dryvist/nix-home/compare/v1.56.0...v1.57.0) (2026-10-23)
 
 
