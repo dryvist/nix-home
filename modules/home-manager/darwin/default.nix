@@ -19,8 +19,8 @@
     ./tmux-session-autostart.nix
   ];
 
+  # Codex comes from the Homebrew cask that nix-ai's agent launcher execs; nixpkgs codex lags upstream.
   home.packages = with pkgs; [
-    codex
     langgraph-cli
   ];
 }
