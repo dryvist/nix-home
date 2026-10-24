@@ -36,7 +36,6 @@ with pkgs;
   lefthook
 
   # Git Workflow
-  (pkgs.callPackage ../git-flow-next.nix { }) # git-flow branching workflow — required for all non-personal repos
   git-bug # Distributed bug tracker embedded in git (git bug command)
 
   # ==========================================================================

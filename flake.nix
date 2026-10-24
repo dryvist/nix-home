@@ -178,7 +178,7 @@
         }
       );
 
-      # Expose custom packages. nix-update manages git-flow-next and grip; BWS
+      # Expose custom packages. nix-update manages grip; BWS
       # is an intentionally pinned official binary archive (not nixpkgs source).
       packages = forAllSystems (
         system:
@@ -190,7 +190,6 @@
           # Its nixpkgs Rust build/test graph made activation builds exceed the
           # hard 20-minute CI budget; see modules/common/packages/bws.nix.
           bws = pkgs.callPackage ./modules/common/packages/bws.nix { };
-          git-flow-next = pkgs.callPackage ./modules/common/git-flow-next.nix { };
           grip = pkgs.python314.pkgs.callPackage ./packages/grip.nix { };
           gh-stack = pkgs.callPackage ./packages/gh-stack.nix { };
         }
