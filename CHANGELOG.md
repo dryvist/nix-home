@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.2](https://github.com/dryvist/nix-home/compare/v1.57.1...v1.57.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **darwin:** drop the nixpkgs Codex package ([#733](https://github.com/dryvist/nix-home/issues/733)) ([c9d88ea](https://github.com/dryvist/nix-home/commit/c9d88ea2b28b55b6c7eaf75736bfb430cff12b05))
+
 ## [1.57.1](https://github.com/dryvist/nix-home/compare/v1.57.0...v1.57.1) (2026-10-24)
 
 
