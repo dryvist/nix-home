@@ -73,10 +73,14 @@
       command = "${pkgs.gitlint}/bin/gitlint --ignore T1,T2,T3,T4,T5,T6,T8,B1,B2,B3,B4,B5,B6,B7,B8 -c ${pkgs.lib.escapeShellArg "title-match-regex.regex=${commitMessagePattern}"} --msg-filename";
     };
 
-    # Pull behavior - rebase keeps history cleaner than merge commits
-    #pull.rebase = true;
-    # Pull behavior - hard error on non-linear history which can then be manually rebased
-    pull.ff = "only";
+    # Pull behavior - rebase keeps history linear when using plain git pull.
+    pull.rebase = true;
+
+    # Rebase behavior - preserve related local branches and include open changes.
+    rebase = {
+      updateRefs = true;
+      autoStash = true;
+    };
 
     # Push behavior
     push = {
@@ -88,6 +92,15 @@
     fetch = {
       prune = true; # Auto-remove deleted remote branches
       pruneTags = true; # Auto-remove deleted remote tags
+    };
+
+    # Git Town workflow defaults. No global main-branch: each repo sets its own
+    # (develop on git-flow repos), so an unset repo fails instead of branching from main.
+    git-town = {
+      sync-feature-strategy = "rebase";
+      sync-perennial-strategy = "rebase";
+      perennial-regex = "^(main|develop)$";
+      ship-strategy = "api";
     };
 
     # Merge & diff improvements

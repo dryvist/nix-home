@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.58.0](https://github.com/dryvist/nix-home/compare/v1.57.2...v1.58.0) (2026-10-24)
+
+
+### Features
+
+* **git:** add Git Town and ghq with rebase-first sync defaults ([#737](https://github.com/dryvist/nix-home/issues/737)) ([6539ca9](https://github.com/dryvist/nix-home/commit/6539ca9041dc76961b0cead917dd741cf78baf5b))
+
 ## [1.57.2](https://github.com/dryvist/nix-home/compare/v1.57.1...v1.57.2) (2026-10-24)
 
 
