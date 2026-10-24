@@ -53,9 +53,17 @@ jobs:
           - '**.md'
           - '.markdownlint*'
 
+  flake-lock-fresh:
+    name: Flake Lock Fresh
+    permissions:
+      contents: read
+    uses: dryvist/.github/.github/workflows/_flake-lock-fresh.yml@cf39ed35622ae0c3398c0e8c8c1de7aa992f387b6
+    with:
+      max_age_days: 30
+
   gate:
     name: Merge Gate
-    needs: [shared-gate]
+    needs: [shared-gate, flake-lock-fresh]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
