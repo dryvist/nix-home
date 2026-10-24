@@ -19,12 +19,39 @@
 # - Packages are still version-controlled via npm itself
 
 { config, ... }:
-
+let
+  # Bun reads one of these global paths, based on XDG_CONFIG_HOME.
+  bunfig = ''
+    [install]
+    minimumReleaseAge = 604800 # seconds
+  '';
+in
 {
   # ~/.npmrc - npm configuration file
   ".npmrc".text = ''
     # Global package prefix (writable directory)
     # Packages installed with: npm install -g <package>
     prefix=''${HOME}/.npm-packages
+
+    # Resolve only package versions that are at least seven days old.
+    min-release-age=7
+  '';
+
+  # Bun's documented global config locations are ~/.bunfig.toml and
+  # $XDG_CONFIG_HOME/.bunfig.toml. Keep one shared config for both cases.
+  ".bunfig.toml".text = bunfig;
+  ".config/.bunfig.toml".text = bunfig;
+
+  # User-level resolver settings for uv and pip.
+  ".config/uv/uv.toml".text = ''
+    exclude-newer = "7 days"
+  '';
+
+  ".config/pip/pip.conf".text = ''
+    [install]
+    uploaded-prior-to = P7D
+
+    [lock]
+    uploaded-prior-to = P7D
   '';
 }
