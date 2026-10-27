@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.60.0](https://github.com/dryvist/nix-home/compare/v1.59.0...v1.60.0) (2026-10-27)
+
+
+### Features
+
+* **direnv:** fetch workspace repos in the background on load ([#745](https://github.com/dryvist/nix-home/issues/745)) ([a8c3503](https://github.com/dryvist/nix-home/commit/a8c3503bef9afefdbb42c5d4e4644b28f09d7789))
+* **git:** remove git-flow-next and its gitflow config ([#742](https://github.com/dryvist/nix-home/issues/742)) ([47fcbf7](https://github.com/dryvist/nix-home/commit/47fcbf7745566d380020c26fc9e485f4887dd79b))
+
 ## [1.59.0](https://github.com/dryvist/nix-home/compare/v1.58.0...v1.59.0) (2026-10-24)
 
 
