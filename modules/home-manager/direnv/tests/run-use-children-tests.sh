@@ -69,13 +69,13 @@ fetch_log=$work/nhfetch-fetches
 mkdir -p "$fetch_group" "$fetch_repo_a" "$fetch_repo_b" "$fetch_worktree" "$fetch_bin"
 cp "$workspace_envrc" "$fetch_root/.envrc"
 cp "$workspace_envrc" "$fetch_group/.envrc"
-cat >"$fetch_bin/ghq" <<'EOF'
-#!/usr/bin/env bash
+printf '#!%s\n' "$BASH" >"$fetch_bin/ghq"
+cat >>"$fetch_bin/ghq" <<'EOF'
 [[ ${GHQ_ROOT:-} == "$FETCH_EXPECTED_ROOT" ]] || exit 1
 printf '%s\n' "$FETCH_REPO_A" "$FETCH_REPO_B" "$FETCH_WORKTREE"
 EOF
-cat >"$fetch_bin/git" <<'EOF'
-#!/usr/bin/env bash
+printf '#!%s\n' "$BASH" >"$fetch_bin/git"
+cat >>"$fetch_bin/git" <<'EOF'
 printf '%s\n' "$*" >>"$FETCH_LOG"
 EOF
 chmod +x "$fetch_bin/ghq" "$fetch_bin/git"
