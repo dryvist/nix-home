@@ -2,7 +2,7 @@
 # Checks that `use children` loads each directory once: no re-run of a parent
 # through a child's source_up, and only the default-branch worktree of a repo.
 #
-# Usage: run-use-children-tests.sh <use-children.sh> <nix-direnv direnvrc>
+# Usage: run-use-children-tests.sh <use-children.sh> <nix-direnv direnvrc> <workspace.envrc>
 set -euo pipefail
 
 work=$(cd "$(mktemp -d)" && pwd -P) # use_children compares physical paths
@@ -57,7 +57,7 @@ check "$root/grp/wt-feat" WT_FEAT 1
 
 # Nested copies of the workspace envrc start only one background fetch and
 # leave linked worktree paths out of the fetch list.
-workspace_envrc=$(cd "$(dirname "$0")/.." && pwd -P)/workspace.envrc
+workspace_envrc=$3
 fetch_workspace=$work/nhfetch-git
 fetch_root=$fetch_workspace/public/owner
 fetch_group=$fetch_root/group
