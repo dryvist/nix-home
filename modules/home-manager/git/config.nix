@@ -94,6 +94,9 @@
       pruneTags = true; # Auto-remove deleted remote tags
     };
 
+    # Keep origin/HEAD aligned with the remote default branch on every fetch.
+    remote.origin.followRemoteHEAD = "always";
+
     # Git Town workflow defaults. No global main-branch: each repo sets its own
     # (develop on git-flow repos), so an unset repo fails instead of branching from main.
     git-town = {
