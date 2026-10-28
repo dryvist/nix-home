@@ -127,7 +127,8 @@
               git = lib.getExe pkgs.git;
             }
           } \
-          ${pkgs.nix-direnv}/share/nix-direnv/direnvrc
+          ${pkgs.nix-direnv}/share/nix-direnv/direnvrc \
+          ${../modules/home-manager/direnv/workspace.envrc}
         touch $out
       '';
 
