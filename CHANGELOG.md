@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.1](https://github.com/dryvist/nix-home/compare/v1.60.0...v1.60.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **gpg-agent:** start on demand instead of via launchd on Darwin ([#748](https://github.com/dryvist/nix-home/issues/748)) ([6885ccf](https://github.com/dryvist/nix-home/commit/6885ccf2a6f11c28d0c9a5a3fb7b40e92d88acf2))
+
 ## [1.60.0](https://github.com/dryvist/nix-home/compare/v1.59.0...v1.60.0) (2026-10-27)
 
 
