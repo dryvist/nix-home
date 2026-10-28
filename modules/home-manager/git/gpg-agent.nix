@@ -1,9 +1,9 @@
 # Native gpg-agent for unattended commit signing (Darwin).
 #
 # Replaces a hand-written ~/.gnupg/gpg-agent.conf + manual `gpgconf --reload`
-# with home-manager's `services.gpg-agent`, which writes the same conf AND
-# manages a launchd agent so the agent stays warm across long AI-driven
-# sessions (the whole reason for the 24h cache TTL).
+# with home-manager's `services.gpg-agent`, which writes the same conf. The
+# home-manager launchd agent is disabled; gpg starts gpg-agent on demand in
+# daemon mode, and the 24h cache TTL applies to that agent.
 #
 # The pinentry program follows the host profile: GUI pinentry-mac on a
 # workstation (uses the Keychain UI, survives a closed stdin), TTY
@@ -27,4 +27,7 @@
     pinentry.package =
       if config.home-profile.features.pinentryGui.enable then pkgs.pinentry_mac else pkgs.pinentry-curses;
   };
+
+  # Disable the home-manager launchd agent, which runs gpg-agent --supervised.
+  launchd.agents.gpg-agent.enable = lib.mkIf pkgs.stdenv.isDarwin (lib.mkForce false);
 }
