@@ -77,6 +77,13 @@ EOF
 printf '#!%s\n' "$BASH" >"$fetch_bin/git"
 cat >>"$fetch_bin/git" <<'EOF'
 printf '%s\n' "$*" >>"$FETCH_LOG"
+if [[ -f ${FETCH_LOG}.spawn-children ]]; then
+  (
+    sleep 5
+    printf '%s\n' done >>"${FETCH_LOG}.done"
+  ) </dev/null >/dev/null 2>&1 &
+  printf '%s\n' "$!" >>"${FETCH_LOG}.pids"
+fi
 EOF
 chmod +x "$fetch_bin/ghq" "$fetch_bin/git"
 export FETCH_EXPECTED_ROOT=$fetch_workspace FETCH_REPO_A=$fetch_repo_a FETCH_REPO_B=$fetch_repo_b
@@ -105,12 +112,73 @@ else
   actual=
 fi
 expected=$(printf '%s\n' \
-  "-C $fetch_repo_a fetch --all --quiet" \
-  "-C $fetch_repo_b fetch --all --quiet" | LC_ALL=C sort)
+  "-C $fetch_repo_a fetch --all --quiet --no-auto-maintenance" \
+  "-C $fetch_repo_b fetch --all --quiet --no-auto-maintenance" | LC_ALL=C sort)
 if [[ $actual == "$expected" ]]; then
-  echo "ok   workspace envrc: nested copies fetched each repo once and skipped .worktrees"
+  echo "ok   workspace envrc: each fetch disables automatic maintenance and skips .worktrees"
 else
   echo "FAIL workspace envrc: nested fetch list did not match"
   fail=1
 fi
+
+# Capture direnv-style stdout while fake fetch children hold inherited fds.
+# The invocation must return within three seconds, before these children exit.
+fetch_child_done=$fetch_log.done
+fetch_child_pids=$fetch_log.pids
+fetch_capture=$work/nhfetch-capture
+export FETCH_CAPTURE=$fetch_capture XDG_CACHE_HOME=$work/nhfetch-cache
+: >"$fetch_log.spawn-children"
+(
+  unset GIT_HOME GIT_TERMINAL_PROMPT GIT_SSH_COMMAND
+  cd "$fetch_root"
+  captured=$(direnv exec . bash -c 'printf children-loaded')
+  printf '%s\n' "$captured" >"$FETCH_CAPTURE"
+) >/dev/null 2>&1 &
+fetch_capture_pid=$!
+
+capture_ready=0
+for ((attempt = 0; attempt < 30; attempt++)); do
+  child_count=0
+  [[ -f $fetch_child_pids ]] && child_count=$(wc -l <"$fetch_child_pids")
+  if [[ -f $fetch_capture && $child_count -eq 2 ]]; then
+    capture_ready=1
+    break
+  fi
+  sleep 0.1
+done
+
+children_alive=1
+if [[ $capture_ready -eq 1 && $(<"$fetch_capture") == children-loaded && ! -f $fetch_child_done ]]; then
+  while IFS= read -r child_pid; do
+    if ! kill -0 "$child_pid" 2>/dev/null; then
+      children_alive=0
+    fi
+  done <"$fetch_child_pids"
+else
+  children_alive=0
+fi
+
+if [[ $capture_ready -eq 1 && $children_alive -eq 1 ]]; then
+  echo "ok   workspace envrc: captured direnv exec returned while detached git children were alive"
+else
+  echo "FAIL workspace envrc: captured direnv exec waited for detached git children"
+  fail=1
+fi
+
+# Let test children exit naturally so the harness leaves no background work.
+children_finished=0
+for ((attempt = 0; attempt < 70; attempt++)); do
+  child_count=0
+  [[ -f $fetch_child_done ]] && child_count=$(wc -l <"$fetch_child_done")
+  if [[ $child_count -eq 2 ]]; then
+    children_finished=1
+    break
+  fi
+  sleep 0.1
+done
+if [[ $children_finished -ne 1 ]]; then
+  echo "FAIL workspace envrc: detached git test children did not exit naturally"
+  fail=1
+fi
+wait "$fetch_capture_pid" || fail=1
 exit "$fail"
