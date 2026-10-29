@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.2](https://github.com/dryvist/nix-home/compare/v1.60.1...v1.60.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **direnv:** keep the background fetch from holding the direnv pipe ([#751](https://github.com/dryvist/nix-home/issues/751)) ([a611c50](https://github.com/dryvist/nix-home/commit/a611c50191b64576f7c474d0e58320256031afc3))
+
 ## [1.60.1](https://github.com/dryvist/nix-home/compare/v1.60.0...v1.60.1) (2026-10-28)
 
 
