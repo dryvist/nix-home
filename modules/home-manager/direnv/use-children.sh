@@ -12,8 +12,9 @@
 #   rebuilds a dev shell when any watched file is newer than its cache. The
 #   child's watched files are then watched here too.
 # - PATH stacks; any other variable: the alphabetically last child wins.
-# - Locals that exist while a child .envrc runs are named _use_children_*,
-#   so a child exporting e.g. `name` cannot overwrite them.
+#   Language-specific search paths stay scoped to this function.
+# - Internal locals that exist while a child .envrc runs are named
+#   _use_children_*, so a child exporting e.g. `name` cannot overwrite them.
 
 # direnv sources this library from the directory it is loading.
 _use_children_root=$PWD
@@ -25,12 +26,39 @@ use_children() {
   [[ :${_use_children_stack:-}: == *:"$PWD":* ]] && return 0
 
   local _use_children_stack=${_use_children_stack:-}:$PWD
+  local _use_children_path=$PATH
+  local -a _use_children_search_vars=(PYTHONPATH PYTHONHOME NODE_PATH PERL5LIB)
+  local -a _use_children_search_values=() _use_children_search_set=()
+  local _use_children_var _use_children_index
   local -a _use_children_loaded=() _use_children_watched=()
   local _use_children_dir
+
+  for _use_children_var in "${_use_children_search_vars[@]}"; do
+    if [[ -n ${!_use_children_var+x} ]]; then
+      _use_children_search_set+=(1)
+      _use_children_search_values+=("${!_use_children_var}")
+    else
+      _use_children_search_set+=(0)
+      _use_children_search_values+=('')
+    fi
+  done
 
   for _use_children_dir in "$PWD"/*/; do
     _use_children_load "${_use_children_dir%/}"
   done
+  for _use_children_index in "${!_use_children_search_vars[@]}"; do
+    _use_children_var=${_use_children_search_vars[_use_children_index]}
+    if [[ ${_use_children_search_set[_use_children_index]} == 1 ]]; then
+      export "$_use_children_var=${_use_children_search_values[_use_children_index]}"
+    else
+      unset "$_use_children_var"
+    fi
+  done
+  # PATH_add prepends, so append the caller's entries after all child tools.
+  if [[ -n $_use_children_path && $PATH != "$_use_children_path" && $PATH != *:"$_use_children_path" ]]; then
+    PATH="${PATH:+$PATH:}$_use_children_path"
+    export PATH
+  fi
   watch_file "${_use_children_watched[@]}"
   log_status "use_children: $(user_rel_path "$PWD") loaded ${#_use_children_loaded[@]}: ${_use_children_loaded[*]}"
 
