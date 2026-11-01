@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.3](https://github.com/dryvist/nix-home/compare/v1.60.2...v1.60.3) (2026-11-01)
+
+
+### Bug Fixes
+
+* **direnv:** keep child search paths and the caller PATH intact in use children ([#755](https://github.com/dryvist/nix-home/issues/755)) ([f45db61](https://github.com/dryvist/nix-home/commit/f45db61f012be9bbdf375972523bba489df1ef9f))
+
 ## [1.60.2](https://github.com/dryvist/nix-home/compare/v1.60.1...v1.60.2) (2026-10-29)
 
 
