@@ -8,7 +8,10 @@ set -euo pipefail
 work=$(cd "$(mktemp -d)" && pwd -P) # use_children compares physical paths
 trap 'rm -rf "$work"' EXIT
 root=$work/root
+direnv_bin=$(command -v direnv)
 export HOME=$work XDG_DATA_HOME=$work/data XDG_CACHE_HOME=$work/cache DIRENV_CONFIG=$work/config
+unset PYTHONPATH PYTHONHOME NODE_PATH PERL5LIB
+unset DIRENV_DIFF DIRENV_DIR DIRENV_FILE DIRENV_WATCHES
 mkdir -p "$DIRENV_CONFIG" "$root/a" "$root/grp/b"
 printf 'source %s\nsource %s\n' "$2" "$1" >"$DIRENV_CONFIG/direnvrc"
 printf '[whitelist]\nprefix = ["%s"]\n' "$work" >"$DIRENV_CONFIG/direnv.toml"
@@ -22,6 +25,20 @@ cat >"$root/grp/.envrc" <<'EOF'
 source_up_if_exists; export GRP_RUNS=${GRP_RUNS:-}x; use children
 EOF
 echo 'source_up; export B=1' >"$root/grp/b/.envrc"
+
+# A child shell can replace PATH and export runtime search paths. Preserve the
+# grouping's original PATH after child tools, but keep those search paths local.
+mkdir -p "$root/path-a/bin" "$root/path-b/bin"
+cat >"$root/path-a/.envrc" <<'EOF'
+export PATH="$PWD/bin"
+export PYTHONPATH=child-pythonpath PYTHONHOME=child-pythonhome
+export NODE_PATH=child-node-path PERL5LIB=child-perl5lib
+EOF
+cat >"$root/path-b/.envrc" <<'EOF'
+PATH_add "$PWD/bin"
+export PYTHONPATH=last-child-pythonpath PYTHONHOME=last-child-pythonhome
+export NODE_PATH=last-child-node-path PERL5LIB=last-child-perl5lib
+EOF
 
 # A repository outside the tree with two worktrees inside it.
 git init -q -b main "$work/repo"
@@ -50,6 +67,48 @@ check "$root" A 1
 check "$root" B 1
 check "$root" WT_MAIN 1
 check "$root" WT_FEAT ""
+
+check_unset() { # <dir> <var>
+  if (cd "$1" && "$direnv_bin" exec . sh -c "test -z \"\${$2+x}\"") 2>/dev/null; then
+    echo "ok   ${1#"$root"}: $2 unset"
+  else
+    echo "FAIL ${1#"$root"}: $2 leaked from a child"
+    fail=1
+  fi
+}
+
+for variable in PYTHONPATH PYTHONHOME NODE_PATH PERL5LIB; do
+  check_unset "$root" "$variable"
+done
+if (cd "$root" && PYTHONPATH=parent-pythonpath "$direnv_bin" exec . sh -c "test \"\$PYTHONPATH\" = parent-pythonpath") 2>/dev/null; then
+  echo "ok   workspace search paths: pre-existing PYTHONPATH preserved"
+else
+  echo "FAIL workspace search paths: pre-existing PYTHONPATH changed"
+  fail=1
+fi
+
+path_test_base=$work/path-test-base
+path_test_original=$PATH
+mkdir -p "$path_test_base"
+if (
+  cd "$root"
+  PATH="$path_test_base:$path_test_original" \
+    PATH_TEST_BASE="$path_test_base" PATH_TEST_ORIGINAL="$path_test_original" \
+    CHILD_PATH_A="$root/path-a/bin" CHILD_PATH_B="$root/path-b/bin" \
+    "$direnv_bin" exec . sh -c '
+      path_before_user=${PATH%%"$PATH_TEST_BASE"*}
+      case ":$path_before_user:" in *":$CHILD_PATH_A:"*) ;; *) exit 1 ;; esac
+      case ":$path_before_user:" in *":$CHILD_PATH_B:"*) ;; *) exit 1 ;; esac
+      case "$PATH" in *"$PATH_TEST_BASE:$PATH_TEST_ORIGINAL") exit 0 ;; esac
+      exit 1
+    '
+  ) 2>/dev/null; then
+  echo "ok   workspace PATH: child tools precede the original entries"
+else
+  echo "FAIL workspace PATH: child tools or original entries missing/out of order"
+  fail=1
+fi
+
 # Entered directly, a child still gets its parents and a feature worktree loads.
 check "$root/grp/b" ROOT_RUNS x
 check "$root/grp/b" B 1
