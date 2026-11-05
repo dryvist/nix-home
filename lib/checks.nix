@@ -136,12 +136,18 @@
             }
           ];
         }).config.home.file.".local/bin/gh".source;
-      configured = wrapperFor "http://judge.example.invalid/v1/chat/completions" "example-judge-model";
+      judgeUrl = "http://judge-fixture/v1/chat/completions";
+      judgeModel = "fixture-model";
+      configured = wrapperFor judgeUrl judgeModel;
       unconfigured = wrapperFor "" "";
+      # The exact export lines the module writes. `${VAR:-value}` keeps a caller's
+      # variable winning, so the check pins that form, not just the value.
+      urlExport = "export GH_GUARD_JUDGE_URL=\${GH_GUARD_JUDGE_URL:-${lib.escapeShellArg judgeUrl}}";
+      modelExport = "export GH_GUARD_JUDGE_MODEL=\${GH_GUARD_JUDGE_MODEL:-${lib.escapeShellArg judgeModel}}";
     in
     pkgs.runCommand "check-gh-guard-judge-options" { } ''
-      grep -qF 'http://judge.example.invalid/v1/chat/completions' ${configured}
-      grep -qF 'example-judge-model' ${configured}
+      grep -qF ${lib.escapeShellArg urlExport} ${configured}
+      grep -qF ${lib.escapeShellArg modelExport} ${configured}
       ! grep -q 'export GH_GUARD_JUDGE_' ${unconfigured}
       touch $out
     '';
