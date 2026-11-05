@@ -110,6 +110,42 @@
         touch $out
       '';
 
+  # The publish gate takes its judge endpoint and model from module options: a
+  # wrapper built with them set carries them, and one built without exports none.
+  gh-guard-judge-options =
+    let
+      wrapperFor =
+        judgeUrl: judgeModel:
+        (lib.evalModules {
+          specialArgs = {
+            inherit pkgs;
+            commitMessagePattern = "^$";
+          };
+          modules = [
+            ../modules/home-manager/gh
+            {
+              options.xdg.configHome = lib.mkOption {
+                type = lib.types.str;
+                default = "/nonexistent";
+              };
+              options.home.file = lib.mkOption {
+                type = lib.types.attrsOf lib.types.raw;
+                default = { };
+              };
+              config.programs.ghGuard = { inherit judgeUrl judgeModel; };
+            }
+          ];
+        }).config.home.file.".local/bin/gh".source;
+      configured = wrapperFor "http://judge.example.invalid/v1/chat/completions" "example-judge-model";
+      unconfigured = wrapperFor "" "";
+    in
+    pkgs.runCommand "check-gh-guard-judge-options" { } ''
+      grep -qF 'http://judge.example.invalid/v1/chat/completions' ${configured}
+      grep -qF 'example-judge-model' ${configured}
+      ! grep -q 'export GH_GUARD_JUDGE_' ${unconfigured}
+      touch $out
+    '';
+
   # `use children` loads each directory once and skips non-default worktrees.
   direnv-use-children =
     pkgs.runCommand "check-direnv-use-children"
