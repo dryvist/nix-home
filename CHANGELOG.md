@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.0](https://github.com/dryvist/nix-home/compare/v1.60.3...v1.61.0) (2026-11-05)
+
+
+### Features
+
+* **gh-guard:** add judge endpoint and model options to the publish gate ([#760](https://github.com/dryvist/nix-home/issues/760)) ([f939379](https://github.com/dryvist/nix-home/commit/f939379676aeda6d4aaada1854c555e5817f47a2))
+
 ## [1.60.3](https://github.com/dryvist/nix-home/compare/v1.60.2...v1.60.3) (2026-11-01)
 
 
