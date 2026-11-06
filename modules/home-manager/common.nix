@@ -41,6 +41,7 @@ let
   gitConfig = import ./git/config.nix {
     inherit
       config
+      lib
       pkgs
       commitMessagePattern
       userConfig
