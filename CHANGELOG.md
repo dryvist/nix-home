@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.1](https://github.com/dryvist/nix-home/compare/v1.61.0...v1.61.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **git:** support per-host signing format and key overrides ([#763](https://github.com/dryvist/nix-home/issues/763)) ([9aadad1](https://github.com/dryvist/nix-home/commit/9aadad139a5be6e0bc7fb1f8e2c68134e389c4ac))
+
 ## [1.61.0](https://github.com/dryvist/nix-home/compare/v1.60.3...v1.61.0) (2026-11-05)
 
 
