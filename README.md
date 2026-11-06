@@ -82,6 +82,18 @@ Feature toggles: `vscode`, `documentSkills`, `heavyPython`, `googleWorkspace`,
 `sessionLogging`, `pinentryGui`. The `server` preset also switches gpg-agent to
 a TTY pinentry so signing works without a GUI.
 
+### Git signing
+
+Git defaults to OpenPGP signing with `userConfig.gpg.signingKey`. A consuming
+host's Home Manager module can select SSH signing through native options:
+
+```nix
+programs.git.signing.format = "ssh";
+programs.git.signing.key = "~/.ssh/id_ed25519_signing.pub";
+```
+
+Commit and tag signing stay enabled. Hosts without overrides retain OpenPGP.
+
 ### BWS package source
 
 `bws` deliberately uses Bitwarden's pinned, checksum-verified release archive
