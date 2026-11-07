@@ -4,6 +4,7 @@
 # Imported by common.nix
 {
   config,
+  lib,
   pkgs,
   commitMessagePattern,
   userConfig,
@@ -26,10 +27,11 @@
     ".gemini/antigravity-cli/worktrees/"
   ];
 
-  # GPG signing configuration
+  # Per-host modules can select their signing format and key.
   # NOTE: Key ID is a public identifier, not the private key (safe to commit)
   signing = {
-    key = userConfig.gpg.signingKey;
+    format = lib.mkDefault "openpgp";
+    key = lib.mkDefault userConfig.gpg.signingKey;
     signByDefault = true; # Enforced by security policy
   };
 

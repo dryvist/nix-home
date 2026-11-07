@@ -13,6 +13,48 @@ let
   wiring = import ./checks-wiring.nix { inherit pkgs lib; };
 in
 {
+  git-signing =
+    let
+      gitConfig =
+        signing:
+        (home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            (
+              { config, ... }:
+              {
+                home = {
+                  username = "test-user";
+                  homeDirectory = "/home/test-user";
+                  stateVersion = (import ./user-defaults.nix).nix.homeManagerStateVersion;
+                };
+                programs.git = import ../modules/home-manager/git/config.nix {
+                  inherit config lib pkgs;
+                  commitMessagePattern = ".*";
+                  userConfig = (import ./user-defaults.nix) // {
+                    gpg.signingKey = "test-gpg-key";
+                  };
+                  gitAliases = { };
+                };
+              }
+            )
+            { programs.git = { inherit signing; }; }
+          ];
+        }).config.programs.git.iniContent;
+      defaultGit = gitConfig { };
+      sshGit = gitConfig {
+        format = "ssh";
+        key = "~/.ssh/id_ed25519_signing.pub";
+      };
+    in
+    assert defaultGit.gpg.format == "openpgp";
+    assert defaultGit.user.signingKey == "test-gpg-key";
+    assert sshGit.gpg.format == "ssh";
+    assert sshGit.user.signingKey == "~/.ssh/id_ed25519_signing.pub";
+    assert defaultGit.commit.gpgSign && defaultGit.tag.gpgSign;
+    assert sshGit.commit.gpgSign && sshGit.tag.gpgSign;
+    pkgs.writeText "git-signing" "Git signing defaults and per-host overrides verified";
+
   proxman-setup =
     pkgs.runCommand "check-proxman-setup"
       {
