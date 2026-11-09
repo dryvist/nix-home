@@ -463,5 +463,47 @@ missing_identifier_check "missing file warns, shape tier blocks" 1 identifier \
 missing_identifier_check "missing file warns and clean scan blocks" 1 identifier \
   "$HERE/msg-clean.txt" http://127.0.0.1:9/nope
 
+# --- live narrative judge: each labelled sample must get its label ----------
+# Needs a reachable judge, so it runs only when GH_GUARD_JUDGE_URL is set. Each
+# sample goes through --scan, which reaches the judge through judge_verdict and
+# build_payload. A tier-1 block or an unreachable judge is a failure: that
+# sample never got a judge verdict.
+SAMPLES="$HERE/narrative-judge-samples.txt"
+if [ -z "${GH_GUARD_JUDGE_URL:-}" ]; then
+  printf 'SKIP  %-38s GH_GUARD_JUDGE_URL unset\n' "live narrative judge samples"
+else
+  judge_pass=0; judge_fail=0; judge_total=0
+  samples_dir="$(mktemp -d)"
+  awk -v dir="$samples_dir" '
+    /^@@ (allow|block)$/ { n++; f = sprintf("%s/%02d-%s.txt", dir, n, substr($0, 4)); printf "" > f; next }
+    f != "" { print >> f }
+  ' "$SAMPLES"
+  for sample in "$samples_dir"/*.txt; do
+    [ -f "$sample" ] || continue
+    name="$(basename "$sample")"
+    label="${name#*-}"; label="${label%.txt}"
+    err="$samples_dir/stderr.log"
+    judge_total=$((judge_total + 1))
+    ( cd "$REPODIR" && GH_GUARD_REAL_GH="$HERE/fakegh" run_guard --scan "$sample" ) >/dev/null 2>"$err"; rc=$?
+    if [ "$rc" -eq 0 ]; then
+      verdict=allow
+    elif [ "$rc" -eq 1 ] && grep -qF 'BLOCKED (narrative tier)' "$err"; then
+      verdict=block
+    else
+      verdict=no-judge-verdict
+    fi
+    if [ "$verdict" = "$label" ]; then
+      printf 'PASS  %-38s [%s]\n' "judge sample $name" "$label"; judge_pass=$((judge_pass + 1))
+    else
+      printf 'FAIL  %-38s expected %s, got %s (rc=%s)\n' "judge sample $name" "$label" "$verdict" "$rc"
+      judge_fail=$((judge_fail + 1))
+    fi
+  done
+  rm -rf "$samples_dir"
+  [ "$judge_total" -gt 0 ] || { printf 'FAIL  no samples read from the fixture\n'; judge_fail=$((judge_fail + 1)); }
+  printf '\nlive narrative judge: %s passed, %s failed\n' "$judge_pass" "$judge_fail"
+  pass=$((pass + judge_pass)); fail=$((fail + judge_fail))
+fi
+
 printf '\n%s passed, %s failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
