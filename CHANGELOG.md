@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.3](https://github.com/dryvist/nix-home/compare/v1.61.2...v1.61.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* **gh:** block private names inside file-list commits ([#780](https://github.com/dryvist/nix-home/issues/780)) ([667fd79](https://github.com/dryvist/nix-home/commit/667fd7905b43bc7bc577cd12e02a481191667093))
+
 ## [1.61.2](https://github.com/dryvist/nix-home/compare/v1.61.1...v1.61.2) (2026-11-09)
 
 
