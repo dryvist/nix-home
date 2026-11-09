@@ -1,0 +1,69 @@
+# Labelled samples for the live narrative-judge check in run-gh-guard-tests.sh.
+# A record starts at a line `@@ allow` or `@@ block` and runs to the next record.
+# Lines before the first record are ignored. Every name here is invented.
+
+@@ allow
+ci(llm_router): run the accelerator-label test in the router contract matrix
+
+- .github/workflows/_llm-router-contract.yml
+
+Assisted-by: Claude:claude-haiku-5-5
+Claude-Session: https://claude.ai/code/session_EXAMPLE0000000000000000
+
+@@ allow
+test(lint): cover the markdown lint config loader
+
+- modules/home-manager/lint/tests/markdown-config.sh
+- modules/home-manager/lint/default.nix
+
+@@ allow
+chore(ci): pin the shellcheck action to a release tag
+
+- .github/workflows/shellcheck.yml
+
+@@ allow
+feat(git): add a default ignore entry for local worktrees
+
+- modules/home-manager/git/default.nix
+- modules/home-manager/git/tests/ignore-list.sh
+
+@@ allow
+refactor(zsh): split alias definitions into their own file
+
+- modules/home-manager/zsh/aliases.nix
+- modules/home-manager/zsh/default.nix
+
+@@ block
+fix(export): restart the nightly export after the failover
+
+The export stalled at 02:10 when the primary failed, and a manual restart fixed it at 06:30.
+
+@@ block
+fix(store): retry writes after the leader change
+
+Writes stalled because the leader was fenced during the rolling upgrade, and the follower never took over.
+
+@@ block
+chore(proxy): route inference traffic over the storage network
+
+Edge proxy traffic reaches the two inference nodes over the storage VLAN on port 9100.
+
+@@ block
+docs(metrics): move the relay to the new host
+
+The metrics relay now runs on ops-relay-02, which replaces ops-relay-01.
+
+@@ block
+chore(relay): point the metrics relay at ops-relay-02
+
+- modules/home-manager/metrics/relay.nix
+
+@@ block
+chore(auth): widen the build token read scope
+
+The build token can read every secret under the build path and renews every twelve hours.
+
+@@ block
+fix(admin): skip the token check on the status route
+
+Any caller can read the settings through GET requests, because the check runs only on writes.
