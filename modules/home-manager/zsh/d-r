@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -u
+set -o pipefail
 
 host="$(hostname -s)" || exit 1
 [ -n "$host" ] || {
@@ -17,8 +18,10 @@ export NIX_CONFIG="${old_nix_config:+$old_nix_config
 }access-tokens = github.com=$token"
 unset token
 
-closure="$(nix build "github:dryvist/nix-darwin-host#darwinConfigurations.${host}.system" \
-  --refresh --no-write-lock-file --accept-flake-config --no-link --print-out-paths --print-build-logs)"
+# Build stdout is the closure path and stays unprefixed; build stderr (logs) is timestamped.
+closure="$({ nix build "github:dryvist/nix-darwin-host#darwinConfigurations.${host}.system" \
+  --refresh --no-write-lock-file --accept-flake-config --no-link --print-out-paths --print-build-logs \
+  2>&1 1>&3 | ts-prefix >&2; } 3>&1)"
 build_rc=$?
 
 if [ -n "$old_nix_config" ]; then
@@ -30,5 +33,5 @@ unset old_nix_config
 
 [ "$build_rc" -eq 0 ] || exit "$build_rc"
 
-printf 'closure=%s\n' "$closure"
-sudo -S sh -c 'nix build --profile /nix/var/nix/profiles/system "$1" && "$1/activate-user" && "$1/activate"' d-r "$closure" < /dev/null
+printf 'closure=%s\n' "$closure" | ts-prefix
+sudo -S sh -c 'nix build --profile /nix/var/nix/profiles/system "$1" && "$1/activate-user" && "$1/activate"' d-r "$closure" < /dev/null 2>&1 | ts-prefix
