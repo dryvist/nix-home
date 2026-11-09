@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.61.2](https://github.com/dryvist/nix-home/compare/v1.61.1...v1.61.2) (2026-11-09)
+
+
+### Bug Fixes
+
+* **ci:** guard merge gate for fork pull requests ([30c6760](https://github.com/dryvist/nix-home/commit/30c67608f56a5ae9d5e859fa6b05cf8dfd84e2b3))
+* **ci:** guard merge gate runner for fork pull requests ([#777](https://github.com/dryvist/nix-home/issues/777)) ([30c6760](https://github.com/dryvist/nix-home/commit/30c67608f56a5ae9d5e859fa6b05cf8dfd84e2b3))
+
 ## [1.61.1](https://github.com/dryvist/nix-home/compare/v1.61.0...v1.61.1) (2026-11-06)
 
 
