@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.62.0](https://github.com/dryvist/nix-home/compare/v1.61.3...v1.62.0) (2026-11-09)
+
+
+### Features
+
+* **zsh:** prefix d-r build and activation output with timestamps ([#783](https://github.com/dryvist/nix-home/issues/783)) ([726f257](https://github.com/dryvist/nix-home/commit/726f2577330a737bc30cf7ac2604b922c70bc86b))
+
 ## [1.61.3](https://github.com/dryvist/nix-home/compare/v1.61.2...v1.61.3) (2026-11-09)
 
 
