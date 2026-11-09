@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prefix each stdin line with the local time: "YYYY-MM-DD HH:MM:SS <line>".
+exec perl -MPOSIX -pe 'BEGIN{$|=1} print strftime("%Y-%m-%d %H:%M:%S ", localtime)'

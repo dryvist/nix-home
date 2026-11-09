@@ -102,6 +102,10 @@ in
           source = ./zsh/d-r;
           executable = true;
         };
+        ".local/bin/ts-prefix" = {
+          source = ./zsh/ts-prefix;
+          executable = true;
+        };
       };
 
     sessionVariables = {
