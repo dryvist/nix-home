@@ -8,7 +8,7 @@ ci(llm_router): run the accelerator-label test in the router contract matrix
 - .github/workflows/_llm-router-contract.yml
 
 Assisted-by: Claude:claude-haiku-5-5
-Claude-Session: https://claude.ai/code/session_013nwrmbeLPhqjEQtDENa3DG
+Claude-Session: https://claude.ai/code/session_EXAMPLE0000000000000000
 
 @@ allow
 test(lint): cover the markdown lint config loader
