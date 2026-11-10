@@ -8,8 +8,10 @@ transcripts for those, and separately models per-message cost (tokens x
 LiteLLM's public price table) so that cost, unlike the native metric, can
 carry the same repo/agent attribution.
 
-Incremental by (path -> byte offset) watermark; counters are cumulative so the
-output matches the cumulative temporality VictoriaMetrics needs.
+Incremental by (path -> byte offset) watermark, plus the last counted
+message key per path so an assistant message whose transcript lines straddle
+two runs is still counted once; counters are cumulative so the output matches
+the cumulative temporality VictoriaMetrics needs.
 
 Usage:
     claude-jsonl-etl.py                 # print exposition text to stdout
@@ -219,8 +221,9 @@ def repo_of(rec: dict) -> str:
 
 
 def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: None,
-              prices: dict | None = None, last_ts: float | None = None) -> tuple[int, float | None]:
-    """Fold new records from `path` into `bump`. Returns (new offset, new last_ts).
+              prices: dict | None = None, last_ts: float | None = None,
+              last_key: str | None = None) -> tuple[int, float | None, str | None]:
+    """Fold new records from `path` into `bump`. Returns (new offset, new last_ts, new last_key).
 
     `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
     once the first request of a file is seen; a file scanned from its start is
@@ -232,12 +235,19 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
 
     `last_ts` is this transcript's previous turn timestamp (persisted across
     runs, per path) so a pause spanning two ETL runs is still bucketed.
+
+    `last_key` is the message.id + requestId of the last assistant message
+    counted here (persisted across runs, per path). Claude Code writes one
+    line per content block and repeats the same usage on every line of a
+    message, so without it a run resumed inside a message counts the
+    message's remaining lines again.
     """
     kind = "subagent" if path.parent.name == "subagents" else "main"
     size = path.stat().st_size
     if offset > size:  # truncated or rotated; start over
         offset = 0
         last_ts = None
+        last_key = None
     pre: dict[str, int] | None = {} if offset == 0 else None
     subagent_uncounted = offset == 0 and kind == "subagent"
     # tool_use_id -> tool name, so a later tool_result can be attributed. Reset
@@ -295,6 +305,19 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
             usage = msg.get("usage")
             if not usage:
                 continue
+            # One assistant message lands as one line PER CONTENT BLOCK, and
+            # every line of the message repeats the same message.id,
+            # requestId and usage object. The key collapses those lines to a
+            # single counted message; records carrying neither id keep the
+            # old per-line counting (and never touch the key, so they cannot
+            # mask the group around them either).
+            msg_id = msg.get("id") or ""
+            req_id = rec.get("requestId") or ""
+            dedup_key = f"{msg_id}\x00{req_id}" if (msg_id or req_id) else None
+            if dedup_key is not None:
+                if dedup_key == last_key:
+                    continue
+                last_key = dedup_key
             labels = (msg.get("model") or "unknown", repo_of(rec), kind)
             if pre is not None and msg.get("model") != "<synthetic>":
                 ts = rec.get("timestamp") or ""
@@ -336,7 +359,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
                         price, input_tok, output_tok, cache_read, cache_5m, cache_1h))
                 else:
                     bump(UNPRICED_METRIC, (labels[0],), 1)
-    return offset, last_ts
+    return offset, last_ts, last_key
 
 
 def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
@@ -362,17 +385,26 @@ def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> 
 
     offsets = dict(state.get("offsets", {}))
     last_ts_by_path = dict(state.get("last_ts", {}))
+    last_key_by_path = dict(state.get("last_key", {}))
     for path in projects.rglob("*.jsonl"):
         sp = str(path)
         try:
-            new_offset, new_last_ts = scan_file(
-                path, offsets.get(sp, 0), bump, set_gauge, prices, last_ts_by_path.get(sp))
+            new_offset, new_last_ts, new_last_key = scan_file(
+                path, offsets.get(sp, 0), bump, set_gauge, prices,
+                last_ts_by_path.get(sp), last_key_by_path.get(sp))
         except OSError:
             continue
         offsets[sp] = new_offset
         if new_last_ts is not None:
             last_ts_by_path[sp] = new_last_ts
-    return {"offsets": offsets, "totals": totals, "gauges": gauges, "last_ts": last_ts_by_path}
+        if new_last_key is None:
+            # Only reachable after the truncation reset: the old key describes
+            # pre-truncation content and must not suppress fresh counts.
+            last_key_by_path.pop(sp, None)
+        else:
+            last_key_by_path[sp] = new_last_key
+    return {"offsets": offsets, "totals": totals, "gauges": gauges,
+            "last_ts": last_ts_by_path, "last_key": last_key_by_path}
 
 
 def escape(v: str) -> str:
@@ -622,6 +654,75 @@ def selfcheck() -> None:
         st8 = collect(root, st7, prices=prices)
         assert st8["totals"].get(PAUSE_METRIC + "\x00main\x00over_1h") == 2
         st3 = st8
+
+        # one assistant message, many transcript lines: Claude Code writes one
+        # line per content block and repeats message.id, requestId and usage
+        # on every line of the message. Three such lines are ONE message and
+        # must count once -- tokens and messages_total alike.
+        dup = root / "repo-a" / "s6.jsonl"
+
+        def keyed_rec(msg_id, req_id, out_tok=4):
+            d = json.loads(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 0, out_tok, 0))
+            if msg_id:
+                d["message"]["id"] = msg_id
+            if req_id:
+                d["requestId"] = req_id
+            return json.dumps(d)
+
+        dup.write_text("\n".join([
+            keyed_rec("msg_dup", "req_dup"),
+            keyed_rec("msg_dup", "req_dup"),
+            keyed_rec("msg_dup", "req_dup"),
+            keyed_rec("msg_dup_2", "req_dup_2"),  # a distinct message still counts
+        ]) + "\n")
+
+        def count_delta(new, old, metric, *labels):
+            key = metric + "\x00" + "\x00".join(labels)
+            return new.get(key, 0) - old.get(key, 0)
+
+        st9 = collect(root, st3, prices=prices)
+        assert count_delta(st9["totals"], st3["totals"],
+                           "claude_jsonl_messages_total", "opus", "tofu-proxmox", "main") == 2, \
+            "one three-line message plus one distinct message must count as 2 messages, not 4"
+        assert count_delta(st9["totals"], st3["totals"],
+                           "claude_jsonl_output_tokens_total", "opus", "tofu-proxmox", "main") == 8
+        assert count_delta(st9["totals"], st3["totals"],
+                           "claude_jsonl_input_tokens_total", "opus", "tofu-proxmox", "main") == 2
+
+        # one message whose lines straddle two collector runs is still one
+        # message: the last counted key persists per path in the state file.
+        # Phase one passes a deliberately old-format state (no `last_key`
+        # field at all) to pin the backward-compatible load.
+        split = root / "repo-a" / "s7.jsonl"
+        split.write_text(keyed_rec("msg_split", "req_split") + "\n")
+        st10 = collect(root, {"offsets": dict(st9["offsets"]), "totals": dict(st9["totals"])},
+                       prices=prices)
+        assert count_delta(st10["totals"], st9["totals"],
+                           "claude_jsonl_messages_total", "opus", "tofu-proxmox", "main") == 1
+        with split.open("a") as fh:
+            fh.write(keyed_rec("msg_split", "req_split") + "\n")
+            fh.write(keyed_rec("msg_split", "req_split") + "\n")
+        st11 = collect(root, st10, prices=prices)
+        assert count_delta(st11["totals"], st10["totals"],
+                           "claude_jsonl_messages_total", "opus", "tofu-proxmox", "main") == 0, \
+            "the resumed run re-counted the message's remaining lines"
+        assert count_delta(st11["totals"], st9["totals"],
+                           "claude_jsonl_messages_total", "opus", "tofu-proxmox", "main") == 1
+        assert count_delta(st11["totals"], st9["totals"],
+                           "claude_jsonl_output_tokens_total", "opus", "tofu-proxmox", "main") == 4
+
+        # records with neither message.id nor requestId keep the old
+        # per-line counting, and do not disturb the dedup of neighbors
+        idless = root / "repo-a" / "s8.jsonl"
+        idless.write_text("\n".join([
+            keyed_rec("", ""),
+            keyed_rec("", ""),
+            keyed_rec("msg_after", "req_after"),
+        ]) + "\n")
+        st12 = collect(root, st11, prices=prices)
+        assert count_delta(st12["totals"], st11["totals"],
+                           "claude_jsonl_messages_total", "opus", "tofu-proxmox", "main") == 3, \
+            "id-less records must count per line and a new keyed message must count"
 
         # gauge ordering: an undated record never overwrites a dated one, a
         # dated one overwrites an undated one, and a newer date wins
