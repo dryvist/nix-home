@@ -331,6 +331,20 @@ if [ "$requests" = '[4,512]' ]; then
 else
   printf 'FAIL  %-38s got %s\n' "reasoning-only judge: two requests" "$requests"; fail=$((fail + 1))
 fi
+# A limits-file judge URL is the model server itself, so its model id must be
+# sent instead of the `judge` router alias it would reject.
+: >"$GH_GUARD_TEST_JUDGE_LOG"
+printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":5,"model":"org/served-model"}}}\n' >"$HERE/resident-model-limits.json"
+MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+  GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+  check3 "limits model reaches judge"    0 clean issue create -R dryvist/pub --body "$CLEAN"
+models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
+if [ "$models" = '["org/served-model"]' ]; then
+  printf 'PASS  %-38s\n' "judge request names served model"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s got %s\n' "judge request names served model" "$models"; fail=$((fail + 1))
+fi
+rm -f "$HERE/resident-model-limits.json"
 rm -f "$GH_GUARD_TEST_JUDGE_LOG"
 unset GH_GUARD_TEST_JUDGE_LOG
 
