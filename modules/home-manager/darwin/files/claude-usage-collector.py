@@ -219,7 +219,7 @@ def repo_of(rec: dict) -> str:
 
 
 def _message_key(rec: dict, msg: dict) -> list | None:
-    """Identity shared by every transcript line of one API message: message.id
+    """Identity shared by every JSONL line of one API message: message.id
     and the top-level requestId. None when neither is present. A list rather than
     a tuple, so the value compares equal after the JSON round trip through state."""
     key = [msg.get("id") or None, rec.get("requestId") or None]
@@ -243,7 +243,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
     `last_ts` is this transcript's previous turn timestamp (persisted across
     runs, per path) so a pause spanning two ETL runs is still bucketed.
 
-    `last_key` is the identity of the last message counted from this transcript
+    `last_key` is the identity of the last message counted from this file
     (see _message_key), persisted per path so a message whose lines straddle two
     runs is still counted once.
     """
