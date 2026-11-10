@@ -218,9 +218,19 @@ def repo_of(rec: dict) -> str:
     return rest[0] if rest else "other"
 
 
+def _message_key(rec: dict, msg: dict) -> list | None:
+    """Identity shared by every JSONL line of one API message: message.id
+    and the top-level requestId. None when neither is present. A list rather than
+    a tuple, so the value compares equal after the JSON round trip through state."""
+    key = [msg.get("id") or None, rec.get("requestId") or None]
+    return None if key == [None, None] else key
+
+
 def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: None,
-              prices: dict | None = None, last_ts: float | None = None) -> tuple[int, float | None]:
-    """Fold new records from `path` into `bump`. Returns (new offset, new last_ts).
+              prices: dict | None = None, last_ts: float | None = None,
+              last_key: list | None = None) -> tuple[int, float | None, list | None]:
+    """Fold new records from `path` into `bump`. Returns (new offset, new last_ts,
+    new last_key).
 
     `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
     once the first request of a file is seen; a file scanned from its start is
@@ -232,12 +242,17 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
 
     `last_ts` is this transcript's previous turn timestamp (persisted across
     runs, per path) so a pause spanning two ETL runs is still bucketed.
+
+    `last_key` is the identity of the last message counted from this file
+    (see _message_key), persisted per path so a message whose lines straddle two
+    runs is still counted once.
     """
     kind = "subagent" if path.parent.name == "subagents" else "main"
     size = path.stat().st_size
     if offset > size:  # truncated or rotated; start over
         offset = 0
         last_ts = None
+        last_key = None
     pre: dict[str, int] | None = {} if offset == 0 else None
     subagent_uncounted = offset == 0 and kind == "subagent"
     # tool_use_id -> tool name, so a later tool_result can be attributed. Reset
@@ -295,6 +310,14 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
             usage = msg.get("usage")
             if not usage:
                 continue
+            # One API message is written as one line per content block, each
+            # repeating the same usage, so only the first of a run of lines
+            # sharing a key is counted. Lines without ids are counted as before.
+            key = _message_key(rec, msg)
+            if key is not None:
+                if key == last_key:
+                    continue
+                last_key = key
             labels = (msg.get("model") or "unknown", repo_of(rec), kind)
             if pre is not None and msg.get("model") != "<synthetic>":
                 ts = rec.get("timestamp") or ""
@@ -336,7 +359,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
                         price, input_tok, output_tok, cache_read, cache_5m, cache_1h))
                 else:
                     bump(UNPRICED_METRIC, (labels[0],), 1)
-    return offset, last_ts
+    return offset, last_ts, last_key
 
 
 def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
@@ -362,17 +385,21 @@ def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> 
 
     offsets = dict(state.get("offsets", {}))
     last_ts_by_path = dict(state.get("last_ts", {}))
+    last_key_by_path = dict(state.get("last_key", {}))
     for path in projects.rglob("*.jsonl"):
         sp = str(path)
         try:
-            new_offset, new_last_ts = scan_file(
-                path, offsets.get(sp, 0), bump, set_gauge, prices, last_ts_by_path.get(sp))
+            new_offset, new_last_ts, new_last_key = scan_file(
+                path, offsets.get(sp, 0), bump, set_gauge, prices,
+                last_ts_by_path.get(sp), last_key_by_path.get(sp))
         except OSError:
             continue
         offsets[sp] = new_offset
         if new_last_ts is not None:
             last_ts_by_path[sp] = new_last_ts
-    return {"offsets": offsets, "totals": totals, "gauges": gauges, "last_ts": last_ts_by_path}
+        last_key_by_path[sp] = new_last_key
+    return {"offsets": offsets, "totals": totals, "gauges": gauges,
+            "last_ts": last_ts_by_path, "last_key": last_key_by_path}
 
 
 def escape(v: str) -> str:
@@ -697,6 +724,53 @@ def selfcheck() -> None:
         mig_new.parent.mkdir()
         mig_new.write_text(json.dumps({"offsets": {}, "totals": {"k": 1}}))
         assert load_state(primary=mig_new, legacy=mig_legacy) == {"offsets": {}, "totals": {"k": 1}}
+        # one API message is written as one line per content block, every line
+        # carrying the same usage, message.id and requestId: counted once.
+        dd_cwd = str(GIT_HOME / "public/demo/main")
+
+        def keyed_rec(msg_id, req_id, out_tok=1, h1=0):
+            d = json.loads(rec("opus", dd_cwd, 0, h1, out_tok, 0))
+            d["message"]["id"] = msg_id
+            d["requestId"] = req_id
+            return json.dumps(d)
+
+        def counts(st_):
+            def at(metric, *labels):
+                return st_["totals"].get(metric + "\x00" + "\x00".join(labels), 0)
+            return (at("claude_jsonl_messages_total", "opus", "demo", "main"),
+                    at("claude_jsonl_output_tokens_total", "opus", "demo", "main"),
+                    at("claude_jsonl_cache_read_tokens_total", "opus", "demo", "main"),
+                    at("claude_jsonl_cache_creation_tokens_total", "opus", "demo", "main", "1h"))
+
+        # (a) three lines sharing message.id + requestId are one message
+        dd_once = root / "dedupe-once"
+        dd_once.mkdir()
+        same = keyed_rec("msg_a", "req_a", out_tok=7, h1=11)
+        (dd_once / "s.jsonl").write_text(same + "\n" + same + "\n" + same + "\n")
+        once = collect(dd_once, {"offsets": {}, "totals": {}})
+        assert counts(once) == (1, 7, 100, 11), counts(once)
+
+        # (b) the same message split across two scans counts once: run one
+        # counts the first two lines, run two meets the third line with the
+        # key persisted in state, and a new message after it is still counted
+        dd_split = root / "dedupe-split"
+        dd_split.mkdir()
+        dd_file = dd_split / "s.jsonl"
+        dd_file.write_text(same + "\n" + same + "\n")
+        run1 = json.loads(json.dumps(collect(dd_split, {"offsets": {}, "totals": {}})))
+        with dd_file.open("a") as fh:
+            fh.write(same + "\n" + keyed_rec("msg_b", "req_b", out_tok=3) + "\n")
+        run2 = collect(dd_split, run1)
+        assert counts(run1) == (1, 7, 100, 11), counts(run1)
+        assert counts(run2) == (2, 10, 200, 11), counts(run2)
+
+        # (c) lines with no ids still count one per line
+        dd_noid = root / "dedupe-noid"
+        dd_noid.mkdir()
+        plain = rec("opus", dd_cwd, 0, 0, 7, 0)
+        (dd_noid / "s.jsonl").write_text(plain + "\n" + plain + "\n" + plain + "\n")
+        noid = collect(dd_noid, {"offsets": {}, "totals": {}})
+        assert counts(noid) == (3, 21, 300, 0), counts(noid)
     print("selfcheck OK")
 
 
