@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import socket
 import sys
@@ -180,13 +181,41 @@ def save_state(state: dict) -> None:
 
 
 GIT_HOME = pathlib.Path.home() / "git"
-# Workspace families (AGENTS.local.md). Adding one is an edit here, not a guess.
-FAMILIES = frozenset(
-    "nix homelab cloud ai cribl docs mlx governance profile visicore".split()
-)
+
+# Workspace family directory names are read from a local, untracked file under
+# XDG_CONFIG_HOME (~/.config), never listed in this source. LABELS_ENV, when
+# set, names a different file.
+LABELS_FILE = pathlib.Path.home() / ".config" / "claude-usage-collector" / "labels.json"
+LABELS_ENV = "CLAUDE_USAGE_COLLECTOR_LABELS"
 
 
-def repo_of(rec: dict) -> str:
+def load_families(path: pathlib.Path | None = None) -> tuple[frozenset[str], str | None]:
+    """Return (family directory names, warning) from the local labels file.
+
+    The file is a JSON object: {"families": ["family-a", "family-b"]}. A
+    missing, unreadable or malformed file yields an empty set and a one-line
+    warning, and repo_of then resolves from the path layout alone. (`path` is
+    a parameter, not a bare global, only so selfcheck can exercise each case
+    without touching the real file.)
+    """
+    if path is None:
+        path = pathlib.Path(os.environ.get(LABELS_ENV) or LABELS_FILE)
+    fallback = "resolving repo labels from the path layout alone"
+    try:
+        data = json.loads(path.read_text())
+    except OSError as exc:
+        return frozenset(), f"labels file {path} not readable ({exc.strerror or exc}); {fallback}"
+    except (ValueError, RecursionError) as exc:  # RecursionError: nested too deeply
+        return frozenset(), f"labels file {path} is not valid JSON ({exc}); {fallback}"
+    names = data.get("families") if isinstance(data, dict) else None
+    if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names):
+        return frozenset(), (
+            f'labels file {path} must be an object with a "families" list of '
+            f"directory names; {fallback}")
+    return frozenset(names), None
+
+
+def repo_of(rec: dict, families: frozenset[str] = frozenset()) -> str:
     """Attribute a record to a repo, resolved against the workspace layout.
 
     `Path(cwd).name` is WRONG: a worktree lives at `<repo>/main` or
@@ -197,6 +226,11 @@ def repo_of(rec: dict) -> str:
     Resolving against the layout also bounds label cardinality. Raw basenames
     produced 874 values, 829 of which carried under 0.1% each; anything outside
     the workspace now folds into "other" rather than minting a series.
+
+    `families` are the grouping directories named by the labels file (see
+    load_families). With none loaded, the first directory below the visibility
+    prefix -- below the owner, for private paths -- is the label exactly as it
+    appears on disk, so a grouped path attributes to its grouping directory.
     """
     cwd = rec.get("cwd") or ""
     if not cwd:
@@ -213,7 +247,7 @@ def repo_of(rec: dict) -> str:
         rest = parts[2:]  # skip <owner>
     else:
         return "other"
-    if rest and rest[0] in FAMILIES:
+    if rest and rest[0] in families:
         rest = rest[1:]
     return rest[0] if rest else "other"
 
@@ -228,9 +262,12 @@ def _message_key(rec: dict, msg: dict) -> list | None:
 
 def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: None,
               prices: dict | None = None, last_ts: float | None = None,
-              last_key: list | None = None) -> tuple[int, float | None, list | None]:
+              last_key: list | None = None,
+              families: frozenset[str] = frozenset()) -> tuple[int, float | None, list | None]:
     """Fold new records from `path` into `bump`. Returns (new offset, new last_ts,
     new last_key).
+
+    `families` is passed straight to repo_of for every record.
 
     `set_gauge(labels, value, timestamp)` receives the per-kind injected bytes
     once the first request of a file is seen; a file scanned from its start is
@@ -289,7 +326,8 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
                         if result_content is not None:
                             nbytes = len(json.dumps(
                                 result_content, separators=(",", ":")).encode("utf-8"))
-                            bump(TOOL_RESULT_METRIC, (tool_name, repo_of(rec), kind), nbytes // 4)
+                            bump(TOOL_RESULT_METRIC,
+                                 (tool_name, repo_of(rec, families), kind), nbytes // 4)
             if rec.get("type") == "attachment":
                 # Injected context: skill listings, MCP instructions, hook output.
                 # This is the only record of what is consuming the window before
@@ -299,7 +337,7 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
                 # relabels every later message record in the same file.
                 att_kind = att.get("type") or (next(iter(att), "unknown"))
                 att_bytes = len(json.dumps(att, separators=(",", ":")).encode("utf-8"))
-                ctx = (repo_of(rec), att_kind)
+                ctx = (repo_of(rec, families), att_kind)
                 bump("claude_jsonl_context_injection_bytes_total", ctx, att_bytes)
                 bump("claude_jsonl_context_injections_total", ctx, 1)
                 if pre is not None:
@@ -318,14 +356,14 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
                 if key == last_key:
                     continue
                 last_key = key
-            labels = (msg.get("model") or "unknown", repo_of(rec), kind)
+            labels = (msg.get("model") or "unknown", repo_of(rec, families), kind)
             if pre is not None and msg.get("model") != "<synthetic>":
                 ts = rec.get("timestamp") or ""
                 for att_kind, nbytes in pre.items():
-                    set_gauge((repo_of(rec), kind, att_kind), nbytes, ts)
+                    set_gauge((repo_of(rec, families), kind, att_kind), nbytes, ts)
                 pre = None
             if subagent_uncounted:
-                bump(SUBAGENT_METRIC, (repo_of(rec),), 1)
+                bump(SUBAGENT_METRIC, (repo_of(rec, families),), 1)
                 subagent_uncounted = False
             now = _parse_ts(rec.get("timestamp") or "")
             if now is not None:
@@ -362,7 +400,8 @@ def scan_file(path: pathlib.Path, offset: int, bump, set_gauge=lambda *_args: No
     return offset, last_ts, last_key
 
 
-def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> dict:
+def collect(projects: pathlib.Path, state: dict, prices: dict | None = None,
+            families: frozenset[str] = frozenset()) -> dict:
     # int for every counter except COST_METRIC, which needs float precision (USD)
     totals: dict[str, int | float] = dict(state.get("totals", {}))
     gauges: dict[str, list] = dict(state.get("gauges", {}))  # key -> [value, timestamp]
@@ -391,7 +430,7 @@ def collect(projects: pathlib.Path, state: dict, prices: dict | None = None) -> 
         try:
             new_offset, new_last_ts, new_last_key = scan_file(
                 path, offsets.get(sp, 0), bump, set_gauge, prices,
-                last_ts_by_path.get(sp), last_key_by_path.get(sp))
+                last_ts_by_path.get(sp), last_key_by_path.get(sp), families)
         except OSError:
             continue
         offsets[sp] = new_offset
@@ -482,11 +521,15 @@ def selfcheck() -> None:
             })
 
         main = root / "repo-a" / "s1.jsonl"
-        main.write_text(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 655, 10, 3) + "\n")
+        main.write_text(rec("opus", str(GIT_HOME / "public/family-a/tofu-proxmox/main"), 0, 655, 10, 3) + "\n")
         sub = root / "repo-a" / "subagents" / "agent-1.jsonl"
-        sub.write_text(rec("fable", str(GIT_HOME / "public/homelab/tofu-proxmox/.worktrees/deploy"), 20, 0, 5, 0) + "\n")
+        sub.write_text(rec("fable", str(GIT_HOME / "public/family-a/tofu-proxmox/.worktrees/deploy"), 20, 0, 5, 0) + "\n")
         unpriced = root / "repo-a" / "s0.jsonl"
-        unpriced.write_text(rec("atlas", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 0, 2, 0) + "\n")
+        unpriced.write_text(rec("atlas", str(GIT_HOME / "public/family-a/tofu-proxmox/main"), 0, 0, 2, 0) + "\n")
+
+        # Grouping directory of the fixture layout; family names are local
+        # data read from the labels file, so the fixture uses placeholders.
+        families = frozenset({"family-a"})
 
         # "opus" is priced with an explicit 1h rate; "fable" is priced but with
         # NO 1h rate listed, so it must fall back to 2x the 5m rate; "atlas"
@@ -507,12 +550,12 @@ def selfcheck() -> None:
         }
 
         # no price table at all -> no cost series, ever (never fabricate a $0)
-        st_nop = collect(root, {"offsets": {}, "totals": {}}, prices=None)
+        st_nop = collect(root, {"offsets": {}, "totals": {}}, prices=None, families=families)
         assert not any(k.startswith(COST_METRIC) or k.startswith(UNPRICED_METRIC)
                        for k in st_nop["totals"])
         print("selfcheck: no price table -> cost series skipped (as expected)")
 
-        st = collect(root, {"offsets": {}, "totals": {}}, prices=prices)
+        st = collect(root, {"offsets": {}, "totals": {}}, prices=prices, families=families)
         t = st["totals"]
 
         def get(metric, *labels):
@@ -538,13 +581,13 @@ def selfcheck() -> None:
         assert get(UNPRICED_METRIC, "atlas") == 1
 
         # incremental: re-running over unchanged files must NOT double-count
-        st2 = collect(root, st, prices=prices)
+        st2 = collect(root, st, prices=prices, families=families)
         assert st2["totals"] == t, "re-scan double-counted"
 
         # appending only adds the new record
         with main.open("a") as fh:
-            fh.write(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 7, 0, 1, 0) + "\n")
-        st3 = collect(root, st2, prices=prices)
+            fh.write(rec("opus", str(GIT_HOME / "public/family-a/tofu-proxmox/main"), 7, 0, 1, 0) + "\n")
+        st3 = collect(root, st2, prices=prices, families=families)
         assert st3["totals"][
             "claude_jsonl_cache_creation_tokens_total\x00opus\x00tofu-proxmox\x00main\x005m"] == 7
 
@@ -552,17 +595,25 @@ def selfcheck() -> None:
         assert repo_of({"cwd": "/tmp/whatever"}) == "other"
         # flat pre-family layout must not resolve to the worktree name
         assert repo_of({"cwd": str(GIT_HOME / "public/terraform-proxmox/main")}) == "terraform-proxmox"
-        assert repo_of({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/.worktrees/x")}) == "tofu-proxmox"
-        assert repo_of({"cwd": str(GIT_HOME / "private/dryvist/nix/nix-ai/main")}) == "nix-ai"
+        assert repo_of({"cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/.worktrees/x")}, families) == "tofu-proxmox"
+        # private layout: the owner directory is skipped, then the family
+        assert repo_of(
+            {"cwd": str(GIT_HOME / "private/owner-one/family-b/repo-two/main")},
+            frozenset({"family-b"})) == "repo-two"
+        # with no families loaded, the first directory below the visibility
+        # prefix (below the owner, for private paths) is the label as it
+        # appears on disk -- a grouping directory, never a guessed name
+        assert repo_of({"cwd": str(GIT_HOME / "public/family-a/repo-one/main")}) == "family-a"
+        assert repo_of({"cwd": str(GIT_HOME / "private/owner-one/repo-two/main")}) == "repo-two"
         assert repo_of({}) == "unknown"
 
         # injected context is measured from attachment records, not messages
         ctx = root / "repo-a" / "s2.jsonl"
         ctx.write_text(json.dumps({
-            "type": "attachment", "cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+            "type": "attachment", "cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/main"),
             "attachment": {"type": "skill_listing", "body": "x" * 500},
         }) + "\n")
-        st4 = collect(root, st3, prices=prices)
+        st4 = collect(root, st3, prices=prices, families=families)
         k = "claude_jsonl_context_injection_bytes_total\x00tofu-proxmox\x00skill_listing"
         assert st4["totals"][k] > 500, st4["totals"].get(k)
         assert st4["totals"]["claude_jsonl_context_injections_total\x00tofu-proxmox\x00skill_listing"] == 1
@@ -571,10 +622,10 @@ def selfcheck() -> None:
         mixed = root / "repo-a" / "s3.jsonl"
         mixed.write_text(
             json.dumps({"type": "attachment",
-                        "cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+                        "cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/main"),
                         "attachment": {"type": "skill_listing", "body": "y" * 10}}) + "\n"
-            + rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 42, 1, 0) + "\n")
-        st5 = collect(root, st4, prices=prices)
+            + rec("opus", str(GIT_HOME / "public/family-a/tofu-proxmox/main"), 0, 42, 1, 0) + "\n")
+        st5 = collect(root, st4, prices=prices, families=families)
         assert st5["totals"].get(
             "claude_jsonl_cache_creation_tokens_total\x00opus\x00tofu-proxmox\x00main\x001h") == 655 + 42, \
             "attachment clobbered the agent label of a later message"
@@ -587,7 +638,7 @@ def selfcheck() -> None:
         # not the parent transcript's)
         assert st3["totals"].get(SUBAGENT_METRIC + "\x00tofu-proxmox") == 1
         # re-scanning must not double-count it
-        st3b = collect(root, st3, prices=prices)
+        st3b = collect(root, st3, prices=prices, families=families)
         assert st3b["totals"].get(SUBAGENT_METRIC + "\x00tofu-proxmox") == 1
         st3 = st3b
 
@@ -596,22 +647,22 @@ def selfcheck() -> None:
         # back to "unknown" rather than being dropped
         tool = root / "repo-a" / "s4.jsonl"
         tool.write_text("\n".join([
-            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+            json.dumps({"cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/main"),
                         "type": "assistant",
                         "message": {"content": [
                             {"type": "tool_use", "id": "t1", "name": "Bash"}]}}),
-            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+            json.dumps({"cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/main"),
                         "type": "user",
                         "message": {"content": [
                             {"type": "tool_result", "tool_use_id": "t1",
                              "content": "x" * 400}]}}),
-            json.dumps({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/main"),
+            json.dumps({"cwd": str(GIT_HOME / "public/family-a/tofu-proxmox/main"),
                         "type": "user",
                         "message": {"content": [
                             {"type": "tool_result", "tool_use_id": "unmatched",
                              "content": "y" * 40}]}}),
         ]) + "\n")
-        st6 = collect(root, st3, prices=prices)
+        st6 = collect(root, st3, prices=prices, families=families)
         assert st6["totals"].get(
             TOOL_RESULT_METRIC + "\x00Bash\x00tofu-proxmox\x00main") == 100  # 400 bytes / 4
         assert st6["totals"].get(
@@ -630,7 +681,7 @@ def selfcheck() -> None:
         pause = root / "repo-a" / "s5.jsonl"
 
         def timed_rec(ts, out_tok=1):
-            d = json.loads(rec("opus", str(GIT_HOME / "public/homelab/tofu-proxmox/main"), 0, 0, out_tok, 0))
+            d = json.loads(rec("opus", str(GIT_HOME / "public/family-a/tofu-proxmox/main"), 0, 0, out_tok, 0))
             d["timestamp"] = ts
             return json.dumps(d)
 
@@ -639,14 +690,14 @@ def selfcheck() -> None:
             timed_rec("2026-01-01T00:10:00Z"),  # +10m -> 5m_60m
             timed_rec("2026-01-01T02:10:00Z"),  # +2h  -> over_1h
         ]) + "\n")
-        st7 = collect(root, st3, prices=prices)
+        st7 = collect(root, st3, prices=prices, families=families)
         assert st7["totals"].get(PAUSE_METRIC + "\x00main\x005m_60m") == 1
         assert st7["totals"].get(PAUSE_METRIC + "\x00main\x00over_1h") == 1
         # a pause spanning two separate ETL runs is still caught, via last_ts
         # persisted in state rather than only in-memory during one scan_file call
         with pause.open("a") as fh:
             fh.write(timed_rec("2026-01-01T04:10:00Z") + "\n")  # +2h from prior run
-        st8 = collect(root, st7, prices=prices)
+        st8 = collect(root, st7, prices=prices, families=families)
         assert st8["totals"].get(PAUSE_METRIC + "\x00main\x00over_1h") == 2
         st3 = st8
 
@@ -747,7 +798,7 @@ def selfcheck() -> None:
         dd_once.mkdir()
         same = keyed_rec("msg_a", "req_a", out_tok=7, h1=11)
         (dd_once / "s.jsonl").write_text(same + "\n" + same + "\n" + same + "\n")
-        once = collect(dd_once, {"offsets": {}, "totals": {}})
+        once = collect(dd_once, {"offsets": {}, "totals": {}}, families=families)
         assert counts(once) == (1, 7, 100, 11), counts(once)
 
         # (b) the same message split across two scans counts once: run one
@@ -757,10 +808,10 @@ def selfcheck() -> None:
         dd_split.mkdir()
         dd_file = dd_split / "s.jsonl"
         dd_file.write_text(same + "\n" + same + "\n")
-        run1 = json.loads(json.dumps(collect(dd_split, {"offsets": {}, "totals": {}})))
+        run1 = json.loads(json.dumps(collect(dd_split, {"offsets": {}, "totals": {}}, families=families)))
         with dd_file.open("a") as fh:
             fh.write(same + "\n" + keyed_rec("msg_b", "req_b", out_tok=3) + "\n")
-        run2 = collect(dd_split, run1)
+        run2 = collect(dd_split, run1, families=families)
         assert counts(run1) == (1, 7, 100, 11), counts(run1)
         assert counts(run2) == (2, 10, 200, 11), counts(run2)
 
@@ -769,8 +820,69 @@ def selfcheck() -> None:
         dd_noid.mkdir()
         plain = rec("opus", dd_cwd, 0, 0, 7, 0)
         (dd_noid / "s.jsonl").write_text(plain + "\n" + plain + "\n" + plain + "\n")
-        noid = collect(dd_noid, {"offsets": {}, "totals": {}})
+        noid = collect(dd_noid, {"offsets": {}, "totals": {}}, families=families)
         assert counts(noid) == (3, 21, 300, 0), counts(noid)
+
+        # family names come from the local labels file, never from a built-in
+        # list. One transcript under a grouped path is collected with the file
+        # present, missing and malformed.
+        cfg = root / "xdg-config" / "claude-usage-collector"
+        cfg.mkdir(parents=True)
+        lbl_projects = root / "labels-projects"
+        lbl_projects.mkdir()
+        (lbl_projects / "s.jsonl").write_text(
+            rec("opus", str(GIT_HOME / "public/family-a/repo-one/main"), 0, 0, 1, 0) + "\n")
+
+        def repo_labels(fams):
+            st_ = collect(lbl_projects, {"offsets": {}, "totals": {}}, families=fams)
+            return {k.split("\x00")[2] for k in st_["totals"]
+                    if k.startswith("claude_jsonl_messages_total\x00")}
+
+        # (a) file present: families come from the file
+        present = cfg / "labels.json"
+        present.write_text(json.dumps({"families": ["family-a", "family-b"]}))
+        got, warn = load_families(present)
+        assert got == frozenset({"family-a", "family-b"}) and warn is None, (got, warn)
+        assert repo_labels(got) == {"repo-one"}, repo_labels(got)
+        # a directory the file does not name is not skipped
+        assert repo_of({"cwd": str(GIT_HOME / "public/org-one/repo-two/main")}, got) == "org-one"
+
+        # (b) file missing: one warning line, labels from the layout alone
+        missing = cfg / "absent.json"
+        got, warn = load_families(missing)
+        assert got == frozenset(), got
+        assert warn and str(missing) in warn and "\n" not in warn, warn
+        assert repo_labels(got) == {"family-a"}, repo_labels(got)
+
+        # (c) file malformed: the same fallback and single warning line, for
+        # invalid JSON, JSON nested too deeply to parse, and valid JSON of the
+        # wrong shape
+        broken = cfg / "broken.json"
+        for blob in ("{not json", "[" * 100000, "[]", '{"families": "family-a"}',
+                     '{"families": [""]}', '{"families": ["family-a", 7]}',
+                     '{"groups": ["family-a"]}'):
+            broken.write_text(blob)
+            got, warn = load_families(broken)
+            assert got == frozenset(), (blob[:40], got)
+            assert warn and str(broken) in warn and "\n" not in warn, (blob[:40], warn)
+            assert repo_labels(got) == {"family-a"}, (blob[:40], repo_labels(got))
+        # unreadable (a directory where the file should be) behaves the same
+        got, warn = load_families(cfg)
+        assert got == frozenset() and warn and "\n" not in warn, (got, warn)
+        # an explicitly empty list is a valid file, not a malformed one
+        broken.write_text('{"families": []}')
+        assert load_families(broken) == (frozenset(), None)
+
+        # LABELS_ENV names a different file than the default
+        saved = os.environ.get(LABELS_ENV)
+        os.environ[LABELS_ENV] = str(present)
+        try:
+            assert load_families() == (frozenset({"family-a", "family-b"}), None)
+        finally:
+            if saved is None:
+                del os.environ[LABELS_ENV]
+            else:
+                os.environ[LABELS_ENV] = saved
     print("selfcheck OK")
 
 
@@ -788,7 +900,10 @@ def main() -> int:
     prices, price_warning = load_prices()
     if price_warning:
         print(price_warning, file=sys.stderr)
-    state = collect(PROJECTS, load_state(), prices)
+    families, labels_warning = load_families()
+    if labels_warning:
+        print(labels_warning, file=sys.stderr)
+    state = collect(PROJECTS, load_state(), prices, families)
     body = render(state["totals"], state["gauges"])
     if args.push:
         req = urllib.request.Request(args.push, data=body.encode(), method="POST")

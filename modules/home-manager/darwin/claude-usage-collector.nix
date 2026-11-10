@@ -12,6 +12,22 @@
 # Counters are cumulative, matching the temporality the metrics store expects;
 # a delta-temporality source is accepted and then silently dropped, which looks
 # identical to a healthy pipeline.
+#
+# Repo labels resolve a transcript's working directory against the workspace
+# layout under ~/git. The names of the family directories that group repos
+# there are local data: the collector reads them at run time from a file this
+# module does not write or manage, so it stays local and untracked.
+#
+#   Path:    ~/.config/claude-usage-collector/labels.json
+#            (CLAUDE_USAGE_COLLECTOR_LABELS in the collector's environment
+#            names a different file)
+#   Schema:  { "families": ["family-a", "family-b"] }
+#
+# Each entry is a directory name as found at ~/git/public/<family>/<repo> or
+# ~/git/private/<owner>/<family>/<repo>; a transcript below one is labelled
+# <repo>. When the file is missing, unreadable or malformed the collector logs
+# one warning and labels each transcript by the first directory below public/
+# (below the owner, under private/) exactly as it appears on disk.
 {
   config,
   lib,
