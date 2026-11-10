@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.62.1](https://github.com/dryvist/nix-home/compare/v1.62.0...v1.62.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **claude-usage-collector:** count each message once ([#787](https://github.com/dryvist/nix-home/issues/787)) ([1df0dd8](https://github.com/dryvist/nix-home/commit/1df0dd84a0139f9fbf4a2ed645aa9fbcd89470a0))
+
 ## [1.62.0](https://github.com/dryvist/nix-home/compare/v1.61.3...v1.62.0) (2026-11-09)
 
 
