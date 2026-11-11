@@ -118,9 +118,85 @@ identifier_boundary_checks() {
   rm -f "$HERE/synthetic-identifiers.txt" "$HERE/synthetic-allowlist.txt"
 }
 
+# Judge request shape and failure handling against the fake judge (no live model).
+judge_endpoint_checks() {
+  # --- a reasoning judge that returns no verdict within the small budget ---
+  # The request asks for no thinking; a reasoning-only reply earns exactly one
+  # retry with a larger budget, and a second reasoning-only reply fails closed.
+  export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+    check3 "reasoning judge widens once"   0 clean issue create -R dryvist/pub --body "$CLEAN"
+  requests="$(jq -sc 'map([.max_tokens, .chat_template_kwargs.enable_thinking])' "$GH_GUARD_TEST_JUDGE_LOG")"
+  if [ "$requests" = '[[4,false],[512,false]]' ]; then
+    printf 'PASS  %-38s\n' "no-thinking request, one widening"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s got %s\n' "no-thinking request, one widening" "$requests"; fail=$((fail + 1))
+  fi
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  PATH="$HERE/fakejudge:$PATH" \
+    check3 "reasoning-only judge -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
+  requests="$(jq -sc 'map(.max_tokens)' "$GH_GUARD_TEST_JUDGE_LOG")"
+  if [ "$requests" = '[4,512]' ]; then
+    printf 'PASS  %-38s\n' "reasoning-only judge: two requests"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s got %s\n' "reasoning-only judge: two requests" "$requests"; fail=$((fail + 1))
+  fi
+  # A limits-file judge URL is the model server itself, so its model id must be
+  # sent instead of the `judge` router alias it would reject.
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":5,"model":"org/served-model"}}}\n' >"$HERE/resident-model-limits.json"
+  MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+    GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+    check3 "limits model reaches judge"    0 clean issue create -R dryvist/pub --body "$CLEAN"
+  models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
+  if [ "$models" = '["org/served-model"]' ]; then
+    printf 'PASS  %-38s\n' "judge request names served model"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s got %s\n' "judge request names served model" "$models"; fail=$((fail + 1))
+  fi
+  # A judge that does not serve the requested model fails closed after one request,
+  # instead of retrying until the timeout; any other error body is still retried.
+  judge_error_case() { # name error_body want_requests(one|many)
+    local name="$1" body="$2" want="$3" requests ok=0
+    : >"$GH_GUARD_TEST_JUDGE_LOG"
+    MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+      GH_GUARD_TEST_JUDGE_ERROR="$body" \
+      check3 "$name -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
+    requests="$(jq -s length "$GH_GUARD_TEST_JUDGE_LOG")"
+    case "$want" in
+      one) [ "$requests" = 1 ] && ok=1 ;;
+      many) [ "$requests" -gt 1 ] && ok=1 ;;
+    esac
+    if [ "$ok" = 1 ]; then
+      printf 'PASS  %-38s [%s requests]\n' "$name: $want request(s)" "$requests"; pass=$((pass + 1))
+    else
+      printf 'FAIL  %-38s got %s\n' "$name: $want request(s)" "$requests"; fail=$((fail + 1))
+    fi
+  }
+  judge_error_case "MLX missing snapshot" "Cannot find an appropriate cached snapshot folder" one
+  judge_error_case "Ollama missing model" "model 'qwen3:9b' not found" one
+  judge_error_case "OpenAI nested error" '{"message":"The model `x` does not exist","type":"invalid_request_error"}' one
+  judge_error_case "transient error" "server busy, please retry" many
+  # The environment variable wins over the limits file's model id.
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+    GH_GUARD_JUDGE_MODEL="env/model" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+    check3 "env model beats limits model"  0 clean issue create -R dryvist/pub --body "$CLEAN"
+  models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
+  if [ "$models" = '["env/model"]' ]; then
+    printf 'PASS  %-38s\n' "judge request names env model"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s got %s\n' "judge request names env model" "$models"; fail=$((fail + 1))
+  fi
+  rm -f "$HERE/resident-model-limits.json"
+  rm -f "$GH_GUARD_TEST_JUDGE_LOG"
+}
+
 if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
   identifier_boundary_checks
   visibility_checks
+  judge_endpoint_checks
   rm -f "$HERE/missing-identifiers.txt"
   GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
     check3 "missing identifier file blocks publish" 1 identifier \
@@ -309,77 +385,7 @@ OPENBAO_GH_CLAIM=dryvist/privaterepo \
   GH_GUARD_TEST_UNAUTH_API=404 GH_GUARD_TEST_AUTH_API=private \
   check3 "private repo not screened"      0 none issue create -R dryvist/privaterepo --body "$LEAK"
 
-# --- a reasoning judge that returns no verdict within the small budget ---
-# The request asks for no thinking; a reasoning-only reply earns exactly one
-# retry with a larger budget, and a second reasoning-only reply fails closed.
-export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
-  check3 "reasoning judge widens once"   0 clean issue create -R dryvist/pub --body "$CLEAN"
-requests="$(jq -sc 'map([.max_tokens, .chat_template_kwargs.enable_thinking])' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$requests" = '[[4,false],[512,false]]' ]; then
-  printf 'PASS  %-38s\n' "no-thinking request, one widening"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "no-thinking request, one widening" "$requests"; fail=$((fail + 1))
-fi
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-PATH="$HERE/fakejudge:$PATH" \
-  check3 "reasoning-only judge -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
-requests="$(jq -sc 'map(.max_tokens)' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$requests" = '[4,512]' ]; then
-  printf 'PASS  %-38s\n' "reasoning-only judge: two requests"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "reasoning-only judge: two requests" "$requests"; fail=$((fail + 1))
-fi
-# A limits-file judge URL is the model server itself, so its model id must be
-# sent instead of the `judge` router alias it would reject.
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":5,"model":"org/served-model"}}}\n' >"$HERE/resident-model-limits.json"
-MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
-  GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
-  check3 "limits model reaches judge"    0 clean issue create -R dryvist/pub --body "$CLEAN"
-models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$models" = '["org/served-model"]' ]; then
-  printf 'PASS  %-38s\n' "judge request names served model"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "judge request names served model" "$models"; fail=$((fail + 1))
-fi
-# A judge that does not serve the requested model fails closed after one request,
-# instead of retrying until the timeout; any other error body is still retried.
-judge_error_case() { # name error_body want_requests(one|many)
-  local name="$1" body="$2" want="$3" requests ok=0
-  : >"$GH_GUARD_TEST_JUDGE_LOG"
-  MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
-    GH_GUARD_TEST_JUDGE_ERROR="$body" \
-    check3 "$name -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
-  requests="$(jq -s length "$GH_GUARD_TEST_JUDGE_LOG")"
-  case "$want" in
-    one) [ "$requests" = 1 ] && ok=1 ;;
-    many) [ "$requests" -gt 1 ] && ok=1 ;;
-  esac
-  if [ "$ok" = 1 ]; then
-    printf 'PASS  %-38s [%s requests]\n' "$name: $want request(s)" "$requests"; pass=$((pass + 1))
-  else
-    printf 'FAIL  %-38s got %s\n' "$name: $want request(s)" "$requests"; fail=$((fail + 1))
-  fi
-}
-judge_error_case "MLX missing snapshot" "Cannot find an appropriate cached snapshot folder" one
-judge_error_case "Ollama missing model" "model 'qwen3:9b' not found" one
-judge_error_case "OpenAI nested error" '{"message":"The model `x` does not exist","type":"invalid_request_error"}' one
-judge_error_case "transient error" "server busy, please retry" many
-# The environment variable wins over the limits file's model id.
-: >"$GH_GUARD_TEST_JUDGE_LOG"
-MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
-  GH_GUARD_JUDGE_MODEL="env/model" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
-  check3 "env model beats limits model"  0 clean issue create -R dryvist/pub --body "$CLEAN"
-models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$models" = '["env/model"]' ]; then
-  printf 'PASS  %-38s\n' "judge request names env model"; pass=$((pass + 1))
-else
-  printf 'FAIL  %-38s got %s\n' "judge request names env model" "$models"; fail=$((fail + 1))
-fi
-rm -f "$HERE/resident-model-limits.json"
-rm -f "$GH_GUARD_TEST_JUDGE_LOG"
+judge_endpoint_checks
 unset GH_GUARD_TEST_JUDGE_LOG
 
 # --- fail-closed when the judge is genuinely absent ---------------------

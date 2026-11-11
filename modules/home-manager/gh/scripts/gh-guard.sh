@@ -530,7 +530,7 @@ judge_verdict() {
       *)
         if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
           # A judge that does not serve the requested model never recovers by waiting: fail closed now.
-          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|model not found|no such model|unknown model|does not exist")' \
+          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|no such model|unknown model|does not exist")' \
             <<<"$result" >/dev/null 2>&1; then
             return 1
           fi
