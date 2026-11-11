@@ -487,12 +487,14 @@ judge_verdict() {
           and $client.timeoutSeconds > 0
           and ($client.timeoutSeconds % 1) == 0
         )
-      | "\($client.url)\t\($client.timeoutSeconds|tostring)\t\($client.model // "")"
+      | "\($client.url)\t\($client.timeoutSeconds|tostring)\t\(($client.model | strings) // "")"
     ' "$LIMITS_FILE")" || return 1
     IFS=$'\t' read -r judge_url judge_timeout client_model <<< "$config"
     # That URL is the model server itself, which serves only its own model id,
-    # never a router alias such as the default `judge`.
-    if [[ -z "${GH_GUARD_JUDGE_MODEL:-}" && -n "$client_model" ]]; then
+    # never a router alias such as the default `judge`. A GH_GUARD_JUDGE_URL
+    # override naming another server does not get the file's model id.
+    if [[ -z "${GH_GUARD_JUDGE_MODEL:-}" && -n "$client_model" &&
+      (-z "${GH_GUARD_JUDGE_URL:-}" || "$GH_GUARD_JUDGE_URL" == "$judge_url") ]]; then
       JUDGE_MODEL="$client_model"
     fi
   else
@@ -530,7 +532,7 @@ judge_verdict() {
       *)
         if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
           # A judge that does not serve the requested model never recovers by waiting: fail closed now.
-          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|no such model|unknown model|does not exist")' \
+          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|no such model|unknown model|model .{0,40}does not exist")' \
             <<<"$result" >/dev/null 2>&1; then
             return 1
           fi

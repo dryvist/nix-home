@@ -178,6 +178,7 @@ judge_endpoint_checks() {
   judge_error_case "Ollama missing model" "model 'qwen3:9b' not found" one
   judge_error_case "OpenAI nested error" '{"message":"The model `x` does not exist","type":"invalid_request_error"}' one
   judge_error_case "transient error" "server busy, please retry" many
+  judge_error_case "unrelated does-not-exist" "upstream route does not exist yet, please retry" many
   # The environment variable wins over the limits file's model id.
   : >"$GH_GUARD_TEST_JUDGE_LOG"
   MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
@@ -189,6 +190,28 @@ judge_endpoint_checks() {
   else
     printf 'FAIL  %-38s got %s\n' "judge request names env model" "$models"; fail=$((fail + 1))
   fi
+  # Without a model id in the limits file, or with a URL override, the request names the `judge` alias.
+  for case in nomodel urloverride; do
+    : >"$GH_GUARD_TEST_JUDGE_LOG"
+    if [ "$case" = nomodel ]; then
+      printf '{"clients":{"ghGuard":{"url":"http://127.0.0.1:9/chat/completions","timeoutSeconds":5}}}\n' >"$HERE/limits-$case.json"
+      MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/limits-$case.json" PATH="$HERE/fakejudge:$PATH" \
+        GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+        check3 "limits without model -> alias" 0 clean issue create -R dryvist/pub --body "$CLEAN"
+    else
+      cp "$HERE/resident-model-limits.json" "$HERE/limits-$case.json"
+      MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/limits-$case.json" PATH="$HERE/fakejudge:$PATH" \
+        GH_GUARD_JUDGE_URL="http://127.0.0.1:9/v1/chat/completions" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+        check3 "URL override drops limits model" 0 clean issue create -R dryvist/pub --body "$CLEAN"
+    fi
+    models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
+    if [ "$models" = '["judge"]' ]; then
+      printf 'PASS  %-38s\n' "$case: request names judge alias"; pass=$((pass + 1))
+    else
+      printf 'FAIL  %-38s got %s\n' "$case: request names judge alias" "$models"; fail=$((fail + 1))
+    fi
+    rm -f "$HERE/limits-$case.json"
+  done
   rm -f "$HERE/resident-model-limits.json"
   rm -f "$GH_GUARD_TEST_JUDGE_LOG"
 }
