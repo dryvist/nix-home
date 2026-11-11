@@ -344,6 +344,18 @@ if [ "$models" = '["org/served-model"]' ]; then
 else
   printf 'FAIL  %-38s got %s\n' "judge request names served model" "$models"; fail=$((fail + 1))
 fi
+# A judge that does not serve the requested model fails closed after one request,
+# instead of retrying until the timeout.
+: >"$GH_GUARD_TEST_JUDGE_LOG"
+MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+  GH_GUARD_TEST_JUDGE_ERROR="Cannot find an appropriate cached snapshot folder" \
+  check3 "unknown judge model -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
+requests="$(jq -s length "$GH_GUARD_TEST_JUDGE_LOG")"
+if [ "$requests" = 1 ]; then
+  printf 'PASS  %-38s\n' "unknown judge model: one request"; pass=$((pass + 1))
+else
+  printf 'FAIL  %-38s got %s\n' "unknown judge model: one request" "$requests"; fail=$((fail + 1))
+fi
 rm -f "$HERE/resident-model-limits.json"
 rm -f "$GH_GUARD_TEST_JUDGE_LOG"
 unset GH_GUARD_TEST_JUDGE_LOG
