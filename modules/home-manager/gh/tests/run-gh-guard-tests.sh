@@ -345,16 +345,38 @@ else
   printf 'FAIL  %-38s got %s\n' "judge request names served model" "$models"; fail=$((fail + 1))
 fi
 # A judge that does not serve the requested model fails closed after one request,
-# instead of retrying until the timeout.
+# instead of retrying until the timeout; any other error body is still retried.
+judge_error_case() { # name error_body want_requests(one|many)
+  local name="$1" body="$2" want="$3" requests ok=0
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
+    GH_GUARD_TEST_JUDGE_ERROR="$body" \
+    check3 "$name -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
+  requests="$(jq -s length "$GH_GUARD_TEST_JUDGE_LOG")"
+  case "$want" in
+    one) [ "$requests" = 1 ] && ok=1 ;;
+    many) [ "$requests" -gt 1 ] && ok=1 ;;
+  esac
+  if [ "$ok" = 1 ]; then
+    printf 'PASS  %-38s [%s requests]\n' "$name: $want request(s)" "$requests"; pass=$((pass + 1))
+  else
+    printf 'FAIL  %-38s got %s\n' "$name: $want request(s)" "$requests"; fail=$((fail + 1))
+  fi
+}
+judge_error_case "MLX missing snapshot" "Cannot find an appropriate cached snapshot folder" one
+judge_error_case "Ollama missing model" "model 'qwen3:9b' not found" one
+judge_error_case "OpenAI nested error" '{"message":"The model `x` does not exist","type":"invalid_request_error"}' one
+judge_error_case "transient error" "server busy, please retry" many
+# The environment variable wins over the limits file's model id.
 : >"$GH_GUARD_TEST_JUDGE_LOG"
 MLX_RESIDENT_MODEL_LIMITS_FILE="$HERE/resident-model-limits.json" PATH="$HERE/fakejudge:$PATH" \
-  GH_GUARD_TEST_JUDGE_ERROR="Cannot find an appropriate cached snapshot folder" \
-  check3 "unknown judge model -> closed" 1 judge-unavailable issue create -R dryvist/pub --body "$CLEAN"
-requests="$(jq -s length "$GH_GUARD_TEST_JUDGE_LOG")"
-if [ "$requests" = 1 ]; then
-  printf 'PASS  %-38s\n' "unknown judge model: one request"; pass=$((pass + 1))
+  GH_GUARD_JUDGE_MODEL="env/model" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+  check3 "env model beats limits model"  0 clean issue create -R dryvist/pub --body "$CLEAN"
+models="$(jq -sc 'map(.model) | unique' "$GH_GUARD_TEST_JUDGE_LOG")"
+if [ "$models" = '["env/model"]' ]; then
+  printf 'PASS  %-38s\n' "judge request names env model"; pass=$((pass + 1))
 else
-  printf 'FAIL  %-38s got %s\n' "unknown judge model: one request" "$requests"; fail=$((fail + 1))
+  printf 'FAIL  %-38s got %s\n' "judge request names env model" "$models"; fail=$((fail + 1))
 fi
 rm -f "$HERE/resident-model-limits.json"
 rm -f "$GH_GUARD_TEST_JUDGE_LOG"

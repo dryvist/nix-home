@@ -12,7 +12,8 @@ while [ $# -gt 0 ]; do
 done
 printf '%s\n' "$payload" >>"$GH_GUARD_TEST_JUDGE_LOG"
 if [ -n "${GH_GUARD_TEST_JUDGE_ERROR:-}" ]; then
-  jq -cn --arg e "$GH_GUARD_TEST_JUDGE_ERROR" '{error:$e}'
+  # A JSON object value becomes a nested error ({"error":{"message":...}}); anything else a string.
+  jq -cn --arg e "$GH_GUARD_TEST_JUDGE_ERROR" '{error:($e | fromjson? // $e)}'
   exit 0
 fi
 if [ "$(jq -r .max_tokens <<<"$payload")" -gt 4 ] && [ -n "${GH_GUARD_TEST_JUDGE_VERDICT:-}" ]; then

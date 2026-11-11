@@ -492,7 +492,9 @@ judge_verdict() {
     IFS=$'\t' read -r judge_url judge_timeout client_model <<< "$config"
     # That URL is the model server itself, which serves only its own model id,
     # never a router alias such as the default `judge`.
-    [[ -z "${GH_GUARD_JUDGE_MODEL:-}" && -n "$client_model" ]] && JUDGE_MODEL="$client_model"
+    if [[ -z "${GH_GUARD_JUDGE_MODEL:-}" && -n "$client_model" ]]; then
+      JUDGE_MODEL="$client_model"
+    fi
   else
     judge_url="http://127.0.0.1:11434/v1/chat/completions"
     judge_timeout=30
@@ -528,7 +530,7 @@ judge_verdict() {
       *)
         if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
           # A judge that does not serve the requested model never recovers by waiting: fail closed now.
-          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model not found|no such model|unknown model|does not exist")' \
+          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|model not found|no such model|unknown model|does not exist")' \
             <<<"$result" >/dev/null 2>&1; then
             return 1
           fi
