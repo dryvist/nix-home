@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import socket
 import sys
@@ -180,10 +181,15 @@ def save_state(state: dict) -> None:
 
 
 GIT_HOME = pathlib.Path.home() / "git"
-# Workspace families (AGENTS.local.md). Adding one is an edit here, not a guess.
+# Generic workspace families; deployments may add segments through the environment.
 FAMILIES = frozenset(
-    "nix homelab cloud ai cribl docs mlx governance profile visicore".split()
+    "nix homelab cloud ai cribl cribl-community docs mlx governance profile".split()
+    + os.environ.get("CLAUDE_USAGE_COLLECTOR_WORKSPACE_FAMILIES", "").split()
 )
+# A checkout always lives in a worktree, `<repo>/main` or
+# `<repo>/.worktrees/<name>`, so one of these after a segment marks that
+# segment as the repo rather than an owner.
+WORKTREES = frozenset(("main", ".worktrees"))
 
 
 def repo_of(rec: dict) -> str:
@@ -193,6 +199,15 @@ def repo_of(rec: dict) -> str:
     `<repo>/.worktrees/<name>`, so the basename is the worktree, not the repo —
     measured over real transcripts that lumped 59% of all traffic under a
     single fake repo called "main".
+
+    Clones migrate between layouts and transcripts outlive every move, so
+    every form below has to resolve at once (newest first):
+      public/<owner>/<repo>/...   private/<owner>/<repo>/...
+      public/<family>/<repo>/...  private/<owner>/<family>/<repo>/...
+      public/<repo>/...           (flat; public only)
+    A known family segment means the family layout. Otherwise on public, a
+    segment followed by a worktree is itself the repo (flat); followed by
+    anything else it is an owner, and the repo is the next segment.
 
     Resolving against the layout also bounds label cardinality. Raw basenames
     produced 874 values, 829 of which carried under 0.1% each; anything outside
@@ -205,16 +220,16 @@ def repo_of(rec: dict) -> str:
         parts = pathlib.PurePath(cwd).relative_to(GIT_HOME).parts
     except ValueError:
         return "other"
-    # Current layout groups by family; transcripts predating it are flat, so
-    # the family segment is optional and detected rather than assumed.
     if parts[:1] == ("public",):
         rest = parts[1:]
     elif parts[:1] == ("private",) and len(parts) >= 2:
-        rest = parts[2:]  # skip <owner>
+        rest = parts[2:]  # skip <owner>; both private layouts carry one
     else:
         return "other"
     if rest and rest[0] in FAMILIES:
-        rest = rest[1:]
+        rest = rest[1:]  # family layout: the repo follows the family
+    elif len(rest) >= 2 and parts[:1] == ("public",) and rest[1] not in WORKTREES:
+        rest = rest[1:]  # owner layout: the repo follows the owner
     return rest[0] if rest else "other"
 
 
@@ -554,6 +569,13 @@ def selfcheck() -> None:
         assert repo_of({"cwd": str(GIT_HOME / "public/terraform-proxmox/main")}) == "terraform-proxmox"
         assert repo_of({"cwd": str(GIT_HOME / "public/homelab/tofu-proxmox/.worktrees/x")}) == "tofu-proxmox"
         assert repo_of({"cwd": str(GIT_HOME / "private/dryvist/nix/nix-ai/main")}) == "nix-ai"
+        # every layout form resolves to the repo segment, never the owner or
+        # family before it: family public, family private, owner public, owner
+        # private
+        assert repo_of({"cwd": str(GIT_HOME / "public/cribl-community/pack-sample/main")}) == "pack-sample"
+        assert repo_of({"cwd": str(GIT_HOME / "private/octo-org/cribl-community/pack-sample/main")}) == "pack-sample"
+        assert repo_of({"cwd": str(GIT_HOME / "public/octo-org/widget-kit/.worktrees/x")}) == "widget-kit"
+        assert repo_of({"cwd": str(GIT_HOME / "private/octo-org/widget-kit/main")}) == "widget-kit"
         assert repo_of({}) == "unknown"
 
         # injected context is measured from attachment records, not messages
