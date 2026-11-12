@@ -47,12 +47,14 @@ in
         description = "Root directory for Obsidian vaults and personal knowledge bases ($NOTES_HOME).";
       };
 
-      openwhisprNotesDirectory = lib.mkOption {
+      dictationNotesDirectory = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = null;
-        example = "${cfg.notes.obsidianHome}/obsidian-granola/openwhispr";
+      dictationNotesDirectory = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "${cfg.notes.obsidianHome}/dictation-notes";
+        example = "${config.home.homeDirectory}/dictation-notes";
         description = ''
-          Target directory where OpenWhispr mirrors notes and transcripts.
+          Directory where dictation notes are mirrored.
           Provides an easily configurable parameter for macOS and Linux workstations.
         '';
       };
@@ -66,8 +68,8 @@ in
       GIT_HOME_PRIVATE = cfg.gitHomePrivate;
       NOTES_HOME = cfg.notes.obsidianHome;
     }
-    // lib.optionalAttrs (cfg.notes.openwhisprNotesDirectory != null) {
-      OPENWHISPR_NOTES_DIR = cfg.notes.openwhisprNotesDirectory;
+    // lib.optionalAttrs (cfg.notes.dictationNotesDirectory != null) {
+      DICTATION_NOTES_DIR = cfg.notes.dictationNotesDirectory;
     };
 
     # The one definition of a grouping directory's .envrc (see the file's header).
