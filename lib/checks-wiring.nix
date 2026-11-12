@@ -25,6 +25,7 @@
         chmod -R u+w "$TMPDIR/gh-guard"
         patchShebangs "$TMPDIR/gh-guard/tests/fakegh"
         patchShebangs "$TMPDIR/gh-guard/tests/fakecurl"
+        patchShebangs "$TMPDIR/gh-guard/tests/fakejudge/curl"
         GH_GUARD_TEST_CI=1 bash "$TMPDIR/gh-guard/tests/run-gh-guard-tests.sh"
         touch $out
       '';

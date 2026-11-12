@@ -475,7 +475,7 @@ is_bot_checkbox_toggle() { # content repo gh-args...
 # retry briefly before falling through to fail-closed — otherwise an unrelated
 # local inference job would block every commit and the gate dies of fatigue.
 judge_verdict() {
-  local content="$1" payload result verdict attempt config judge_url judge_timeout deadline remaining delay
+  local content="$1" payload result verdict attempt config judge_url judge_timeout client_model deadline remaining delay
   local max_tokens=4 widened=0
 
   if [[ -f "$LIMITS_FILE" ]]; then
@@ -487,9 +487,16 @@ judge_verdict() {
           and $client.timeoutSeconds > 0
           and ($client.timeoutSeconds % 1) == 0
         )
-      | "\($client.url)\t\($client.timeoutSeconds|tostring)"
+      | "\($client.url)\t\($client.timeoutSeconds|tostring)\t\(($client.model | strings) // "")"
     ' "$LIMITS_FILE")" || return 1
-    IFS=$'\t' read -r judge_url judge_timeout <<< "$config"
+    IFS=$'\t' read -r judge_url judge_timeout client_model <<< "$config"
+    # That URL is the model server itself, which serves only its own model id,
+    # never a router alias such as the default `judge`. A GH_GUARD_JUDGE_URL
+    # override naming another server does not get the file's model id.
+    if [[ -z "${GH_GUARD_JUDGE_MODEL:-}" && -n "$client_model" &&
+      (-z "${GH_GUARD_JUDGE_URL:-}" || "$GH_GUARD_JUDGE_URL" == "$judge_url") ]]; then
+      JUDGE_MODEL="$client_model"
+    fi
   else
     judge_url="http://127.0.0.1:11434/v1/chat/completions"
     judge_timeout=30
@@ -524,7 +531,11 @@ judge_verdict() {
       *'Too many requests'*|'') ;;
       *)
         if jq -e 'type == "object" and has("error")' <<<"$result" >/dev/null 2>&1; then
-          :
+          # A judge that does not serve the requested model never recovers by waiting: fail closed now.
+          if jq -e '(.error | tostring | ascii_downcase) | test("cached snapshot|model .*not found|no such model|unknown model|model .{0,40}does not exist")' \
+            <<<"$result" >/dev/null 2>&1; then
+            return 1
+          fi
         else
           verdict="$(jq -r '.choices[0].message.content // empty' <<<"$result" 2>/dev/null)"
           verdict="$(tr '[:upper:]' '[:lower:]' <<<"${verdict:-}" | tr -d '[:space:][:punct:]')"
