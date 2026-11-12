@@ -49,8 +49,6 @@ in
 
       dictationNotesDirectory = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-      dictationNotesDirectory = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
         default = "${cfg.notes.obsidianHome}/dictation-notes";
         example = "${config.home.homeDirectory}/dictation-notes";
         description = ''
