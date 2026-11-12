@@ -39,6 +39,24 @@ in
       default = "${cfg.gitHome}/private";
       description = "Derived: $GIT_HOME_PRIVATE.";
     };
+    notes = {
+      obsidianHome = lib.mkOption {
+        type = lib.types.str;
+        default = "${config.home.homeDirectory}/obsidian";
+        example = "${config.home.homeDirectory}/notes";
+        description = "Root directory for Obsidian vaults and personal knowledge bases ($NOTES_HOME).";
+      };
+
+      dictationNotesDirectory = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "${cfg.notes.obsidianHome}/dictation-notes";
+        example = "${config.home.homeDirectory}/dictation-notes";
+        description = ''
+          Directory where dictation notes are mirrored.
+          Provides an easily configurable parameter for macOS and Linux workstations.
+        '';
+      };
+    };
   };
 
   config = {
@@ -46,6 +64,10 @@ in
       GIT_HOME = cfg.gitHome;
       GIT_HOME_PUBLIC = cfg.gitHomePublic;
       GIT_HOME_PRIVATE = cfg.gitHomePrivate;
+      NOTES_HOME = cfg.notes.obsidianHome;
+    }
+    // lib.optionalAttrs (cfg.notes.dictationNotesDirectory != null) {
+      DICTATION_NOTES_DIR = cfg.notes.dictationNotesDirectory;
     };
 
     # The one definition of a grouping directory's .envrc (see the file's header).
