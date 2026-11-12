@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import socket
 import sys
@@ -180,9 +181,10 @@ def save_state(state: dict) -> None:
 
 
 GIT_HOME = pathlib.Path.home() / "git"
-# Workspace families (AGENTS.local.md). Adding one is an edit here, not a guess.
+# Generic workspace families; deployments may add segments through the environment.
 FAMILIES = frozenset(
-    "nix homelab cloud ai cribl cribl-community docs mlx governance profile visicore".split()
+    "nix homelab cloud ai cribl cribl-community docs mlx governance profile".split()
+    + os.environ.get("CLAUDE_USAGE_COLLECTOR_WORKSPACE_FAMILIES", "").split()
 )
 # A checkout always lives in a worktree, `<repo>/main` or
 # `<repo>/.worktrees/<name>`, so one of these after a segment marks that
