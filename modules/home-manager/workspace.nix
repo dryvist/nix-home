@@ -49,7 +49,7 @@ in
 
       openwhisprNotesDirectory = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = "${cfg.notes.obsidianHome}/openwhispr";
+        default = null;
         example = "${cfg.notes.obsidianHome}/obsidian-granola/openwhispr";
         description = ''
           Target directory where OpenWhispr mirrors notes and transcripts.
