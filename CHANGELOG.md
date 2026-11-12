@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.62.2](https://github.com/dryvist/nix-home/compare/v1.62.1...v1.62.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **darwin:** resolve collector repo labels across workspace layouts ([#797](https://github.com/dryvist/nix-home/issues/797)) ([3d6d0a6](https://github.com/dryvist/nix-home/commit/3d6d0a649ec33d1ca2a31f27766ae444bbba2324))
+
 ## [1.62.1](https://github.com/dryvist/nix-home/compare/v1.62.0...v1.62.1) (2026-11-10)
 
 

@@ -55,6 +55,43 @@ in
     assert sshGit.commit.gpgSign && sshGit.tag.gpgSign;
     pkgs.writeText "git-signing" "Git signing defaults and per-host overrides verified";
 
+  workspace-notes-contract =
+    let
+      workspaceConfig =
+        notes:
+        (home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            ../modules/home-manager/workspace.nix
+            {
+              home = {
+                username = "test-user";
+                homeDirectory = "/home/test-user";
+                stateVersion = (import ./user-defaults.nix).nix.homeManagerStateVersion;
+              };
+            }
+            { workspace.notes = notes; }
+          ];
+        }).config;
+      defaultWorkspace = workspaceConfig { };
+      overriddenWorkspace = workspaceConfig {
+        dictationNotesDirectory = "/home/test-user/captures";
+      };
+      disabledWorkspace = workspaceConfig {
+        dictationNotesDirectory = null;
+      };
+    in
+    assert
+      defaultWorkspace.workspace.notes.dictationNotesDirectory
+      == "/home/test-user/obsidian/dictation-notes";
+    assert
+      defaultWorkspace.home.sessionVariables.DICTATION_NOTES_DIR
+      == "/home/test-user/obsidian/dictation-notes";
+    assert overriddenWorkspace.home.sessionVariables.DICTATION_NOTES_DIR == "/home/test-user/captures";
+    assert disabledWorkspace.workspace.notes.dictationNotesDirectory == null;
+    assert !(builtins.hasAttr "DICTATION_NOTES_DIR" disabledWorkspace.home.sessionVariables);
+    pkgs.writeText "workspace-notes-contract" "Dictation notes option and session variable verified";
+
   proxman-setup =
     pkgs.runCommand "check-proxman-setup"
       {

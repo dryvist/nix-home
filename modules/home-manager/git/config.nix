@@ -35,6 +35,15 @@
     signByDefault = true; # Enforced by security policy
   };
 
+  # Repositories under ~/orca/ (Orca's workspace root) skip the commit-subject
+  # hook; the rest of the global config still applies there.
+  includes = [
+    {
+      condition = "gitdir:~/orca/";
+      contents.hook.commit-subject.enabled = false;
+    }
+  ];
+
   # All git settings (new unified syntax)
   settings = {
     # User identity
