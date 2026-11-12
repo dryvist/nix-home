@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.63.0](https://github.com/dryvist/nix-home/compare/v1.62.2...v1.63.0) (2026-11-12)
+
+
+### Features
+
+* **git:** skip the commit-subject hook under ~/orca ([#799](https://github.com/dryvist/nix-home/issues/799)) ([f609782](https://github.com/dryvist/nix-home/commit/f609782124e0befb637841ee4e35a1275b40ab03))
+* **workspace:** add notes.obsidianHome and notes.dictationNotesDirectory options ([78437a0](https://github.com/dryvist/nix-home/commit/78437a0383f0259334da9180250446da81a44f66))
+
+
+### Bug Fixes
+
+* **gh-guard:** send the served model id to the judge and fail closed on a missing model ([#786](https://github.com/dryvist/nix-home/issues/786)) ([7dfd095](https://github.com/dryvist/nix-home/commit/7dfd0950f2bd867616750be24dc02b73d141c7f4))
+
 ## [1.62.2](https://github.com/dryvist/nix-home/compare/v1.62.1...v1.62.2) (2026-11-12)
 
 
