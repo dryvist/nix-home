@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.63.1](https://github.com/dryvist/nix-home/compare/v1.63.0...v1.63.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **git:** stop fetch aborting on moved floating tags ([#803](https://github.com/dryvist/nix-home/issues/803)) ([72545bc](https://github.com/dryvist/nix-home/commit/72545bcd95d47e81ec01f2f9433f17637e24cfda))
+
 ## [1.63.0](https://github.com/dryvist/nix-home/compare/v1.62.2...v1.63.0) (2026-11-12)
 
 
