@@ -102,7 +102,8 @@
     # Fetch behavior
     fetch = {
       prune = true; # Auto-remove deleted remote branches
-      pruneTags = true; # Auto-remove deleted remote tags
+      # No pruneTags: it adds an unforced tag refspec, so a floating release tag (v8)
+      # moved upstream aborts every fetch and pull with "would clobber existing tag".
     };
 
     # Keep origin/HEAD aligned with the remote default branch on every fetch.
@@ -114,6 +115,7 @@
       sync-feature-strategy = "rebase";
       sync-perennial-strategy = "rebase";
       perennial-regex = "^(main|develop)$";
+      sync-tags = false; # Sync would run `fetch --tags`, which rejects a moved floating tag
       ship-strategy = "api";
     };
 
