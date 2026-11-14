@@ -47,15 +47,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1794021513,
-        "narHash": "sha256-p5+VgpRuEICtsZxt+BExOB4G3E8MMOAkeLOFVkXs8yA=",
-        "owner": "dryvist",
+        "lastModified": 1794620913,
+        "narHash": "sha256-3m7POE71N5qSUYVIPEBbFIyNzlLHBzuLY4z0Y6RSGbA=",
+        "owner": "jpe-ansible",
         "repo": "homelab-contracts",
-        "rev": "88d2c7980531e5da1a7d56d9332f4c58d123801a",
+        "rev": "766af85c2d0878f58b62ceccc90e4ee58ac01b13",
         "type": "github"
       },
       "original": {
-        "owner": "dryvist",
+        "owner": "jpe-ansible",
         "ref": "v5",
         "repo": "homelab-contracts",
         "type": "github"

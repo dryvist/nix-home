@@ -34,7 +34,7 @@
     # inside the inventory_resolve Ansible role; a workstation has no such path,
     # so without this they are absent from PATH.
     homelab-contracts = {
-      url = "github:dryvist/homelab-contracts?ref=v5";
+      url = "github:jpe-ansible/homelab-contracts?ref=v5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
