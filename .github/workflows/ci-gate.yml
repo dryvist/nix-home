@@ -57,7 +57,7 @@ jobs:
     name: Flake Lock Fresh
     permissions:
       contents: read
-    uses: JacobPEvans/.github/.github/workflows/_flake-lock-fresh.yml@63f866fa9d9f03f72eb8a2e0df2b07de3ae8e54d # v1.50.1
+    uses: JacobPEvans/.github/.github/workflows/_flake-lock-fresh.yml@cc003b693f7722c84649ff1331dd5ee4d7daf8b1 # v1.51.0
     with:
       max_age_days: 30
 
