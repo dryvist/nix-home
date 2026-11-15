@@ -67,3 +67,44 @@ The build token can read every secret under the build path and renews every twel
 fix(admin): skip the token check on the status route
 
 Any caller can read the settings through GET requests, because the check runs only on writes.
+
+@@ allow
+feat(gh): replace the checklist template with six sections
+
+## Objective
+Six sections replace the checklist, so a description states its objective and approach.
+
+## Approach
+The trace line is in the body so titles keep their form. Putting the id in the title was considered.
+
+## Changes
+- modules/home-manager/gh/scripts/gh-guard.sh
+
+## Verification
+The guard test suite passes with the new template.
+
+## Related
+https://github.com/example-org/example-repo/pull/812
+
+## Trace
+lead: ab12cd34 worker: 42
+
+@@ block
+chore(schedule): replace the timer
+
+## Objective
+Simplify the nightly schedule.
+
+## Approach
+The timer was replaced because the old job silently failed for a week on host alpha-01.
+
+@@ block
+docs(vpn): describe the dashboard route
+
+## Objective
+Publish the dashboard behind 192.0.2.10, reachable only from the internal network.
+
+@@ block
+chore(auth): rotate the deploy token
+
+The new deploy token can read every secret under the apps path and write to every repository.
