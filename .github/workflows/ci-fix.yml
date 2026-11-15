@@ -1,12 +1,15 @@
-name: CI Fix (Claude)
+---
+name: CI Fix (OpenHands)
 
+# Thin caller for the shared CI-fix workflow. When CI Gate fails on a PR
+# branch, OpenHands reads the failure and pushes a fix commit to that branch
+# (max 2 attempts/PR). The reusable handles gating, attempt-capping, daily
+# limits, and concurrency, so this wrapper stays minimal.
 on:
+  workflow_run:
+    workflows: ["CI Gate"]
+    types: [completed]
   workflow_dispatch:
-  # --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-  # workflow_run:
-  #   workflows: ["CI Gate"]
-  #   types: [completed]
-  # --- END DISABLED ---
 
 permissions:
   actions: read
@@ -14,22 +17,20 @@ permissions:
   issues: write
   pull-requests: write
 
-# --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-# concurrency:
-#   group: ci-fix-${{ github.event.workflow_run.head_branch }}
-#   cancel-in-progress: true
-# --- END DISABLED ---
-
 jobs:
-  fix:
-    # --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-    # if: >-
-    #   github.event.workflow_run.conclusion == 'failure' &&
-    #   github.event.workflow_run.head_branch != 'main'
-    # --- END DISABLED ---
-    uses: JacobPEvans/.github-ai/.github/workflows/cc-ci-fix.yml@v2
+  ci-fix:
+    uses: JacobPEvans/.github-ai/.github/workflows/cc-ci-fix.yml@5737c65c9a6ba4bf9df44dc2bdefb96029fa8b08 # v2.11.3
+    secrets: inherit
     with:
+      runner_label: >-
+        ${{ (github.event_name != 'workflow_run' ||
+        github.event.workflow_run.head_repository.full_name == github.repository)
+        && 'review' || 'ubuntu-latest' }}
+      agent: openhands
+      local_model: medium
+      # shortcut: every CI Gate completion counts as a run, so the default of 5 is spent on
+      # passing runs; lower this once the shared limit counts fix runs only.
+      daily_run_limit: "100"
       repo_context: "Nix home-manager modules for cross-platform dev environment (git, zsh, VS Code, tmux)"
       ci_structure: "ci-gate.yml (dorny/paths-filter + nix-check + markdown-lint + alls-green gate)"
       extra_tools: "Bash(nix:*)"
-    secrets: inherit
