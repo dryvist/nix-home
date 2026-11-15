@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.0](https://github.com/dryvist/nix-home/compare/v1.63.2...v1.64.0) (2026-11-15)
+
+
+### Features
+
+* **gh-guard:** allow a pull request objective and approach in the narrative screen ([#814](https://github.com/dryvist/nix-home/issues/814)) ([b98bd20](https://github.com/dryvist/nix-home/commit/b98bd20745bfdbe8c5d61d9ff20cc6c8d466efba))
+
 ## [1.63.2](https://github.com/dryvist/nix-home/compare/v1.63.1...v1.63.2) (2026-11-14)
 
 
