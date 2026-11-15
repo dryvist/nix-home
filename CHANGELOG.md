@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.63.2](https://github.com/dryvist/nix-home/compare/v1.63.1...v1.63.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **flake:** resolve homelab-contracts from its current owner ([#806](https://github.com/dryvist/nix-home/issues/806)) ([50a89ad](https://github.com/dryvist/nix-home/commit/50a89ad8a17092188fd305e809270376e667ce4e))
+
 ## [1.63.1](https://github.com/dryvist/nix-home/compare/v1.63.0...v1.63.1) (2026-11-13)
 
 
