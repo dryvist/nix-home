@@ -236,7 +236,7 @@ judge_prompt_checks() {
   export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
   : >"$GH_GUARD_TEST_JUDGE_LOG"
   PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
-    check3 "prompt wording reaches judge"  0 clean issue create -R dryvist/pub --body "$CLEAN"
+    check3 "prompt wording reaches judge"  0 clean issue create -R "$OPENBAO_GH_CLAIM" --body "$CLEAN"
   prompt="$(jq -r '.messages[0].content' "$GH_GUARD_TEST_JUDGE_LOG")"
   wording_case "prompt allows objective and approach"   found "$prompt" \
     "A pull request body may state its objective and approach"
@@ -258,7 +258,7 @@ judge_prompt_checks() {
   wording_case "prompt keeps credential detail"         found "$prompt" "credential detail:"
   wording_case "prompt keeps instance over label"       found "$prompt" "ACTUAL INSTANCE"
   err="$(PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Block." \
-    run_guard issue create -R dryvist/pub --body "$CLEAN" 2>&1 >/dev/null)" || true
+    run_guard issue create -R "$OPENBAO_GH_CLAIM" --body "$CLEAN" 2>&1 >/dev/null)" || true
   wording_case "refusal says objective/approach ok"     found "$err" "Objective and approach are allowed."
   wording_case "refusal names what is not allowed"      found "$err" \
     "Incident, weakness, topology, or credential detail is not allowed."

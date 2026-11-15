@@ -84,7 +84,7 @@ The trace line is in the body so titles keep their form. Putting the id in the t
 The guard test suite passes with the new template.
 
 ## Related
-https://github.com/dryvist/nix-home/pull/812
+https://github.com/example-org/example-repo/pull/812
 
 ## Trace
 lead: ab12cd34 worker: 42
