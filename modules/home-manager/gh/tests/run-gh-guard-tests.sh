@@ -216,10 +216,61 @@ judge_endpoint_checks() {
   rm -f "$GH_GUARD_TEST_JUDGE_LOG"
 }
 
+# --- judge prompt wording -------------------------------------------------
+# The system prompt is the control itself, so the shipped wording is pinned
+# through the fake judge's request log: the objective-and-approach allowance,
+# the Trace line and pull request URL allowances, the removal of the
+# decided/rationale rule, and every category that must keep blocking.
+judge_prompt_checks() {
+  local prompt err
+  wording_case() { # name want(found|absent) text needle
+    local name="$1" want="$2" text="$3" needle="$4" found=0
+    if grep -qF -- "$needle" <<<"$text"; then found=1; fi
+    if { [ "$want" = found ] && [ "$found" = 1 ]; } ||
+      { [ "$want" = absent ] && [ "$found" = 0 ]; }; then
+      printf 'PASS  %-38s\n' "$name"; pass=$((pass + 1))
+    else
+      printf 'FAIL  %-38s expected the text to %s: %s\n' "$name" "$want" "$needle"; fail=$((fail + 1))
+    fi
+  }
+  export GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
+  : >"$GH_GUARD_TEST_JUDGE_LOG"
+  PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Allow." \
+    check3 "prompt wording reaches judge"  0 clean issue create -R dryvist/pub --body "$CLEAN"
+  prompt="$(jq -r '.messages[0].content' "$GH_GUARD_TEST_JUDGE_LOG")"
+  wording_case "prompt allows objective and approach"   found "$prompt" \
+    "A pull request body may state its objective and approach"
+  wording_case "allowance needs no block instance"      found "$prompt" \
+    "as long as it contains no instance of any category above"
+  wording_case "prompt allows the trace line"           found "$prompt" \
+    "A Trace line of the form lead: ab12cd34 worker: 42"
+  wording_case "prompt allows github pull request URLs" found "$prompt" \
+    "a full URL of a pull request on github.com"
+  wording_case "prompt drops the decided rule"          absent "$prompt" "was decided"
+  wording_case "prompt drops the rationale rule"        absent "$prompt" "rationale"
+  wording_case "prompt keeps the failure category"      found "$prompt" \
+    "incident, outage, or root-cause narrative"
+  wording_case "prompt keeps faults and weaknesses"     found "$prompt" \
+    "real fault, weakness, or finding"
+  wording_case "prompt keeps topology"                  found "$prompt" "internal system topology"
+  wording_case "prompt keeps hostnames and addresses"   found "$prompt" \
+    "hostnames, IP addresses, or internal service names"
+  wording_case "prompt keeps credential detail"         found "$prompt" "credential detail:"
+  wording_case "prompt keeps instance over label"       found "$prompt" "ACTUAL INSTANCE"
+  err="$(PATH="$HERE/fakejudge:$PATH" GH_GUARD_TEST_JUDGE_VERDICT="Block." \
+    run_guard issue create -R dryvist/pub --body "$CLEAN" 2>&1 >/dev/null)" || true
+  wording_case "refusal says objective/approach ok"     found "$err" "Objective and approach are allowed."
+  wording_case "refusal names what is not allowed"      found "$err" \
+    "Incident, weakness, topology, or credential detail is not allowed."
+  rm -f "$GH_GUARD_TEST_JUDGE_LOG"
+  unset GH_GUARD_TEST_JUDGE_LOG
+}
+
 if [ "${GH_GUARD_TEST_CI:-}" = 1 ]; then
   identifier_boundary_checks
   visibility_checks
   judge_endpoint_checks
+  judge_prompt_checks
   rm -f "$HERE/missing-identifiers.txt"
   GH_GUARD_DENYLIST="$HERE/missing-identifiers.txt" \
     check3 "missing identifier file blocks publish" 1 identifier \
@@ -410,6 +461,8 @@ OPENBAO_GH_CLAIM=dryvist/privaterepo \
 
 judge_endpoint_checks
 unset GH_GUARD_TEST_JUDGE_LOG
+
+judge_prompt_checks
 
 # --- fail-closed when the judge is genuinely absent ---------------------
 GH_GUARD_JUDGE_URL="http://127.0.0.1:9/nope" GH_GUARD_JUDGE_TIMEOUT=1 \
