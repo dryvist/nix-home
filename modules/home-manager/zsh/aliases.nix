@@ -88,6 +88,14 @@
   tn = "tmux new -s"; # Create named session
 
   # ===========================================================================
+  # Git (override oh-my-zsh git plugin fetch aliases for floating major tags)
+  # ===========================================================================
+  # Git has no global config to overwrite moved floating release tags (e.g. v1,
+  # v8) when `fetch --tags` runs; passing --force keeps gfo/gfa from aborting.
+  gfo = "git fetch origin --force";
+  gfa = "git fetch --all --tags --force --prune --jobs=10";
+
+  # ===========================================================================
   # MLX (Apple Silicon ML Inference Server)
   # ===========================================================================
   # The MLX stack is an always-on LaunchAgent (vllm-mlx + llama-swap on port
