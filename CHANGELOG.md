@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.2](https://github.com/dryvist/nix-home/compare/v1.64.1...v1.64.2) (2026-11-20)
+
+
+### Bug Fixes
+
+* **gh:** add allow examples to the narrative judge prompt ([#829](https://github.com/dryvist/nix-home/issues/829)) ([908992c](https://github.com/dryvist/nix-home/commit/908992c5fb1076645df5326da74924f736efa02e))
+
 ## [1.64.1](https://github.com/dryvist/nix-home/compare/v1.64.0...v1.64.1) (2026-11-18)
 
 
