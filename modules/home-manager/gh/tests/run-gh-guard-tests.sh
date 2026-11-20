@@ -512,8 +512,15 @@ check3 "identifier in pasted output"    1 identifier issue create -R dryvist/pub
 # A CIDR range describes policy, not a host. Doc ranges, semver, ports, and
 # issue refs all collided with naive rules in the corpus. RFC 1918 addresses,
 # including the former 192.168.x placeholder case, are always private targets.
+# A private range passes the deterministic tiers and the narrative judge decides
+# it, so the next two checks run against a fake judge that allows.
+saved_path="$PATH" saved_judge_url="${GH_GUARD_JUDGE_URL-}"
+export PATH="$HERE/fakejudge:$PATH" GH_GUARD_JUDGE_URL="http://127.0.0.1:9/v1/chat/completions" \
+  GH_GUARD_JUDGE_TIMEOUT=5 GH_GUARD_TEST_JUDGE_VERDICT="Allow." GH_GUARD_TEST_JUDGE_LOG="$HERE/judge-requests.log"
 check3 "CIDR range is policy not host"  0 clean issue create -R dryvist/pub --body "allow 10.0.0.0/8 in the firewall rule"
 check3 "private /24 range is policy"     0 clean issue create -R dryvist/pub --body "allow 192.168.0.0/24 in the firewall rule"
+PATH="$saved_path"; unset GH_GUARD_TEST_JUDGE_VERDICT GH_GUARD_JUDGE_URL GH_GUARD_JUDGE_TIMEOUT
+[ -z "$saved_judge_url" ] || export GH_GUARD_JUDGE_URL="$saved_judge_url"
 check3 "documentation range is public"   0 clean issue create -R dryvist/pub --body "use 192.0.2.10 as the documentation placeholder"
 check3 "semver is not an address"       0 clean issue create -R dryvist/pub --body "bump to v1.24.3 and 10.2.1 tooling"
 check3 "ports and issue refs"           0 clean issue create -R dryvist/pub --body "closes #1771, exposes :8088 and :49152"
