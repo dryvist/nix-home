@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.1](https://github.com/dryvist/nix-home/compare/v1.64.0...v1.64.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **zsh:** force-update floating tags in gfo and gfa aliases ([#823](https://github.com/dryvist/nix-home/issues/823)) ([31b8792](https://github.com/dryvist/nix-home/commit/31b879224b1329488ac42f2f9f0f3753562ec460))
+
 ## [1.64.0](https://github.com/dryvist/nix-home/compare/v1.63.2...v1.64.0) (2026-11-15)
 
 

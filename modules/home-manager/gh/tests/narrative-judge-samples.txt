@@ -108,3 +108,105 @@ Publish the dashboard behind 192.0.2.10, reachable only from the internal networ
 chore(auth): rotate the deploy token
 
 The new deploy token can read every secret under the apps path and write to every repository.
+
+@@ allow
+Assigns each `tenant-blue` repository-write role its tenant's default token audience at
+`https://codehost.example.test/tenant-blue`. Removes `shared_write_audience` and
+`automation_write_audience`; updates the tests to match.
+
+@@ allow
+## Summary
+
+- `repo-write-role-payload.json` sets `bound_audiences` to
+  `https://codehost.example.test/tenant-blue` for each tenant role; the drift
+  check compares the same value.
+- Removes the `tenant_write_audience` and `automation_write_audience` defaults.
+- Tests assert the per-tenant audience in the rendered payload.
+
+## Checks
+
+- `pytest -q tests`: 64 passed.
+- `pre-commit run --all-files`: clean.
+
+@@ allow
+## Summary
+
+- `replication-restore-check.sh.j2` puts `/usr/sbin:/sbin:/usr/bin:/bin` ahead
+  of inherited `PATH`, matching `replication-send.sh.j2`.
+- The test harness runs in the `archive-scenario` container. It installs the
+  `volume-tool` and `event-logger` stubs at the pinned paths, records whether a
+  real binary was present, and restores or removes it in an `always` block.
+- `tests/replication/verify_restore_check.yml` keeps the render assertions and
+  skips the harness.
+
+## Checks
+
+- Render assertions pass; static lint has 0 findings; pytest reports 64 passed.
+- CI runs the `replication` scenario harness.
+
+@@ allow
+fix(workstation): start device helper, show shell notice, remove container plugin
+
+@@ allow
+feat(secret-store): seed and grant the task-board profile router key
+
+@@ allow
+fix(secret-store): bind each repository-write role to its own tenant audience
+
+@@ allow
+fix(ci): pass the automation app key to the gate callers
+
+@@ block
+The `tenant-blue` write role accepts `https://codehost.example.test/tenant-blue`
+and can write to every repository in that tenant.
+
+@@ block
+On `archive-node-17`, the restore check returned 127 because its required binary
+lived under `/opt/volume-tools`, outside pinned `PATH`; the check failed in
+production.
+
+@@ block
+The restore verifier kept failing on `vault-node-12` because its executable was
+installed only under `/usr/local/sbin`; the deployed path ordering omitted that
+directory.
+
+@@ block
+A retry loop filled the disk on `queue-node-5`; once that node stopped writing,
+all nightly exports stalled until an operator cleared it.
+
+@@ block
+The private dashboard is on `mgmt-node-8`, listening on port 8443; any device on
+the backup network can open the admin page.
+
+@@ block
+The automation key stored in the `task-board` vault can read every tenant's
+database secret and write to all repositories in the tenant.
+
+@@ block
+The status endpoint skipped the read check on `mgmt-node-8`, so an
+unauthenticated request exposed the tenant settings.
+
+@@ allow
+- The CI write OIDC role payload sets `bound_audiences` to `https://github.com/<org>` for each role's org; the drift check compares against the same value.
+- Removes the `vault_ci_write_audience` and `vault_bot_write_audience` defaults.
+- Tests assert the per-org audience in the rendered payload.
+
+Checks: `pytest -q tests` 412 passed; `pre-commit run --all-files` clean.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_EXAMPLE0000000000000000
+
+@@ block
+fix(firewall): let the build runners reach the package cache
+
+The build runner VLAN can now reach the package cache VLAN on port 5000, and the old deny rule is removed.
+
+@@ allow
+fix(zammad): release a declared API token value held by another row
+
+@@ allow
+fix(zammad): reconcile service API token rows before seeding their values
+
+@@ allow
+fix(zammad): update the bootstrap fragment and its test
