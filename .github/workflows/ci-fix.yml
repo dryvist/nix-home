@@ -1,12 +1,22 @@
-name: CI Fix (Claude)
+name: CI Fix (OpenHands)
 
+# Started when CI Gate fails, and by the PR Reconcile sweep: one
+# workflow_dispatch per head commit of a pull request whose code checks failed.
+# The called workflow handles gating, attempt caps, daily limits and concurrency.
 on:
+  workflow_run:
+    workflows: ["CI Gate"]
+    types: [completed]
   workflow_dispatch:
-  # --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-  # workflow_run:
-  #   workflows: ["CI Gate"]
-  #   types: [completed]
-  # --- END DISABLED ---
+    inputs:
+      failure_run_id:
+        description: ID of the failed run
+        required: true
+        type: string
+      failure_head_branch:
+        description: Head branch of the failed run
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -14,22 +24,22 @@ permissions:
   issues: write
   pull-requests: write
 
-# --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-# concurrency:
-#   group: ci-fix-${{ github.event.workflow_run.head_branch }}
-#   cancel-in-progress: true
-# --- END DISABLED ---
-
 jobs:
   fix:
-    # --- DISABLED AUTOMATIC TRIGGERS (restore by uncommenting) ---
-    # if: >-
-    #   github.event.workflow_run.conclusion == 'failure' &&
-    #   github.event.workflow_run.head_branch != 'main'
-    # --- END DISABLED ---
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure'
     uses: JacobPEvans/.github-ai/.github/workflows/cc-ci-fix.yml@v2
     with:
+      # Hosted runners cannot reach the model router; the review pool can.
+      runner_label: review
+      agent: openhands
+      local_model: medium
       repo_context: "Nix home-manager modules for cross-platform dev environment (git, zsh, VS Code, tmux)"
       ci_structure: "ci-gate.yml (dorny/paths-filter + nix-check + markdown-lint + alls-green gate)"
       extra_tools: "Bash(nix:*)"
+      # Empty on workflow_run: the called workflow reads the failed run from the event.
+      failure_conclusion: ${{ github.event_name == 'workflow_dispatch' && 'failure' || '' }}
+      failure_run_id: ${{ inputs.failure_run_id }}
+      failure_head_branch: ${{ inputs.failure_head_branch }}
+      failure_head_repository: ${{ github.event_name == 'workflow_dispatch' && github.repository || '' }}
+      failure_actor: ${{ github.event_name == 'workflow_dispatch' && github.actor || '' }}
     secrets: inherit
