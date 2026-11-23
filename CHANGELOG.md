@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.3](https://github.com/dryvist/nix-home/compare/v1.64.2...v1.64.3) (2026-11-23)
+
+
+### Bug Fixes
+
+* **zsh:** read the d-r host flake from DARWIN_HOST_FLAKE ([#841](https://github.com/dryvist/nix-home/issues/841)) ([68548e6](https://github.com/dryvist/nix-home/commit/68548e6a52cb8cd4c1a29c3ae4601df275c1673c))
+
 ## [1.64.2](https://github.com/dryvist/nix-home/compare/v1.64.1...v1.64.2) (2026-11-20)
 
 
