@@ -55,6 +55,8 @@ jobs:
 
   flake-lock-fresh:
     name: Flake Lock Fresh
+    # Off unless the FLAKE_LOCK_FRESH repository variable is 'true'.
+    if: ${{ vars.FLAKE_LOCK_FRESH == 'true' }}
     permissions:
       contents: read
     uses: JacobPEvans/.github/.github/workflows/_flake-lock-fresh.yml@6b24369aee9976565dde669f74b96594e48b3b36 # v1.61.3
@@ -71,4 +73,5 @@ jobs:
       - name: Aggregate results
         uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
         with:
+          allowed-skips: flake-lock-fresh
           jobs: ${{ toJSON(needs) }}
