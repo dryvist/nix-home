@@ -8,8 +8,11 @@ host="$(hostname -s)" || exit 1
   exit 1
 }
 
+# The private host flake and its private inputs live under this owner; its read token covers them all.
+flake_owner="jpe-nix"
+
 old_nix_config="${NIX_CONFIG:-}"
-token="$(env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run -- openbao-github-creds token read dryvist)" || {
+token="$(env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run -- openbao-github-creds token read "$flake_owner")" || {
   printf 'd-r: unable to read the GitHub evaluation token\n' >&2
   exit 1
 }
@@ -19,7 +22,7 @@ export NIX_CONFIG="${old_nix_config:+$old_nix_config
 unset token
 
 # Build stdout is the closure path and stays unprefixed; build stderr (logs) is timestamped.
-closure="$(nix build "github:dryvist/nix-darwin-host#darwinConfigurations.${host}.system" \
+closure="$(nix build "github:${flake_owner}/nix-darwin-host#darwinConfigurations.${host}.system" \
   --refresh --no-write-lock-file --accept-flake-config --no-link --print-out-paths --print-build-logs \
   2> >(ts-prefix >&2))"
 build_rc=$?
