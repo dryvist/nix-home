@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.4](https://github.com/dryvist/nix-home/compare/v1.64.3...v1.64.4) (2026-11-25)
+
+
+### Bug Fixes
+
+* **zsh:** state only what d-r reads from DARWIN_HOST_FLAKE ([#847](https://github.com/dryvist/nix-home/issues/847)) ([369b411](https://github.com/dryvist/nix-home/commit/369b411b771afc0ea76ed998dda8f3d91c676be4))
+
 ## [1.64.3](https://github.com/dryvist/nix-home/compare/v1.64.2...v1.64.3) (2026-11-23)
 
 
