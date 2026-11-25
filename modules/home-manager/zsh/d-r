@@ -8,8 +8,20 @@ host="$(hostname -s)" || exit 1
   exit 1
 }
 
+# DARWIN_HOST_FLAKE names the host flake as github:<owner>/<repo>; the read token is minted for <owner>.
+host_flake="${DARWIN_HOST_FLAKE:-}"
+case "$host_flake" in
+  github:*/*) ;;
+  *)
+    printf 'd-r: DARWIN_HOST_FLAKE must be github:<owner>/<repo>; open a new shell after the first activation that sets it\n' >&2
+    exit 1
+    ;;
+esac
+flake_owner="${host_flake#github:}"
+flake_owner="${flake_owner%%/*}"
+
 old_nix_config="${NIX_CONFIG:-}"
-token="$(env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run -- openbao-github-creds token read dryvist)" || {
+token="$(env -u DOPPLER_PROJECT -u DOPPLER_CONFIG -u DOPPLER_ENVIRONMENT doppler run -- openbao-github-creds token read "$flake_owner")" || {
   printf 'd-r: unable to read the GitHub evaluation token\n' >&2
   exit 1
 }
@@ -19,7 +31,7 @@ export NIX_CONFIG="${old_nix_config:+$old_nix_config
 unset token
 
 # Build stdout is the closure path and stays unprefixed; build stderr (logs) is timestamped.
-closure="$(nix build "github:dryvist/nix-darwin-host#darwinConfigurations.${host}.system" \
+closure="$(nix build "${host_flake}#darwinConfigurations.${host}.system" \
   --refresh --no-write-lock-file --accept-flake-config --no-link --print-out-paths --print-build-logs \
   2> >(ts-prefix >&2))"
 build_rc=$?
