@@ -8,8 +8,7 @@ host="$(hostname -s)" || exit 1
   exit 1
 }
 
-# The private host layer sets DARWIN_HOST_FLAKE (github:<owner>/<repo>) once for every Mac;
-# that owner's read token covers the host flake and its private inputs.
+# DARWIN_HOST_FLAKE names the host flake as github:<owner>/<repo>; the read token is minted for <owner>.
 host_flake="${DARWIN_HOST_FLAKE:-}"
 case "$host_flake" in
   github:*/*) ;;
