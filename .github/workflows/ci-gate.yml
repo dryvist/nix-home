@@ -59,7 +59,7 @@ jobs:
     if: ${{ vars.FLAKE_LOCK_FRESH == 'true' }}
     permissions:
       contents: read
-    uses: JacobPEvans/.github/.github/workflows/_flake-lock-fresh.yml@871fbcd29b5f220c81a985453caf01c63ab0c04c # v1.66.0
+    uses: JacobPEvans/.github/.github/workflows/_flake-lock-fresh.yml@88da5b53e781410e1bbee0092e134830ca85bda6 # v1.67.0
     with:
       max_age_days: 30
 
